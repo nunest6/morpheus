@@ -1,0 +1,2904 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Módulo de Auditoria SPED Fiscal ICMS/IPI</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #111827;
+  --bg-card: #1a2035;
+  --bg-card-hover: #1f2847;
+  --border: #2a3455;
+  --border-active: #4f6df5;
+  --text-primary: #e8ecf4;
+  --text-secondary: #8b95b0;
+  --text-muted: #5a6580;
+  --accent: #4f6df5;
+  --accent-light: #6b85f7;
+  --accent-glow: rgba(79,109,245,0.15);
+  --success: #22c55e;
+  --success-bg: rgba(34,197,94,0.1);
+  --warning: #f59e0b;
+  --warning-bg: rgba(245,158,11,0.1);
+  --danger: #ef4444;
+  --danger-bg: rgba(239,68,68,0.1);
+  --info: #06b6d4;
+  --info-bg: rgba(6,182,212,0.1);
+  --purple: #a855f7;
+  --purple-bg: rgba(168,85,247,0.1);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg-primary);
+  color:var(--text-primary);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ─── SCROLLBAR ─── */
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background:var(--bg-secondary); }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:var(--text-muted); }
+
+/* ─── LAYOUT ─── */
+.app-container { display:flex; min-height:100vh; }
+
+.sidebar {
+  width:260px;
+  background:var(--bg-secondary);
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  position:fixed;
+  top:0; left:0; bottom:0;
+  z-index:100;
+  transition:transform .3s;
+}
+
+.main-content {
+  margin-left:260px;
+  flex:1;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+/* ─── SIDEBAR ─── */
+.logo-area {
+  padding:20px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+.logo-icon {
+  width:40px; height:40px;
+  background:linear-gradient(135deg,var(--accent),var(--purple));
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px; font-weight:700; color:#fff;
+}
+.logo-text h1 { font-size:14px; font-weight:700; letter-spacing:-.3px; }
+.logo-text span { font-size:11px; color:var(--text-muted); }
+
+.nav-section { padding:16px 12px 8px; }
+.nav-section-title {
+  font-size:10px; font-weight:600; letter-spacing:1px;
+  color:var(--text-muted); text-transform:uppercase;
+  padding:0 8px 8px;
+}
+.nav-item {
+  display:flex; align-items:center; gap:10px;
+  padding:9px 12px; border-radius:8px;
+  color:var(--text-secondary); cursor:pointer;
+  font-size:13px; font-weight:500;
+  transition:all .15s;
+  margin-bottom:2px;
+}
+.nav-item:hover { background:var(--bg-card); color:var(--text-primary); }
+.nav-item.active {
+  background:var(--accent-glow);
+  color:var(--accent-light);
+  border:1px solid rgba(79,109,245,.25);
+}
+.nav-item svg { width:18px; height:18px; flex-shrink:0; }
+.nav-badge {
+  margin-left:auto;
+  background:var(--accent);
+  color:#fff; font-size:10px; font-weight:600;
+  padding:2px 6px; border-radius:10px;
+}
+
+/* ─── TOPBAR ─── */
+.topbar {
+  height:56px;
+  background:var(--bg-secondary);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;
+  padding:0 24px;
+  gap:16px;
+  position:sticky; top:0; z-index:50;
+}
+.topbar-title { font-size:15px; font-weight:600; }
+.topbar-right { margin-left:auto; display:flex; align-items:center; gap:12px; }
+.topbar-badge {
+  font-size:11px; padding:4px 10px; border-radius:20px;
+  font-weight:600;
+}
+.badge-success { background:var(--success-bg); color:var(--success); }
+.badge-warning { background:var(--warning-bg); color:var(--warning); }
+.badge-danger { background:var(--danger-bg); color:var(--danger); }
+.badge-info { background:var(--info-bg); color:var(--info); }
+
+/* ─── PAGE CONTENT ─── */
+.page-content { padding:24px; flex:1; }
+
+/* ─── CARDS ─── */
+.card {
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  overflow:hidden;
+  margin-bottom:20px;
+}
+.card-header {
+  padding:16px 20px;
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.card-header h3 { font-size:14px; font-weight:600; }
+.card-body { padding:20px; }
+
+/* ─── GRID ─── */
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; }
+.grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+
+/* ─── STAT CARDS ─── */
+.stat-card {
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:18px 20px;
+  transition:all .2s;
+}
+.stat-card:hover { border-color:var(--border-active); transform:translateY(-1px); }
+.stat-label { font-size:11px; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; }
+.stat-value { font-size:26px; font-weight:700; font-family:'JetBrains Mono',monospace; }
+.stat-sub { font-size:12px; color:var(--text-secondary); margin-top:4px; }
+.stat-change { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; margin-top:6px; padding:2px 8px; border-radius:10px; }
+.stat-up { background:var(--success-bg); color:var(--success); }
+.stat-down { background:var(--danger-bg); color:var(--danger); }
+.stat-neutral { background:var(--info-bg); color:var(--info); }
+
+/* ─── UPLOAD ZONE ─── */
+.upload-zone {
+  border:2px dashed var(--border);
+  border-radius:16px;
+  padding:60px 40px;
+  text-align:center;
+  cursor:pointer;
+  transition:all .3s;
+  background:var(--bg-card);
+  position:relative;
+}
+.upload-zone:hover, .upload-zone.dragover {
+  border-color:var(--accent);
+  background:var(--accent-glow);
+}
+.upload-zone svg { margin:0 auto 16px; opacity:.5; }
+.upload-zone h3 { font-size:18px; margin-bottom:8px; }
+.upload-zone p { color:var(--text-muted); font-size:13px; }
+.upload-zone input { display:none; }
+
+.file-list { margin-top:20px; }
+.file-item {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 16px; background:var(--bg-secondary);
+  border:1px solid var(--border); border-radius:10px;
+  margin-bottom:8px; font-size:13px;
+}
+.file-item .name { flex:1; font-weight:500; }
+.file-item .size { color:var(--text-muted); font-family:'JetBrains Mono',monospace; font-size:11px; }
+.file-item .status { font-size:11px; font-weight:600; }
+.file-remove { cursor:pointer; color:var(--danger); font-size:16px; padding:4px; }
+
+/* ─── TABLE ─── */
+.data-table {
+  width:100%;
+  border-collapse:collapse;
+  font-size:13px;
+}
+.data-table th {
+  text-align:left;
+  padding:10px 14px;
+  font-size:11px; font-weight:600;
+  color:var(--text-muted);
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  border-bottom:1px solid var(--border);
+  position:sticky; top:0;
+  background:var(--bg-card);
+}
+.data-table td {
+  padding:10px 14px;
+  border-bottom:1px solid rgba(42,52,85,.5);
+  color:var(--text-secondary);
+}
+.data-table tr:hover td { background:rgba(79,109,245,.03); color:var(--text-primary); }
+.data-table .mono { font-family:'JetBrains Mono',monospace; font-size:12px; }
+.data-table .right { text-align:right; }
+
+/* ─── TABS ─── */
+.tabs {
+  display:flex; gap:2px;
+  background:var(--bg-secondary);
+  border-radius:10px;
+  padding:3px;
+  border:1px solid var(--border);
+  width:fit-content;
+}
+.tab-btn {
+  padding:7px 16px;
+  border-radius:8px;
+  font-size:12px; font-weight:600;
+  color:var(--text-muted);
+  cursor:pointer;
+  border:none;
+  background:transparent;
+  transition:all .15s;
+}
+.tab-btn:hover { color:var(--text-secondary); }
+.tab-btn.active { background:var(--accent); color:#fff; }
+
+/* ─── BLOCK EXPLORER ─── */
+.block-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; }
+.block-card {
+  background:var(--bg-secondary);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:16px;
+  cursor:pointer;
+  transition:all .2s;
+  position:relative;
+  overflow:hidden;
+}
+.block-card:hover { border-color:var(--accent); transform:translateY(-2px); }
+.block-card .block-id {
+  font-family:'JetBrains Mono',monospace;
+  font-size:22px; font-weight:700;
+  color:var(--accent);
+}
+.block-card .block-name { font-size:11px; color:var(--text-secondary); margin-top:4px; line-height:1.4; }
+.block-card .block-count {
+  font-family:'JetBrains Mono',monospace;
+  font-size:24px; font-weight:700;
+  margin-top:10px;
+}
+.block-card .block-count-label { font-size:10px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.5px; }
+.block-card .block-stripe {
+  position:absolute; top:0; left:0; right:0; height:3px;
+}
+
+/* ─── REGISTER DETAIL ─── */
+.register-detail-header {
+  display:flex; align-items:center; gap:12px;
+  margin-bottom:20px;
+}
+.register-detail-header .reg-code {
+  font-family:'JetBrains Mono',monospace;
+  font-size:28px; font-weight:700;
+  color:var(--accent);
+}
+.register-detail-header .reg-desc { color:var(--text-secondary); font-size:14px; }
+
+/* ─── BUTTONS ─── */
+.btn {
+  padding:8px 18px;
+  border-radius:8px;
+  font-size:13px; font-weight:600;
+  cursor:pointer;
+  border:1px solid var(--border);
+  background:var(--bg-card);
+  color:var(--text-primary);
+  display:inline-flex; align-items:center; gap:6px;
+  transition:all .15s;
+}
+.btn:hover { border-color:var(--accent); background:var(--bg-card-hover); }
+.btn-primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+.btn-primary:hover { background:var(--accent-light); }
+.btn-sm { padding:5px 12px; font-size:12px; }
+.btn-danger { border-color:var(--danger); color:var(--danger); }
+.btn-danger:hover { background:var(--danger-bg); }
+
+/* ─── PROGRESS ─── */
+.progress-bar { width:100%; height:6px; background:var(--bg-secondary); border-radius:3px; overflow:hidden; }
+.progress-fill { height:100%; border-radius:3px; transition:width .3s; }
+
+/* ─── COMPARISON ─── */
+.comparison-row {
+  display:flex; align-items:center; gap:12px;
+  padding:10px 0;
+  border-bottom:1px solid rgba(42,52,85,.3);
+}
+.comparison-label { width:200px; font-size:13px; color:var(--text-secondary); }
+.comparison-values { flex:1; display:flex; gap:20px; }
+.comparison-val {
+  font-family:'JetBrains Mono',monospace;
+  font-size:14px; font-weight:600;
+  min-width:120px;
+}
+.comparison-diff { font-size:12px; font-weight:600; }
+
+/* ─── ALERTS ─── */
+.alert-item {
+  display:flex; gap:12px; padding:14px 16px;
+  border-radius:10px; margin-bottom:8px;
+  border:1px solid;
+}
+.alert-item.alert-danger { background:var(--danger-bg); border-color:rgba(239,68,68,.2); }
+.alert-item.alert-warning { background:var(--warning-bg); border-color:rgba(245,158,11,.2); }
+.alert-item.alert-info { background:var(--info-bg); border-color:rgba(6,182,212,.2); }
+.alert-icon { font-size:18px; flex-shrink:0; }
+.alert-text { font-size:13px; line-height:1.5; }
+.alert-text strong { display:block; margin-bottom:2px; }
+
+/* ─── SEARCH ─── */
+.search-box {
+  display:flex; align-items:center; gap:8px;
+  background:var(--bg-secondary);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:0 12px;
+}
+.search-box input {
+  background:transparent; border:none; outline:none;
+  color:var(--text-primary); font-size:13px;
+  padding:8px 0; width:200px;
+  font-family:'DM Sans',sans-serif;
+}
+.search-box input::placeholder { color:var(--text-muted); }
+
+/* ─── CHART CONTAINER ─── */
+.chart-container { position:relative; height:300px; }
+.chart-container canvas { max-height:100%; }
+
+/* ─── EMPTY STATE ─── */
+.empty-state {
+  text-align:center; padding:80px 40px;
+}
+.empty-state svg { margin-bottom:20px; opacity:.3; }
+.empty-state h3 { font-size:18px; margin-bottom:8px; color:var(--text-secondary); }
+.empty-state p { font-size:13px; color:var(--text-muted); max-width:400px; margin:0 auto; }
+
+/* ─── SECTION TITLE ─── */
+.section-title { font-size:18px; font-weight:700; margin-bottom:16px; }
+.section-subtitle { font-size:13px; color:var(--text-muted); margin-bottom:20px; }
+
+/* ─── MODAL ─── */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,.7);
+  display:flex; align-items:center; justify-content:center;
+  z-index:1000; opacity:0; pointer-events:none;
+  transition:opacity .2s;
+}
+.modal-overlay.active { opacity:1; pointer-events:all; }
+.modal {
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:16px;
+  max-width:900px; width:95%;
+  max-height:85vh;
+  display:flex; flex-direction:column;
+}
+.modal-header {
+  padding:20px 24px;
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.modal-header h3 { font-size:16px; font-weight:700; }
+.modal-close { cursor:pointer; color:var(--text-muted); font-size:20px; padding:4px; }
+.modal-body { padding:24px; overflow-y:auto; flex:1; }
+
+/* ─── LOADING ─── */
+.loading-spinner {
+  width:40px; height:40px;
+  border:3px solid var(--border);
+  border-top-color:var(--accent);
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+  margin:0 auto;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+.page { display:none; }
+.page.active { display:block; }
+
+/* ─── RESPONSIVE ─── */
+@media(max-width:1200px) {
+  .grid-4 { grid-template-columns:repeat(2,1fr); }
+}
+@media(max-width:900px) {
+  .sidebar { transform:translateX(-100%); }
+  .sidebar.open { transform:translateX(0); }
+  .main-content { margin-left:0; }
+  .grid-2, .grid-3 { grid-template-columns:1fr; }
+}
+
+/* ─── ANIMATIONS ─── */
+@keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+.animate-in { animation:fadeIn .3s ease-out; }
+
+.tag {
+  display:inline-block;
+  padding:2px 8px;
+  border-radius:6px;
+  font-size:11px;
+  font-weight:600;
+}
+.tag-blue { background:var(--accent-glow); color:var(--accent-light); }
+.tag-green { background:var(--success-bg); color:var(--success); }
+.tag-red { background:var(--danger-bg); color:var(--danger); }
+.tag-yellow { background:var(--warning-bg); color:var(--warning); }
+.tag-purple { background:var(--purple-bg); color:var(--purple); }
+
+.truncate { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:300px; }
+
+/* Back button */
+.back-btn {
+  display:inline-flex; align-items:center; gap:6px;
+  color:var(--text-muted); font-size:13px;
+  cursor:pointer; margin-bottom:16px;
+  padding:4px 0;
+}
+.back-btn:hover { color:var(--accent); }
+
+.variation-bar {
+  display:flex; align-items:center; gap:8px;
+}
+.variation-bar-track {
+  flex:1; height:8px;
+  background:var(--bg-secondary);
+  border-radius:4px;
+  overflow:hidden;
+}
+.variation-bar-fill {
+  height:100%; border-radius:4px;
+}
+
+/* ─── NCM CONSULTATION PANEL ─── */
+.ncm-panel {
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  overflow:hidden;
+  margin-bottom:20px;
+}
+.ncm-panel-header {
+  padding:16px 20px;
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:16px;
+  flex-wrap:wrap;
+}
+.ncm-panel-header h3 { font-size:14px; font-weight:600; white-space:nowrap; }
+.ncm-search-inline {
+  display:flex; align-items:center; gap:8px; flex:1; min-width:200px;
+}
+.ncm-search-inline input {
+  background:var(--bg-secondary); border:1px solid var(--border);
+  border-radius:8px; color:var(--text-primary);
+  font-size:13px; font-family:'JetBrains Mono',monospace;
+  padding:7px 12px; width:160px; outline:none;
+  transition:border-color .15s;
+}
+.ncm-search-inline input:focus { border-color:var(--accent); }
+.ncm-search-inline select {
+  background:var(--bg-secondary); border:1px solid var(--border);
+  border-radius:8px; color:var(--text-primary);
+  font-size:12px; padding:7px 10px; outline:none;
+  cursor:pointer;
+}
+.ncm-btn-consult {
+  padding:7px 16px; border-radius:8px;
+  font-size:12px; font-weight:600;
+  cursor:pointer; border:none;
+  background:linear-gradient(135deg,var(--accent),var(--purple));
+  color:#fff; display:inline-flex; align-items:center; gap:6px;
+  transition:opacity .15s;
+}
+.ncm-btn-consult:hover { opacity:.9; }
+.ncm-btn-consult:disabled { opacity:.5; cursor:not-allowed; }
+
+.ncm-result-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  padding:20px;
+}
+@media(max-width:900px) { .ncm-result-grid { grid-template-columns:1fr; } }
+
+.ncm-info-box {
+  background:var(--bg-secondary);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:16px;
+}
+.ncm-info-box h4 {
+  font-size:12px; font-weight:600; color:var(--text-muted);
+  text-transform:uppercase; letter-spacing:.5px;
+  margin-bottom:10px; display:flex; align-items:center; gap:6px;
+}
+.ncm-info-box h4 .icon-dot {
+  width:8px; height:8px; border-radius:50%; flex-shrink:0;
+}
+.ncm-info-row {
+  display:flex; justify-content:space-between; align-items:baseline;
+  padding:5px 0;
+  border-bottom:1px solid rgba(42,52,85,.3);
+  font-size:13px;
+}
+.ncm-info-row:last-child { border-bottom:none; }
+.ncm-info-row .label { color:var(--text-muted); }
+.ncm-info-row .value { font-family:'JetBrains Mono',monospace; font-weight:600; }
+
+.ncm-full-desc {
+  padding:14px 20px;
+  background:var(--bg-secondary);
+  border-top:1px solid var(--border);
+  font-size:13px; color:var(--text-secondary); line-height:1.6;
+}
+
+.ncm-ai-analysis {
+  padding:20px;
+  border-top:1px solid var(--border);
+}
+.ncm-ai-analysis h4 {
+  font-size:13px; font-weight:700; margin-bottom:12px;
+  display:flex; align-items:center; gap:8px;
+}
+.ncm-ai-analysis h4 .ai-badge {
+  font-size:10px; font-weight:700;
+  padding:2px 8px; border-radius:10px;
+  background:linear-gradient(135deg,var(--accent),var(--purple));
+  color:#fff; letter-spacing:.5px;
+}
+.ncm-ai-content {
+  font-size:13px; line-height:1.7;
+  color:var(--text-secondary);
+  background:var(--bg-secondary);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:16px;
+  max-height:400px;
+  overflow-y:auto;
+  white-space:pre-wrap;
+}
+.ncm-ai-content strong, .ncm-ai-content b { color:var(--text-primary); }
+
+.ncm-batch-bar {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 20px;
+  background:rgba(79,109,245,.05);
+  border-bottom:1px solid var(--border);
+  font-size:12px;
+}
+.ncm-batch-bar .progress-bar { flex:1; max-width:300px; }
+.ncm-batch-bar .batch-text { color:var(--text-muted); }
+
+.ncm-table-btn {
+  padding:3px 10px; border-radius:6px;
+  font-size:11px; font-weight:600;
+  cursor:pointer; border:1px solid var(--border);
+  background:transparent; color:var(--accent-light);
+  transition:all .15s; white-space:nowrap;
+}
+.ncm-table-btn:hover { background:var(--accent-glow); border-color:var(--accent); }
+.ncm-table-btn.consulted { border-color:var(--success); color:var(--success); }
+
+.ncm-chip {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:2px 8px; border-radius:6px;
+  font-size:11px; font-weight:600;
+  cursor:pointer; transition:all .15s;
+  background:var(--accent-glow); color:var(--accent-light);
+  border:1px solid rgba(79,109,245,.2);
+}
+.ncm-chip:hover { border-color:var(--accent); background:rgba(79,109,245,.2); }
+
+.ncm-trib-bar {
+  display:flex; height:24px; border-radius:6px; overflow:hidden; margin-top:8px;
+}
+.ncm-trib-seg {
+  display:flex; align-items:center; justify-content:center;
+  font-size:9px; font-weight:700; color:#fff;
+  min-width:30px;
+  transition:flex .3s;
+}
+
+.ncm-loading-inline {
+  display:inline-block;
+  width:14px; height:14px;
+  border:2px solid var(--border);
+  border-top-color:var(--accent);
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+  vertical-align:middle;
+}
+</style>
+</head>
+<body>
+<div class="app-container">
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="logo-area">
+      <div class="logo-icon">SF</div>
+      <div class="logo-text">
+        <h1>SPED Fiscal</h1>
+        <span>Módulo de Auditoria</span>
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Principal</div>
+      <div class="nav-item active" data-page="import" onclick="showPage('import')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Importar Arquivos
+      </div>
+      <div class="nav-item" data-page="dashboard" onclick="showPage('dashboard')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" data-page="blocks" onclick="showPage('blocks')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        Blocos & Registros
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Análise</div>
+      <div class="nav-item" data-page="apuracao" onclick="showPage('apuracao')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M6 20V4M18 20v-6"/></svg>
+        Apuração ICMS/IPI
+      </div>
+      <div class="nav-item" data-page="comparativo" onclick="showPage('comparativo')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        Comparativo Mensal
+      </div>
+      <div class="nav-item" data-page="documentos" onclick="showPage('documentos')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+        Documentos Fiscais
+      </div>
+      <div class="nav-item" data-page="participantes" onclick="showPage('participantes')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        Participantes
+      </div>
+      <div class="nav-item" data-page="itens" onclick="showPage('itens')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        Itens / Produtos
+      </div>
+      <div class="nav-item" data-page="inventario" onclick="showPage('inventario')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+        Inventário (Bloco H)
+      </div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Auditoria</div>
+      <div class="nav-item" data-page="validacao" onclick="showPage('validacao')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Validações
+        <span class="nav-badge" id="alert-count" style="display:none">0</span>
+      </div>
+      <div class="nav-item" data-page="resumo" onclick="showPage('resumo')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+        Resumo Geral
+      </div>
+    </div>
+
+    <div style="margin-top:auto;padding:16px 20px;border-top:1px solid var(--border);">
+      <div style="font-size:11px;color:var(--text-muted);">
+        Versão 1.0 · Guia 3.2.2<br>
+        Arquivos carregados: <span id="sidebar-file-count">0</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+    <div class="topbar">
+      <button class="btn btn-sm" onclick="toggleSidebar()" style="display:none" id="menu-btn">☰</button>
+      <span class="topbar-title" id="topbar-title">Importar Arquivos SPED</span>
+      <div class="topbar-right">
+        <span class="topbar-badge badge-info" id="topbar-period" style="display:none"></span>
+        <span class="topbar-badge badge-success" id="topbar-status" style="display:none">✓ Processado</span>
+      </div>
+    </div>
+
+    <div class="page-content">
+
+      <!-- ═══ PAGE: IMPORT ═══ -->
+      <div class="page active" id="page-import">
+        <div class="section-title">Importar Arquivos SPED Fiscal (ICMS/IPI)</div>
+        <div class="section-subtitle">Importe um ou mais arquivos .txt do SPED Fiscal para auditoria. Suporta múltiplos períodos para comparativo mensal.</div>
+
+        <div class="upload-zone" id="upload-zone">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <h3>Arraste os arquivos .txt do SPED aqui</h3>
+          <p>ou clique para selecionar • Aceita múltiplos arquivos para comparativo mensal</p>
+          <input type="file" id="file-input" multiple accept=".txt,.TXT">
+        </div>
+
+        <div class="file-list" id="file-list"></div>
+
+        <div style="margin-top:20px;display:flex;gap:12px;align-items:center;" id="import-actions" class="hidden">
+          <button class="btn btn-primary" onclick="processAllFiles()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Processar Todos
+          </button>
+          <button class="btn btn-danger" onclick="clearFiles()">Limpar</button>
+          <div id="process-status" style="font-size:13px;color:var(--text-muted);"></div>
+        </div>
+      </div>
+
+      <!-- ═══ PAGE: DASHBOARD ═══ -->
+      <div class="page" id="page-dashboard">
+        <div class="section-title">Dashboard Geral</div>
+        <div id="dashboard-content"></div>
+      </div>
+
+      <!-- ═══ PAGE: BLOCKS ═══ -->
+      <div class="page" id="page-blocks">
+        <div class="section-title">Blocos & Registros</div>
+        <div class="section-subtitle">Visão detalhada de todos os blocos e registros presentes no arquivo SPED.</div>
+        <div id="blocks-content"></div>
+      </div>
+
+      <!-- ═══ PAGE: APURACAO ═══ -->
+      <div class="page" id="page-apuracao">
+        <div class="section-title">Apuração ICMS / IPI</div>
+        <div id="apuracao-content"></div>
+      </div>
+
+      <!-- ═══ PAGE: COMPARATIVO ═══ -->
+      <div class="page" id="page-comparativo">
+        <div class="section-title">Comparativo Mensal</div>
+        <div class="section-subtitle">Comparação entre períodos carregados - valores, variações e tendências.</div>
+        <div id="comparativo-content"></div>
+      </div>
+
+      <!-- ═══ PAGE: DOCUMENTOS ═══ -->
+      <div class="page" id="page-documentos">
+        <div class="section-title">Documentos Fiscais</div>
+        <div id="documentos-content"></div>
+      </div>
+
+      <!-- ═══ PAGE: PARTICIPANTES ═══ -->
+      <div class="page" id="page-participantes">
+        <div class="section-title">Participantes</div>
+        <div id="participantes-content"></div>
+      </div>
+
+      <!-- ═══ PAGE: ITENS ═══ -->
+      <div class="page" id="page-itens">
+        <div class="section-title">Itens / Produtos / Serviços</div>
+        <div id="itens-content"></div>
+      </div>
+
+      <!-- ═══ PAGE: INVENTARIO ═══ -->
+      <div class="page" id="page-inventario">
+        <div class="section-title">Inventário Físico (Bloco H)</div>
+        <div id="inventario-content"></div>
+      </div>
+
+      <!-- ═══ PAGE: VALIDACAO ═══ -->
+      <div class="page" id="page-validacao">
+        <div class="section-title">Validações & Alertas de Auditoria</div>
+        <div id="validacao-content"></div>
+      </div>
+
+      <!-- ═══ PAGE: RESUMO ═══ -->
+      <div class="page" id="page-resumo">
+        <div class="section-title">Resumo Geral da Escrituração</div>
+        <div id="resumo-content"></div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title"></h3>
+      <span class="modal-close" onclick="closeModal()">✕</span>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// SPED FISCAL ICMS/IPI - MÓDULO DE AUDITORIA
+// Parser completo conforme Guia Prático EFD versão 3.2.2
+// ═══════════════════════════════════════════════════════════════
+
+// ─── GLOBAL STATE ───
+const state = {
+  files: [],           // raw file objects
+  parsed: [],          // parsed SPED data per file
+  activeFile: 0,       // index of currently viewed file
+  charts: {}           // Chart.js instances
+};
+
+// ─── BLOCK DEFINITIONS (Guia 3.2.2) ───
+const BLOCK_DEFS = {
+  '0': { name: 'Abertura, Identificação e Referências', color: '#4f6df5' },
+  'B': { name: 'Escrituração e Apuração do ISS', color: '#06b6d4' },
+  'C': { name: 'Documentos Fiscais I – Mercadorias (ICMS/IPI)', color: '#22c55e' },
+  'D': { name: 'Documentos Fiscais II – Serviços (ICMS)', color: '#f59e0b' },
+  'E': { name: 'Apuração do ICMS e do IPI', color: '#ef4444' },
+  'G': { name: 'Controle do Crédito de ICMS do Ativo Permanente – CIAP', color: '#a855f7' },
+  'H': { name: 'Inventário Físico', color: '#ec4899' },
+  'K': { name: 'Controle da Produção e do Estoque', color: '#14b8a6' },
+  '1': { name: 'Outras Informações', color: '#f97316' },
+  '9': { name: 'Controle e Encerramento do Arquivo Digital', color: '#6b7280' }
+};
+
+// ─── REGISTER FIELD DEFINITIONS ───
+const REG_FIELDS = {
+  '0000': ['REG','COD_VER','COD_FIN','DT_INI','DT_FIN','NOME','CNPJ','CPF','UF','IE','COD_MUN','IM','SUFRAMA','IND_PERFIL','IND_ATIV'],
+  '0001': ['REG','IND_MOV'],
+  '0002': ['REG','CLAS_ESTAB_IND'],
+  '0005': ['REG','FANTASIA','CEP','END','NUM','COMPL','BAIRRO','FONE','FAX','EMAIL'],
+  '0015': ['REG','UF_ST','IE_ST'],
+  '0100': ['REG','NOME','CPF','CRC','CNPJ','CEP','END','NUM','COMPL','BAIRRO','FONE','FAX','EMAIL','COD_MUN'],
+  '0150': ['REG','COD_PART','NOME','COD_PAIS','CNPJ','CPF','IE','COD_MUN','SUFRAMA','END','NUM','COMPL','BAIRRO'],
+  '0175': ['REG','DT_ALT','NR_CAMPO','CONT_ANT'],
+  '0190': ['REG','UNID','DESCR'],
+  '0200': ['REG','COD_ITEM','DESCR_ITEM','COD_BARRA','COD_ANT_ITEM','UNID_INV','TIPO_ITEM','COD_NCM','EX_IPI','COD_GEN','COD_LST','ALIQ_ICMS','CEST'],
+  '0205': ['REG','DESCR_ANT_ITEM','DT_INI','DT_FIN','COD_ANT_ITEM'],
+  '0206': ['REG','COD_COMB'],
+  '0220': ['REG','UNID_CONV','FAT_CONV','COD_BARRA'],
+  '0221': ['REG','COD_ITEM_ATOMICO'],
+  '0300': ['REG','COD_AGRE','IDENT_MERC','DESCR_MERC','COD_PRNC','TIPO_MERC'],
+  '0305': ['REG','COD_CCUS','FUNC','VIDA_UTIL'],
+  '0400': ['REG','COD_NAT','DESCR_NAT'],
+  '0450': ['REG','COD_INF','TXT'],
+  '0460': ['REG','COD_OBS','TXT'],
+  '0500': ['REG','DT_ALT','COD_NAT_CC','IND_CTA','NIVEL','COD_CTA','NOME_CTA'],
+  '0600': ['REG','DT_ALT','COD_CCUS','CCUS'],
+  '0990': ['REG','QTD_LIN_0'],
+  'C001': ['REG','IND_MOV'],
+  'C100': ['REG','IND_OPER','IND_EMIT','COD_PART','COD_MOD','COD_SIT','SER','NUM_DOC','CHV_NFE','DT_DOC','DT_E_S','VL_DOC','IND_PGTO','VL_DESC','VL_ABAT_NT','VL_MERC','IND_FRT','VL_FRT','VL_SEG','VL_OUT_DA','VL_BC_ICMS','VL_ICMS','VL_BC_ICMS_ST','VL_ICMS_ST','VL_IPI','VL_PIS','VL_COFINS','VL_PIS_ST','VL_COFINS_ST'],
+  'C170': ['REG','NUM_ITEM','COD_ITEM','DESCR_COMPL','QTD','UNID','VL_ITEM','VL_DESC','IND_MOV','CST_ICMS','CFOP','COD_NAT','VL_BC_ICMS','ALIQ_ICMS','VL_ICMS','VL_BC_ICMS_ST','ALIQ_ST','VL_ICMS_ST','IND_APUR','CST_IPI','COD_ENQ','VL_BC_IPI','ALIQ_IPI','VL_IPI','CST_PIS','VL_BC_PIS','ALIQ_PIS','QUANT_BC_PIS','VL_PIS','CST_COFINS','VL_BC_COFINS','ALIQ_COFINS','QUANT_BC_COFINS','VL_COFINS','COD_CTA','VL_ABAT_NT'],
+  'C190': ['REG','CST_ICMS','CFOP','ALIQ_ICMS','VL_OPR','VL_BC_ICMS','VL_ICMS','VL_BC_ICMS_ST','VL_ICMS_ST','VL_RED_BC','VL_IPI','COD_OBS'],
+  'C990': ['REG','QTD_LIN_C'],
+  'D001': ['REG','IND_MOV'],
+  'D100': ['REG','IND_OPER','IND_EMIT','COD_PART','COD_MOD','COD_SIT','SER','SUB','NUM_DOC','CHV_CTE','DT_DOC','DT_A_P','TP_CT_e','CHV_CTE_REF','VL_DOC','VL_DESC','IND_FRT','VL_SERV','VL_BC_ICMS','VL_ICMS','VL_NT','COD_INF','COD_CTA'],
+  'D190': ['REG','CST_ICMS','CFOP','ALIQ_ICMS','VL_OPR','VL_BC_ICMS','VL_ICMS','VL_RED_BC','COD_OBS'],
+  'D990': ['REG','QTD_LIN_D'],
+  'E001': ['REG','IND_MOV'],
+  'E100': ['REG','DT_INI','DT_FIN'],
+  'E110': ['REG','VL_TOT_DEBITOS','VL_AJ_DEBITOS','VL_TOT_AJ_DEBITOS','VL_ESTORNOS_CRED','VL_TOT_CREDITOS','VL_AJ_CREDITOS','VL_TOT_AJ_CREDITOS','VL_ESTORNOS_DEB','VL_SLD_CREDOR_ANT','VL_SLD_APURADO','VL_TOT_DED','VL_ICMS_RECOLHER','VL_SLD_CREDOR_TRANSPORTAR','DEB_ESP'],
+  'E111': ['REG','COD_AJ_APUR','DESCR_COMPL_AJ','VL_AJ_APUR'],
+  'E112': ['REG','NUM_DA','NUM_PROC','IND_PROC','PROC','TXT_COMPL'],
+  'E113': ['REG','COD_PART','COD_MOD','SER','SUB','NUM_DOC','DT_DOC','COD_ITEM','VL_AJ_ITEM'],
+  'E115': ['REG','COD_INF_ADIC','VL_INF_ADIC','DESCR_COMPL_AJ'],
+  'E116': ['REG','COD_OR','VL_OR','DT_VCTO','COD_REC','NUM_PROC','IND_PROC','PROC','TXT_COMPL','MES_REF'],
+  'E200': ['REG','UF','DT_INI','DT_FIN'],
+  'E210': ['REG','IND_MOV_ST','VL_SLD_CRED_ANT_ST','VL_DEVOL_ST','VL_RESSARC_ST','VL_OUT_CRED_ST','VL_AJ_CREDITOS_ST','VL_RETENCAO_ST','VL_OUT_DEB_ST','VL_AJ_DEBITOS_ST','VL_SLD_DEV_ANT_ST','VL_DEDUCOES_ST','VL_ICMS_RECOL_ST','VL_SLD_CRED_ST_TRANSPORTAR','DEB_ESP_ST'],
+  'E500': ['REG','IND_APUR','DT_INI','DT_FIN'],
+  'E510': ['REG','CFOP','CST_IPI','VL_CONT_IPI','VL_BC_IPI','VL_IPI'],
+  'E520': ['REG','VL_SD_ANT_IPI','VL_DEB_IPI','VL_CRED_IPI','VL_OD_IPI','VL_OC_IPI','VL_SC_IPI','VL_SD_IPI'],
+  'E530': ['REG','IND_AJ','VL_AJ','COD_AJ','IND_DOC','NUM_DOC','DESCR_AJ'],
+  'E990': ['REG','QTD_LIN_E'],
+  'G001': ['REG','IND_MOV'],
+  'G110': ['REG','DT_INI','DT_FIN','SALDO_IN_ICMS','SOM_PARC','VL_TRIB_EXP','VL_TOTAL','IND_PER_SAI','ICMS_APROP','SOM_ICMS_OC'],
+  'G990': ['REG','QTD_LIN_G'],
+  'H001': ['REG','IND_MOV'],
+  'H005': ['REG','DT_INV','VL_INV','MOT_INV'],
+  'H010': ['REG','COD_ITEM','UNID','QTD','VL_UNIT','VL_ITEM','IND_PROP','COD_PART','TXT_COMPL','COD_CTA','VL_ITEM_IR'],
+  'H020': ['REG','CST_ICMS','BC_ICMS','VL_ICMS'],
+  'H990': ['REG','QTD_LIN_H'],
+  'K001': ['REG','IND_MOV'],
+  'K010': ['REG','IND_TP_LEIAUTE'],
+  'K100': ['REG','DT_INI','DT_FIN'],
+  'K200': ['REG','DT_EST','COD_ITEM','QTD','IND_EST'],
+  'K220': ['REG','DT_MOV','COD_ITEM_ORI','COD_ITEM_DEST','QTD','QTD_DEST'],
+  'K230': ['REG','DT_INI_OP','DT_FIN_OP','COD_DOC_OP','COD_ITEM','QTD_ENC'],
+  'K235': ['REG','DT_SAIDA','COD_ITEM','QTD','COD_INS_SUBST','QTD_SUBST'],
+  'K250': ['REG','DT_PROD','COD_ITEM','QTD'],
+  'K990': ['REG','QTD_LIN_K'],
+  '1001': ['REG','IND_MOV'],
+  '1010': ['REG','IND_EXP','IND_CCRF','IND_COMB','IND_USINA','IND_VA','IND_EE','IND_CART','IND_FORM','IND_AER','IND_GIAF1','IND_GIAF3','IND_GIAF4','IND_REST_RESSARC_COMPL_ICMS'],
+  '1100': ['REG','IND_DOC','NRO_DE','DT_DE','NAT_EXP','NRO_RE','DT_RE','CHC_EMB','DT_CHC','DT_AVB','TP_CHC','PAIS'],
+  '1200': ['REG','COD_AJ_APUR','SLD_CRED','CRED_APR','CRED_RECEB','CRED_UTIL','SLD_CRED_FIM'],
+  '1400': ['REG','COD_ITEM_IPM','MUN','VALOR'],
+  '1600': ['REG','COD_PART','TOT_CREDITO','TOT_DEBITO'],
+  '1990': ['REG','QTD_LIN_1'],
+  '9001': ['REG','IND_MOV'],
+  '9900': ['REG','REG_BLC','QTD_REG_BLC'],
+  '9990': ['REG','QTD_LIN_9'],
+  '9999': ['REG','QTD_LIN']
+};
+
+// ─── SPED PARSER ───
+function parseSPED(text, fileName) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  const data = {
+    fileName,
+    registers: {},     // { regId: [ [fields], [fields], ... ] }
+    blocks: {},        // { blockId: { registers: {regId: count}, totalLines: n } }
+    entity: {},        // from 0000, 0005
+    period: {},        // dt_ini, dt_fin
+    summary: {},
+    rawLines: lines.length,
+    errors: []
+  };
+
+  let currentC100Idx = -1;
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+    // SPED lines are pipe-delimited: |REG|field1|field2|...|
+    if (!line.startsWith('|')) continue;
+    // Remove leading/trailing pipes and split
+    const trimmed = line.replace(/^\|/, '').replace(/\|$/, '');
+    const fields = trimmed.split('|');
+    const regId = fields[0];
+
+    if (!regId) continue;
+
+    if (!data.registers[regId]) data.registers[regId] = [];
+    if (regId === 'C100') {
+      currentC100Idx = data.registers['C100'].length;
+    } else if (regId === 'C170') {
+      fields._parentC100Idx = currentC100Idx;
+    }
+    data.registers[regId].push(fields);
+
+    // Determine block
+    const blockId = regId.charAt(0);
+    if (!data.blocks[blockId]) data.blocks[blockId] = { registers: {}, totalLines: 0 };
+    data.blocks[blockId].totalLines++;
+    data.blocks[blockId].registers[regId] = (data.blocks[blockId].registers[regId] || 0) + 1;
+  }
+
+  // Extract entity info from 0000
+  if (data.registers['0000'] && data.registers['0000'][0]) {
+    const r = data.registers['0000'][0];
+    data.entity = {
+      codVer: r[1], codFin: r[2],
+      dtIni: r[3], dtFin: r[4],
+      nome: r[5], cnpj: r[6], cpf: r[7],
+      uf: r[8], ie: r[9], codMun: r[10],
+      im: r[11], suframa: r[12],
+      indPerfil: r[13], indAtiv: r[14]
+    };
+    data.period = {
+      dtIni: formatDate(r[3]),
+      dtFin: formatDate(r[4]),
+      month: r[3] ? r[3].substring(2,4) : '',
+      year: r[3] ? r[3].substring(4,8) : '',
+      label: r[3] ? `${r[3].substring(2,4)}/${r[3].substring(4,8)}` : ''
+    };
+  }
+
+  // Complement from 0005
+  if (data.registers['0005'] && data.registers['0005'][0]) {
+    const r = data.registers['0005'][0];
+    data.entity.fantasia = r[1];
+    data.entity.cep = r[2];
+    data.entity.end = r[3];
+    data.entity.num = r[4];
+    data.entity.bairro = r[6];
+    data.entity.fone = r[7];
+    data.entity.email = r[9];
+  }
+
+  // Summary calculations
+  data.summary = calculateSummary(data);
+
+  return data;
+}
+
+function calculateSummary(data) {
+  const s = {
+    totalRegistros: 0,
+    totalBlocos: Object.keys(data.blocks).length,
+    // ICMS from E110
+    icmsDebitos: 0, icmsCreditos: 0, icmsRecolher: 0, icmsSaldoCredor: 0,
+    // IPI from E520
+    ipiDebitos: 0, ipiCreditos: 0, ipiSaldo: 0,
+    // ST from E210
+    icmsSTRecolher: 0, icmsSTSaldoCredor: 0,
+    // Documents
+    totalDocEntrada: 0, totalDocSaida: 0,
+    vlTotalEntradas: 0, vlTotalSaidas: 0,
+    // Inventory
+    vlInventario: 0,
+    // Participants
+    totalParticipantes: 0,
+    // Items
+    totalItens: 0,
+    // C190 analytics
+    cfopAnalytics: {}
+  };
+
+  // Count registers
+  for (const regId in data.registers) {
+    s.totalRegistros += data.registers[regId].length;
+  }
+
+  // E110 - ICMS Próprio
+  if (data.registers['E110']) {
+    data.registers['E110'].forEach(r => {
+      s.icmsDebitos += parseNum(r[1]);
+      s.icmsCreditos += parseNum(r[5]);
+      s.icmsRecolher += parseNum(r[12]);
+      s.icmsSaldoCredor += parseNum(r[13]);
+    });
+  }
+
+  // E520 - IPI
+  if (data.registers['E520']) {
+    data.registers['E520'].forEach(r => {
+      s.ipiDebitos += parseNum(r[2]);
+      s.ipiCreditos += parseNum(r[3]);
+      s.ipiSaldo += parseNum(r[7]);
+    });
+  }
+
+  // E210 - ICMS ST
+  if (data.registers['E210']) {
+    data.registers['E210'].forEach(r => {
+      s.icmsSTRecolher += parseNum(r[12]);
+      s.icmsSTSaldoCredor += parseNum(r[13]);
+    });
+  }
+
+  // C100 - Documents
+  if (data.registers['C100']) {
+    data.registers['C100'].forEach(r => {
+      const indOper = r[1]; // 0=entrada, 1=saida
+      const vlDoc = parseNum(r[11]);
+      if (indOper === '0') { s.totalDocEntrada++; s.vlTotalEntradas += vlDoc; }
+      else { s.totalDocSaida++; s.vlTotalSaidas += vlDoc; }
+    });
+  }
+
+  // D100 - Service Documents
+  if (data.registers['D100']) {
+    data.registers['D100'].forEach(r => {
+      const indOper = r[1];
+      const vlDoc = parseNum(r[15]);
+      if (indOper === '0') { s.totalDocEntrada++; s.vlTotalEntradas += vlDoc; }
+      else { s.totalDocSaida++; s.vlTotalSaidas += vlDoc; }
+    });
+  }
+
+  // H005 - Inventory
+  if (data.registers['H005']) {
+    data.registers['H005'].forEach(r => {
+      s.vlInventario += parseNum(r[2]);
+    });
+  }
+
+  // 0150 - Participants
+  s.totalParticipantes = (data.registers['0150'] || []).length;
+
+  // 0200 - Items
+  s.totalItens = (data.registers['0200'] || []).length;
+
+  // C190 - CFOP Analytics
+  if (data.registers['C190']) {
+    data.registers['C190'].forEach(r => {
+      const cfop = r[2] || 'N/I';
+      if (!s.cfopAnalytics[cfop]) s.cfopAnalytics[cfop] = { vlOpr: 0, vlBcIcms: 0, vlIcms: 0, vlIpi: 0, count: 0 };
+      s.cfopAnalytics[cfop].vlOpr += parseNum(r[4]);
+      s.cfopAnalytics[cfop].vlBcIcms += parseNum(r[5]);
+      s.cfopAnalytics[cfop].vlIcms += parseNum(r[6]);
+      s.cfopAnalytics[cfop].vlIpi += parseNum(r[10]);
+      s.cfopAnalytics[cfop].count++;
+    });
+  }
+
+  return s;
+}
+
+// ─── UTILITIES ───
+function parseNum(val) {
+  if (!val || val === '') return 0;
+  return parseFloat(val.replace(',', '.')) || 0;
+}
+
+function formatDate(d) {
+  if (!d || d.length < 8) return d || '';
+  return `${d.substring(0,2)}/${d.substring(2,4)}/${d.substring(4,8)}`;
+}
+
+function fmtMoney(v) {
+  return v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function fmtInt(v) {
+  return v.toLocaleString('pt-BR');
+}
+
+function pctChange(newVal, oldVal) {
+  if (oldVal === 0) return newVal === 0 ? 0 : 100;
+  return ((newVal - oldVal) / Math.abs(oldVal)) * 100;
+}
+
+function formatCNPJ(c) {
+  if (!c || c.length < 14) return c || '';
+  return `${c.substr(0,2)}.${c.substr(2,3)}.${c.substr(5,3)}/${c.substr(8,4)}-${c.substr(12,2)}`;
+}
+
+function destroyChart(id) {
+  if (state.charts[id]) { state.charts[id].destroy(); delete state.charts[id]; }
+}
+
+// ─── NAVIGATION ───
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const page = document.getElementById('page-' + pageId);
+  if (page) page.classList.add('active');
+  const nav = document.querySelector(`.nav-item[data-page="${pageId}"]`);
+  if (nav) nav.classList.add('active');
+
+  const titles = {
+    import: 'Importar Arquivos SPED',
+    dashboard: 'Dashboard Geral',
+    blocks: 'Blocos & Registros',
+    apuracao: 'Apuração ICMS/IPI',
+    comparativo: 'Comparativo Mensal',
+    documentos: 'Documentos Fiscais',
+    participantes: 'Participantes',
+    itens: 'Itens / Produtos',
+    inventario: 'Inventário Físico',
+    validacao: 'Validações & Alertas',
+    resumo: 'Resumo Geral'
+  };
+  document.getElementById('topbar-title').textContent = titles[pageId] || '';
+
+  // Render page content if we have data
+  if (state.parsed.length > 0) renderPage(pageId);
+}
+
+function renderPage(pageId) {
+  const d = state.parsed[state.activeFile];
+  if (!d) return;
+  switch(pageId) {
+    case 'dashboard': renderDashboard(d); break;
+    case 'blocks': renderBlocks(d); break;
+    case 'apuracao': renderApuracao(d); break;
+    case 'comparativo': renderComparativo(); break;
+    case 'documentos': renderDocumentos(d); break;
+    case 'participantes': renderParticipantes(d); break;
+    case 'itens': renderItens(d); break;
+    case 'inventario': renderInventario(d); break;
+    case 'validacao': renderValidacao(d); break;
+    case 'resumo': renderResumo(d); break;
+  }
+}
+
+// ─── FILE UPLOAD ───
+const uploadZone = document.getElementById('upload-zone');
+const fileInput = document.getElementById('file-input');
+
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', e => handleFiles(e.target.files));
+
+function handleFiles(files) {
+  for (const f of files) {
+    if (state.files.find(x => x.name === f.name)) continue;
+    state.files.push(f);
+  }
+  renderFileList();
+}
+
+function renderFileList() {
+  const el = document.getElementById('file-list');
+  const actions = document.getElementById('import-actions');
+  if (state.files.length === 0) {
+    el.innerHTML = '';
+    actions.style.display = 'none';
+    return;
+  }
+  actions.style.display = 'flex';
+  el.innerHTML = state.files.map((f, i) => `
+    <div class="file-item animate-in">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+      <span class="name">${f.name}</span>
+      <span class="size">${(f.size / 1024).toFixed(1)} KB</span>
+      <span class="status tag ${state.parsed[i] ? 'tag-green' : 'tag-yellow'}">${state.parsed[i] ? '✓ Processado' : 'Pendente'}</span>
+      <span class="file-remove" onclick="removeFile(${i})">✕</span>
+    </div>
+  `).join('');
+  document.getElementById('sidebar-file-count').textContent = state.files.length;
+}
+
+function removeFile(i) {
+  state.files.splice(i, 1);
+  state.parsed.splice(i, 1);
+  renderFileList();
+}
+
+function clearFiles() {
+  state.files = [];
+  state.parsed = [];
+  renderFileList();
+  document.getElementById('process-status').textContent = '';
+  document.getElementById('topbar-period').style.display = 'none';
+  document.getElementById('topbar-status').style.display = 'none';
+  document.getElementById('alert-count').style.display = 'none';
+}
+
+async function processAllFiles() {
+  const statusEl = document.getElementById('process-status');
+  state.parsed = [];
+
+  for (let i = 0; i < state.files.length; i++) {
+    statusEl.textContent = `Processando ${i+1}/${state.files.length}: ${state.files[i].name}...`;
+    const text = await readFileText(state.files[i]);
+    const parsed = parseSPED(text, state.files[i].name);
+    state.parsed.push(parsed);
+  }
+
+  // Sort by period
+  state.parsed.sort((a, b) => {
+    const da = a.entity.dtIni || '';
+    const db = b.entity.dtIni || '';
+    return da.localeCompare(db);
+  });
+
+  state.activeFile = state.parsed.length - 1;
+  renderFileList();
+
+  const d = state.parsed[state.activeFile];
+  statusEl.textContent = `✓ ${state.parsed.length} arquivo(s) processado(s) com sucesso!`;
+  statusEl.style.color = 'var(--success)';
+
+  document.getElementById('topbar-period').textContent = `Período: ${d.period.label}`;
+  document.getElementById('topbar-period').style.display = '';
+  document.getElementById('topbar-status').style.display = '';
+
+  // Run validations
+  const alertCount = runValidations(d).length;
+  const alertEl = document.getElementById('alert-count');
+  if (alertCount > 0) {
+    alertEl.textContent = alertCount;
+    alertEl.style.display = '';
+  }
+
+  showPage('dashboard');
+}
+
+function readFileText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => resolve(e.target.result);
+    reader.onerror = reject;
+    // Try UTF-8 first, fallback to latin1
+    reader.readAsText(file, 'ISO-8859-1');
+  });
+}
+
+// ─── RENDER: DASHBOARD ───
+function renderDashboard(d) {
+  const s = d.summary;
+  const el = document.getElementById('dashboard-content');
+
+  // File selector if multiple
+  let fileSelectorHTML = '';
+  if (state.parsed.length > 1) {
+    fileSelectorHTML = `<div style="margin-bottom:20px;">
+      <div class="tabs">${state.parsed.map((p, i) => `
+        <button class="tab-btn ${i === state.activeFile ? 'active' : ''}" onclick="switchFile(${i})">${p.period.label}</button>
+      `).join('')}</div>
+    </div>`;
+  }
+
+  el.innerHTML = `
+    ${fileSelectorHTML}
+    <div class="card" style="border-left:3px solid var(--accent);margin-bottom:24px;">
+      <div class="card-body" style="display:flex;align-items:center;gap:20px;">
+        <div style="flex:1;">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">Entidade</div>
+          <div style="font-size:20px;font-weight:700;margin-top:4px;">${d.entity.nome || 'N/I'}</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-top:4px;">
+            ${d.entity.cnpj ? 'CNPJ: ' + formatCNPJ(d.entity.cnpj) : ''} 
+            ${d.entity.ie ? ' · IE: ' + d.entity.ie : ''} 
+            ${d.entity.uf ? ' · UF: ' + d.entity.uf : ''}
+          </div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:11px;color:var(--text-muted);">PERÍODO</div>
+          <div style="font-size:18px;font-weight:700;color:var(--accent);">${d.period.label}</div>
+          <div style="font-size:12px;color:var(--text-secondary);">${d.period.dtIni} a ${d.period.dtFin}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Perfil: ${d.entity.indPerfil || 'N/I'} · Finalidade: ${d.entity.codFin === '0' ? 'Remessa original' : d.entity.codFin === '1' ? 'Retificação' : d.entity.codFin || 'N/I'}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-4" style="margin-bottom:24px;">
+      <div class="stat-card">
+        <div class="stat-label">Total de Registros</div>
+        <div class="stat-value">${fmtInt(s.totalRegistros)}</div>
+        <div class="stat-sub">${fmtInt(d.rawLines)} linhas · ${s.totalBlocos} blocos</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Documentos Fiscais</div>
+        <div class="stat-value">${fmtInt(s.totalDocEntrada + s.totalDocSaida)}</div>
+        <div class="stat-sub">${fmtInt(s.totalDocEntrada)} entradas · ${fmtInt(s.totalDocSaida)} saídas</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Participantes</div>
+        <div class="stat-value">${fmtInt(s.totalParticipantes)}</div>
+        <div class="stat-sub">Cadastrados no período</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Itens / Produtos</div>
+        <div class="stat-value">${fmtInt(s.totalItens)}</div>
+        <div class="stat-sub">Tabela 0200</div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:24px;">
+      <div class="card">
+        <div class="card-header"><h3>Movimentação Fiscal</h3></div>
+        <div class="card-body">
+          <div class="comparison-row">
+            <div class="comparison-label">Valor Total Entradas</div>
+            <div class="comparison-val" style="color:var(--success);">R$ ${fmtMoney(s.vlTotalEntradas)}</div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-label">Valor Total Saídas</div>
+            <div class="comparison-val" style="color:var(--info);">R$ ${fmtMoney(s.vlTotalSaidas)}</div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-label">Inventário (Bloco H)</div>
+            <div class="comparison-val">R$ ${fmtMoney(s.vlInventario)}</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Apuração de Impostos</h3></div>
+        <div class="card-body">
+          <div class="comparison-row">
+            <div class="comparison-label">ICMS a Recolher</div>
+            <div class="comparison-val" style="color:var(--danger);">R$ ${fmtMoney(s.icmsRecolher)}</div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-label">Saldo Credor ICMS</div>
+            <div class="comparison-val" style="color:var(--success);">R$ ${fmtMoney(s.icmsSaldoCredor)}</div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-label">ICMS-ST a Recolher</div>
+            <div class="comparison-val" style="color:var(--warning);">R$ ${fmtMoney(s.icmsSTRecolher)}</div>
+          </div>
+          <div class="comparison-row">
+            <div class="comparison-label">IPI Saldo</div>
+            <div class="comparison-val">R$ ${fmtMoney(s.ipiSaldo)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><h3>Distribuição por Bloco</h3></div>
+        <div class="card-body"><div class="chart-container"><canvas id="chart-blocks"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Top 10 CFOPs por Valor</h3></div>
+        <div class="card-body"><div class="chart-container"><canvas id="chart-cfop"></canvas></div></div>
+      </div>
+    </div>
+  `;
+
+  // Block distribution chart
+  destroyChart('chart-blocks');
+  const blockLabels = [], blockData = [], blockColors = [];
+  for (const [bid, bdata] of Object.entries(d.blocks).sort()) {
+    const def = BLOCK_DEFS[bid];
+    blockLabels.push(`Bloco ${bid}`);
+    blockData.push(bdata.totalLines);
+    blockColors.push(def ? def.color : '#6b7280');
+  }
+  state.charts['chart-blocks'] = new Chart(document.getElementById('chart-blocks'), {
+    type: 'doughnut',
+    data: { labels: blockLabels, datasets: [{ data: blockData, backgroundColor: blockColors, borderWidth: 0 }] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { position: 'right', labels: { color: '#8b95b0', font: { size: 11, family: 'DM Sans' }, padding: 10 } } }
+    }
+  });
+
+  // CFOP chart
+  destroyChart('chart-cfop');
+  const cfopEntries = Object.entries(s.cfopAnalytics).sort((a, b) => b[1].vlOpr - a[1].vlOpr).slice(0, 10);
+  if (cfopEntries.length > 0) {
+    state.charts['chart-cfop'] = new Chart(document.getElementById('chart-cfop'), {
+      type: 'bar',
+      data: {
+        labels: cfopEntries.map(e => e[0]),
+        datasets: [{
+          label: 'Valor Operação',
+          data: cfopEntries.map(e => e[1].vlOpr),
+          backgroundColor: 'rgba(79,109,245,0.6)',
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: 'rgba(42,52,85,.3)' }, ticks: { color: '#8b95b0', font: { size: 10 }, callback: v => 'R$ ' + fmtMoney(v) } },
+          y: { grid: { display: false }, ticks: { color: '#8b95b0', font: { size: 11, family: 'JetBrains Mono' } } }
+        }
+      }
+    });
+  }
+}
+
+function switchFile(idx) {
+  state.activeFile = idx;
+  const d = state.parsed[idx];
+  document.getElementById('topbar-period').textContent = `Período: ${d.period.label}`;
+  renderDashboard(d);
+}
+
+// ─── RENDER: BLOCKS ───
+function renderBlocks(d) {
+  const el = document.getElementById('blocks-content');
+
+  // File selector
+  let fileSel = '';
+  if (state.parsed.length > 1) {
+    fileSel = `<div style="margin-bottom:20px;">
+      <div class="tabs">${state.parsed.map((p, i) => `
+        <button class="tab-btn ${i === state.activeFile ? 'active' : ''}" onclick="state.activeFile=${i};renderBlocks(state.parsed[${i}])">${p.period.label}</button>
+      `).join('')}</div>
+    </div>`;
+  }
+
+  let blockCardsHTML = '<div class="block-grid">';
+  for (const [bid, bdata] of Object.entries(d.blocks).sort()) {
+    const def = BLOCK_DEFS[bid] || { name: 'Desconhecido', color: '#6b7280' };
+    const regCount = Object.keys(bdata.registers).length;
+    blockCardsHTML += `
+      <div class="block-card" onclick="showBlockDetail('${bid}')">
+        <div class="block-stripe" style="background:${def.color}"></div>
+        <div class="block-id">Bloco ${bid}</div>
+        <div class="block-name">${def.name}</div>
+        <div style="margin-top:12px;display:flex;justify-content:space-between;">
+          <div>
+            <div class="block-count-label">Registros</div>
+            <div style="font-family:'JetBrains Mono';font-size:18px;font-weight:700;">${fmtInt(bdata.totalLines)}</div>
+          </div>
+          <div style="text-align:right;">
+            <div class="block-count-label">Tipos</div>
+            <div style="font-family:'JetBrains Mono';font-size:18px;font-weight:700;">${regCount}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+  blockCardsHTML += '</div>';
+
+  // All registers table
+  let regTableHTML = `
+    <div class="card" style="margin-top:24px;">
+      <div class="card-header">
+        <h3>Todos os Registros</h3>
+        <div class="search-box">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input placeholder="Filtrar registro..." oninput="filterRegisters(this.value)">
+        </div>
+      </div>
+      <div class="card-body" style="max-height:500px;overflow-y:auto;">
+        <table class="data-table" id="registers-table">
+          <thead><tr>
+            <th>Registro</th><th>Bloco</th><th>Quantidade</th><th>% do Total</th><th></th>
+          </tr></thead>
+          <tbody>
+  `;
+
+  const allRegs = [];
+  for (const [bid, bdata] of Object.entries(d.blocks).sort()) {
+    for (const [regId, count] of Object.entries(bdata.registers).sort()) {
+      allRegs.push({ regId, blockId: bid, count });
+    }
+  }
+  allRegs.sort((a, b) => b.count - a.count);
+
+  for (const r of allRegs) {
+    const pct = (r.count / d.summary.totalRegistros * 100).toFixed(2);
+    regTableHTML += `
+      <tr data-reg="${r.regId}">
+        <td class="mono" style="font-weight:600;color:var(--accent);">${r.regId}</td>
+        <td><span class="tag tag-blue">Bloco ${r.blockId}</span></td>
+        <td class="mono right">${fmtInt(r.count)}</td>
+        <td class="right">
+          <div class="variation-bar">
+            <div class="variation-bar-track"><div class="variation-bar-fill" style="width:${Math.min(pct * 2, 100)}%;background:var(--accent);"></div></div>
+            <span class="mono" style="font-size:11px;min-width:50px;text-align:right;">${pct}%</span>
+          </div>
+        </td>
+        <td><button class="btn btn-sm" onclick="showRegisterDetail('${r.regId}')">Ver</button></td>
+      </tr>
+    `;
+  }
+
+  regTableHTML += '</tbody></table></div></div>';
+
+  el.innerHTML = fileSel + blockCardsHTML + regTableHTML;
+}
+
+function filterRegisters(val) {
+  const rows = document.querySelectorAll('#registers-table tbody tr');
+  const v = val.toUpperCase();
+  rows.forEach(row => {
+    row.style.display = row.dataset.reg.includes(v) ? '' : 'none';
+  });
+}
+
+function showBlockDetail(blockId) {
+  const d = state.parsed[state.activeFile];
+  const def = BLOCK_DEFS[blockId] || { name: 'Desconhecido', color: '#6b7280' };
+  const bdata = d.blocks[blockId];
+
+  let html = `<div style="margin-bottom:20px;">
+    <div style="font-size:24px;font-weight:700;color:${def.color};">Bloco ${blockId}</div>
+    <div style="font-size:14px;color:var(--text-secondary);">${def.name}</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">${fmtInt(bdata.totalLines)} registros totais</div>
+  </div>`;
+
+  html += '<table class="data-table"><thead><tr><th>Registro</th><th>Qtd</th><th>Campos</th><th></th></tr></thead><tbody>';
+  for (const [regId, count] of Object.entries(bdata.registers).sort()) {
+    const fieldDef = REG_FIELDS[regId];
+    const fieldCount = fieldDef ? fieldDef.length : '?';
+    html += `<tr>
+      <td class="mono" style="font-weight:600;color:var(--accent);">${regId}</td>
+      <td class="mono right">${fmtInt(count)}</td>
+      <td class="mono">${fieldCount} campos</td>
+      <td><button class="btn btn-sm" onclick="closeModal();showRegisterDetail('${regId}')">Detalhar</button></td>
+    </tr>`;
+  }
+  html += '</tbody></table>';
+
+  openModal(`Bloco ${blockId} – ${def.name}`, html);
+}
+
+function showRegisterDetail(regId) {
+  const d = state.parsed[state.activeFile];
+  const records = d.registers[regId] || [];
+  const fieldDef = REG_FIELDS[regId] || [];
+
+  let html = `<div style="margin-bottom:16px;">
+    <span style="font-family:'JetBrains Mono';font-size:24px;font-weight:700;color:var(--accent);">${regId}</span>
+    <span style="font-size:13px;color:var(--text-muted);margin-left:12px;">${fmtInt(records.length)} ocorrência(s)</span>
+  </div>`;
+
+  if (records.length === 0) {
+    html += '<p style="color:var(--text-muted);">Nenhum registro encontrado.</p>';
+  } else {
+    const maxShow = Math.min(records.length, 100);
+    html += `<div style="overflow-x:auto;max-height:500px;overflow-y:auto;">
+      <table class="data-table"><thead><tr><th>#</th>`;
+    
+    // Headers
+    const maxCols = Math.max(...records.slice(0, maxShow).map(r => r.length));
+    for (let i = 0; i < maxCols; i++) {
+      const fname = fieldDef[i] || `Campo ${i+1}`;
+      html += `<th style="font-size:10px;">${fname}</th>`;
+    }
+    html += '</tr></thead><tbody>';
+
+    for (let i = 0; i < maxShow; i++) {
+      html += `<tr><td class="mono" style="color:var(--text-muted);">${i+1}</td>`;
+      for (let j = 0; j < maxCols; j++) {
+        const val = records[i][j] || '';
+        html += `<td class="mono" style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${val}">${val}</td>`;
+      }
+      html += '</tr>';
+    }
+    html += '</tbody></table></div>';
+    if (records.length > maxShow) {
+      html += `<p style="margin-top:10px;font-size:12px;color:var(--text-muted);">Mostrando ${maxShow} de ${fmtInt(records.length)} registros.</p>`;
+    }
+  }
+
+  openModal(`Registro ${regId}`, html);
+}
+
+// ─── RENDER: APURACAO ───
+function renderApuracao(d) {
+  const el = document.getElementById('apuracao-content');
+  const s = d.summary;
+
+  let e110HTML = '';
+  if (d.registers['E110'] && d.registers['E110'][0]) {
+    const r = d.registers['E110'][0];
+    const fields = ['VL_TOT_DEBITOS','VL_AJ_DEBITOS','VL_TOT_AJ_DEBITOS','VL_ESTORNOS_CRED','VL_TOT_CREDITOS','VL_AJ_CREDITOS','VL_TOT_AJ_CREDITOS','VL_ESTORNOS_DEB','VL_SLD_CREDOR_ANT','VL_SLD_APURADO','VL_TOT_DED','VL_ICMS_RECOLHER','VL_SLD_CREDOR_TRANSPORTAR','DEB_ESP'];
+    e110HTML = `<div class="card"><div class="card-header"><h3>E110 – Apuração do ICMS – Operações Próprias</h3></div><div class="card-body">`;
+    fields.forEach((fname, idx) => {
+      const val = parseNum(r[idx + 1]);
+      const isHighlight = fname === 'VL_ICMS_RECOLHER' || fname === 'VL_SLD_CREDOR_TRANSPORTAR';
+      e110HTML += `<div class="comparison-row">
+        <div class="comparison-label">${fname.replace(/VL_/g,'').replace(/_/g,' ')}</div>
+        <div class="comparison-val" style="${isHighlight ? 'color:var(--accent);font-size:16px;' : ''}">R$ ${fmtMoney(val)}</div>
+      </div>`;
+    });
+    e110HTML += '</div></div>';
+  }
+
+  let e210HTML = '';
+  if (d.registers['E210'] && d.registers['E210'].length > 0) {
+    e210HTML = `<div class="card"><div class="card-header"><h3>E210 – Apuração do ICMS – Substituição Tributária</h3></div><div class="card-body">`;
+    d.registers['E210'].forEach(r => {
+      const uf = d.registers['E200'] ? (d.registers['E200'].find(e => true) || [])[1] || '' : '';
+      const fields210 = ['IND_MOV_ST','VL_SLD_CRED_ANT_ST','VL_DEVOL_ST','VL_RESSARC_ST','VL_OUT_CRED_ST','VL_AJ_CREDITOS_ST','VL_RETENCAO_ST','VL_OUT_DEB_ST','VL_AJ_DEBITOS_ST','VL_SLD_DEV_ANT_ST','VL_DEDUCOES_ST','VL_ICMS_RECOL_ST','VL_SLD_CRED_ST_TRANSPORTAR','DEB_ESP_ST'];
+      fields210.forEach((fname, idx) => {
+        const val = idx === 0 ? r[idx + 1] : parseNum(r[idx + 1]);
+        e210HTML += `<div class="comparison-row">
+          <div class="comparison-label">${fname.replace(/VL_/g,'').replace(/_/g,' ')}</div>
+          <div class="comparison-val">${idx === 0 ? val : 'R$ ' + fmtMoney(val)}</div>
+        </div>`;
+      });
+    });
+    e210HTML += '</div></div>';
+  }
+
+  let e520HTML = '';
+  if (d.registers['E520'] && d.registers['E520'][0]) {
+    const r = d.registers['E520'][0];
+    const fields520 = ['VL_SD_ANT_IPI','VL_DEB_IPI','VL_CRED_IPI','VL_OD_IPI','VL_OC_IPI','VL_SC_IPI','VL_SD_IPI'];
+    e520HTML = `<div class="card"><div class="card-header"><h3>E520 – Apuração do IPI</h3></div><div class="card-body">`;
+    fields520.forEach((fname, idx) => {
+      const val = parseNum(r[idx + 1]);
+      e520HTML += `<div class="comparison-row">
+        <div class="comparison-label">${fname.replace(/VL_/g,'').replace(/_/g,' ')}</div>
+        <div class="comparison-val">R$ ${fmtMoney(val)}</div>
+      </div>`;
+    });
+    e520HTML += '</div></div>';
+  }
+
+  // E111 - Adjustments
+  let e111HTML = '';
+  if (d.registers['E111'] && d.registers['E111'].length > 0) {
+    e111HTML = `<div class="card"><div class="card-header"><h3>E111 – Ajustes da Apuração do ICMS</h3></div><div class="card-body">
+      <table class="data-table"><thead><tr><th>Código Ajuste</th><th>Descrição</th><th class="right">Valor</th></tr></thead><tbody>`;
+    d.registers['E111'].forEach(r => {
+      e111HTML += `<tr><td class="mono">${r[1] || ''}</td><td>${r[2] || ''}</td><td class="mono right">R$ ${fmtMoney(parseNum(r[3]))}</td></tr>`;
+    });
+    e111HTML += '</tbody></table></div></div>';
+  }
+
+  // E116 - Obligations
+  let e116HTML = '';
+  if (d.registers['E116'] && d.registers['E116'].length > 0) {
+    e116HTML = `<div class="card"><div class="card-header"><h3>E116 – Obrigações do ICMS a Recolher</h3></div><div class="card-body">
+      <table class="data-table"><thead><tr><th>Cód. Receita</th><th>Valor</th><th>Vencimento</th><th>Mês Ref.</th></tr></thead><tbody>`;
+    d.registers['E116'].forEach(r => {
+      e116HTML += `<tr><td class="mono">${r[4] || ''}</td><td class="mono right">R$ ${fmtMoney(parseNum(r[2]))}</td><td class="mono">${formatDate(r[3])}</td><td class="mono">${r[9] || ''}</td></tr>`;
+    });
+    e116HTML += '</tbody></table></div></div>';
+  }
+
+  el.innerHTML = `
+    <div class="grid-4" style="margin-bottom:24px;">
+      <div class="stat-card">
+        <div class="stat-label">ICMS Débitos</div>
+        <div class="stat-value" style="font-size:20px;color:var(--danger);">R$ ${fmtMoney(s.icmsDebitos)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">ICMS Créditos</div>
+        <div class="stat-value" style="font-size:20px;color:var(--success);">R$ ${fmtMoney(s.icmsCreditos)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">ICMS a Recolher</div>
+        <div class="stat-value" style="font-size:20px;color:var(--accent);">R$ ${fmtMoney(s.icmsRecolher)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">IPI Saldo</div>
+        <div class="stat-value" style="font-size:20px;">R$ ${fmtMoney(s.ipiSaldo)}</div>
+      </div>
+    </div>
+    ${e110HTML}
+    ${e210HTML}
+    ${e520HTML}
+    ${e111HTML}
+    ${e116HTML}
+  `;
+}
+
+// ─── RENDER: COMPARATIVO ───
+function renderComparativo() {
+  const el = document.getElementById('comparativo-content');
+
+  if (state.parsed.length < 2) {
+    el.innerHTML = `<div class="empty-state">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+      <h3>Importe pelo menos 2 arquivos</h3>
+      <p>Para o comparativo mensal, é necessário importar arquivos de diferentes períodos.</p>
+    </div>`;
+    return;
+  }
+
+  const periods = state.parsed.map(p => p.period.label);
+  const metrics = [
+    { label: 'Valor Total Entradas', key: 'vlTotalEntradas', fmt: fmtMoney, prefix: 'R$ ' },
+    { label: 'Valor Total Saídas', key: 'vlTotalSaidas', fmt: fmtMoney, prefix: 'R$ ' },
+    { label: 'ICMS Débitos', key: 'icmsDebitos', fmt: fmtMoney, prefix: 'R$ ' },
+    { label: 'ICMS Créditos', key: 'icmsCreditos', fmt: fmtMoney, prefix: 'R$ ' },
+    { label: 'ICMS a Recolher', key: 'icmsRecolher', fmt: fmtMoney, prefix: 'R$ ' },
+    { label: 'Saldo Credor ICMS', key: 'icmsSaldoCredor', fmt: fmtMoney, prefix: 'R$ ' },
+    { label: 'ICMS-ST a Recolher', key: 'icmsSTRecolher', fmt: fmtMoney, prefix: 'R$ ' },
+    { label: 'IPI Débitos', key: 'ipiDebitos', fmt: fmtMoney, prefix: 'R$ ' },
+    { label: 'IPI Créditos', key: 'ipiCreditos', fmt: fmtMoney, prefix: 'R$ ' },
+    { label: 'IPI Saldo', key: 'ipiSaldo', fmt: fmtMoney, prefix: 'R$ ' },
+    { label: 'Documentos Entrada', key: 'totalDocEntrada', fmt: fmtInt, prefix: '' },
+    { label: 'Documentos Saída', key: 'totalDocSaida', fmt: fmtInt, prefix: '' },
+    { label: 'Participantes', key: 'totalParticipantes', fmt: fmtInt, prefix: '' },
+    { label: 'Itens Cadastrados', key: 'totalItens', fmt: fmtInt, prefix: '' },
+    { label: 'Total de Registros', key: 'totalRegistros', fmt: fmtInt, prefix: '' },
+    { label: 'Inventário', key: 'vlInventario', fmt: fmtMoney, prefix: 'R$ ' },
+  ];
+
+  let tableHTML = `<div class="card"><div class="card-header"><h3>Comparativo de Valores</h3></div>
+    <div class="card-body" style="overflow-x:auto;">
+    <table class="data-table"><thead><tr><th>Métrica</th>`;
+  periods.forEach(p => tableHTML += `<th class="right">${p}</th>`);
+  if (state.parsed.length >= 2) tableHTML += '<th class="right">Variação</th>';
+  tableHTML += '</tr></thead><tbody>';
+
+  metrics.forEach(m => {
+    tableHTML += `<tr><td style="font-weight:500;">${m.label}</td>`;
+    const vals = state.parsed.map(p => p.summary[m.key] || 0);
+    vals.forEach(v => {
+      tableHTML += `<td class="mono right">${m.prefix}${m.fmt(v)}</td>`;
+    });
+    if (vals.length >= 2) {
+      const last = vals[vals.length - 1];
+      const prev = vals[vals.length - 2];
+      const change = pctChange(last, prev);
+      const cls = change > 0 ? 'stat-up' : change < 0 ? 'stat-down' : 'stat-neutral';
+      const arrow = change > 0 ? '▲' : change < 0 ? '▼' : '–';
+      tableHTML += `<td class="right"><span class="stat-change ${cls}">${arrow} ${Math.abs(change).toFixed(1)}%</span></td>`;
+    }
+    tableHTML += '</tr>';
+  });
+
+  tableHTML += '</tbody></table></div></div>';
+
+  // Charts
+  let chartsHTML = `<div class="grid-2" style="margin-top:20px;">
+    <div class="card"><div class="card-header"><h3>Evolução ICMS</h3></div><div class="card-body"><div class="chart-container"><canvas id="chart-comp-icms"></canvas></div></div></div>
+    <div class="card"><div class="card-header"><h3>Evolução Movimentação</h3></div><div class="card-body"><div class="chart-container"><canvas id="chart-comp-mov"></canvas></div></div></div>
+  </div>`;
+
+  el.innerHTML = tableHTML + chartsHTML;
+
+  // ICMS evolution chart
+  destroyChart('chart-comp-icms');
+  state.charts['chart-comp-icms'] = new Chart(document.getElementById('chart-comp-icms'), {
+    type: 'line',
+    data: {
+      labels: periods,
+      datasets: [
+        { label: 'Débitos', data: state.parsed.map(p => p.summary.icmsDebitos), borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,.1)', tension: .3, fill: true },
+        { label: 'Créditos', data: state.parsed.map(p => p.summary.icmsCreditos), borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,.1)', tension: .3, fill: true },
+        { label: 'A Recolher', data: state.parsed.map(p => p.summary.icmsRecolher), borderColor: '#4f6df5', backgroundColor: 'rgba(79,109,245,.1)', tension: .3, fill: true },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#8b95b0', font: { size: 11 } } } },
+      scales: {
+        x: { grid: { color: 'rgba(42,52,85,.3)' }, ticks: { color: '#8b95b0' } },
+        y: { grid: { color: 'rgba(42,52,85,.3)' }, ticks: { color: '#8b95b0', callback: v => 'R$ ' + fmtMoney(v) } }
+      }
+    }
+  });
+
+  // Movement evolution chart
+  destroyChart('chart-comp-mov');
+  state.charts['chart-comp-mov'] = new Chart(document.getElementById('chart-comp-mov'), {
+    type: 'bar',
+    data: {
+      labels: periods,
+      datasets: [
+        { label: 'Entradas', data: state.parsed.map(p => p.summary.vlTotalEntradas), backgroundColor: 'rgba(34,197,94,.6)', borderRadius: 4 },
+        { label: 'Saídas', data: state.parsed.map(p => p.summary.vlTotalSaidas), backgroundColor: 'rgba(79,109,245,.6)', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#8b95b0', font: { size: 11 } } } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#8b95b0' } },
+        y: { grid: { color: 'rgba(42,52,85,.3)' }, ticks: { color: '#8b95b0', callback: v => 'R$ ' + fmtMoney(v) } }
+      }
+    }
+  });
+}
+
+// ─── EXPORT C100 + C170 TO EXCEL ───
+function exportC100C170() {
+  const d = state.parsed[state.activeFile];
+  if (!d) { alert('Nenhum arquivo carregado.'); return; }
+
+  const C100_HEADERS = REG_FIELDS['C100'];
+  const C170_HEADERS = REG_FIELDS['C170'];
+  const NUM_FIELDS_C100 = new Set(['VL_DOC','VL_DESC','VL_ABAT_NT','VL_MERC','VL_FRT','VL_SEG','VL_OUT_DA','VL_BC_ICMS','VL_ICMS','VL_BC_ICMS_ST','VL_ICMS_ST','VL_IPI','VL_PIS','VL_COFINS','VL_PIS_ST','VL_COFINS_ST']);
+  const NUM_FIELDS_C170 = new Set(['QTD','VL_ITEM','VL_DESC','VL_BC_ICMS','ALIQ_ICMS','VL_ICMS','VL_BC_ICMS_ST','ALIQ_ST','VL_ICMS_ST','VL_BC_IPI','ALIQ_IPI','VL_IPI','VL_BC_PIS','ALIQ_PIS','QUANT_BC_PIS','VL_PIS','VL_BC_COFINS','ALIQ_COFINS','QUANT_BC_COFINS','VL_COFINS','VL_ABAT_NT']);
+
+  const c100 = d.registers['C100'] || [];
+  const c170 = d.registers['C170'] || [];
+
+  // Sheet 1: C100
+  const c100Rows = c100.map(r => {
+    const o = {};
+    C100_HEADERS.forEach((h, i) => {
+      const v = r[i] || '';
+      o[h] = NUM_FIELDS_C100.has(h) && v !== '' ? parseNum(v) : v;
+    });
+    return o;
+  });
+
+  // Sheet 2: C170 with parent C100 key fields
+  const c170Rows = c170.map(r => {
+    const parent = r._parentC100Idx >= 0 ? c100[r._parentC100Idx] : null;
+    const o = {
+      C100_NUM_DOC: parent ? (parent[7] || '') : '',
+      C100_SER: parent ? (parent[6] || '') : '',
+      C100_COD_MOD: parent ? (parent[4] || '') : '',
+      C100_DT_DOC: parent ? (parent[9] || '') : '',
+      C100_COD_PART: parent ? (parent[3] || '') : '',
+      C100_CHV_NFE: parent ? (parent[8] || '') : '',
+      C100_IND_OPER: parent ? (parent[1] || '') : ''
+    };
+    C170_HEADERS.forEach((h, i) => {
+      const v = r[i] || '';
+      o[h] = NUM_FIELDS_C170.has(h) && v !== '' ? parseNum(v) : v;
+    });
+    return o;
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws1 = XLSX.utils.json_to_sheet(c100Rows);
+  const ws2 = XLSX.utils.json_to_sheet(c170Rows);
+  XLSX.utils.book_append_sheet(wb, ws1, 'C100');
+  XLSX.utils.book_append_sheet(wb, ws2, 'C170');
+
+  const periodo = (d.period && d.period.label) ? d.period.label.replace(/[^0-9A-Za-z]/g, '_') : 'sped';
+  const cnpj = (d.entity && d.entity.cnpj) ? d.entity.cnpj : '';
+  const fname = `SPED_C100_C170_${cnpj}_${periodo}.xlsx`;
+  XLSX.writeFile(wb, fname);
+}
+
+// ─── RENDER: DOCUMENTOS ───
+function renderDocumentos(d) {
+  const el = document.getElementById('documentos-content');
+  const docs = d.registers['C100'] || [];
+
+  let html = `
+    <div style="margin-bottom:16px;display:flex;justify-content:flex-end;gap:10px;">
+      <button onclick="exportC100C170()" style="background:var(--accent);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">📊 Exportar Excel (C100 + C170)</button>
+    </div>
+    <div class="grid-4" style="margin-bottom:20px;">
+      <div class="stat-card">
+        <div class="stat-label">Total Documentos</div>
+        <div class="stat-value">${fmtInt(docs.length)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Entradas</div>
+        <div class="stat-value" style="color:var(--success);">${fmtInt(docs.filter(r=>r[1]==='0').length)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Saídas</div>
+        <div class="stat-value" style="color:var(--info);">${fmtInt(docs.filter(r=>r[1]==='1').length)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Cancelados</div>
+        <div class="stat-value" style="color:var(--danger);">${fmtInt(docs.filter(r=>['02','03','04'].includes(r[5])).length)}</div>
+      </div>
+    </div>
+  `;
+
+  // C190 Analytics by CFOP
+  const s = d.summary;
+  if (Object.keys(s.cfopAnalytics).length > 0) {
+    html += `<div class="card"><div class="card-header"><h3>C190 – Analítico por CFOP</h3></div>
+      <div class="card-body" style="max-height:400px;overflow-y:auto;">
+      <table class="data-table"><thead><tr>
+        <th>CFOP</th><th class="right">Qtd</th><th class="right">Valor Operação</th><th class="right">BC ICMS</th><th class="right">ICMS</th><th class="right">IPI</th>
+      </tr></thead><tbody>`;
+    Object.entries(s.cfopAnalytics).sort((a,b) => b[1].vlOpr - a[1].vlOpr).forEach(([cfop, v]) => {
+      html += `<tr>
+        <td class="mono" style="font-weight:600;">${cfop}</td>
+        <td class="mono right">${fmtInt(v.count)}</td>
+        <td class="mono right">R$ ${fmtMoney(v.vlOpr)}</td>
+        <td class="mono right">R$ ${fmtMoney(v.vlBcIcms)}</td>
+        <td class="mono right">R$ ${fmtMoney(v.vlIcms)}</td>
+        <td class="mono right">R$ ${fmtMoney(v.vlIpi)}</td>
+      </tr>`;
+    });
+    html += '</tbody></table></div></div>';
+  }
+
+  // Document list (C100)
+  if (docs.length > 0) {
+    const maxShow = Math.min(docs.length, 200);
+    html += `<div class="card" style="margin-top:20px;"><div class="card-header">
+      <h3>Documentos C100 (NF/NF-e/NFC-e)</h3>
+      <span style="font-size:12px;color:var(--text-muted);">Mostrando ${maxShow} de ${fmtInt(docs.length)}</span>
+    </div>
+    <div class="card-body" style="max-height:500px;overflow:auto;">
+    <table class="data-table"><thead><tr>
+      <th>Oper</th><th>Emitente</th><th>Modelo</th><th>Número</th><th>Data</th><th>Sit.</th><th class="right">Valor Doc</th><th class="right">BC ICMS</th><th class="right">ICMS</th>
+    </tr></thead><tbody>`;
+
+    for (let i = 0; i < maxShow; i++) {
+      const r = docs[i];
+      const oper = r[1] === '0' ? '<span class="tag tag-green">Entrada</span>' : '<span class="tag tag-blue">Saída</span>';
+      const sit = r[5] === '00' ? '<span class="tag tag-green">Regular</span>' : `<span class="tag tag-red">${r[5]}</span>`;
+      html += `<tr>
+        <td>${oper}</td>
+        <td>${r[2] === '0' ? 'Própria' : 'Terceiros'}</td>
+        <td class="mono">${r[4] || ''}</td>
+        <td class="mono">${r[7] || ''}</td>
+        <td class="mono">${formatDate(r[9])}</td>
+        <td>${sit}</td>
+        <td class="mono right">R$ ${fmtMoney(parseNum(r[11]))}</td>
+        <td class="mono right">R$ ${fmtMoney(parseNum(r[20]))}</td>
+        <td class="mono right">R$ ${fmtMoney(parseNum(r[21]))}</td>
+      </tr>`;
+    }
+    html += '</tbody></table></div></div>';
+  }
+
+  el.innerHTML = html;
+}
+
+// ─── RENDER: PARTICIPANTES ───
+function renderParticipantes(d) {
+  const el = document.getElementById('participantes-content');
+  const parts = d.registers['0150'] || [];
+
+  let html = `<div class="stat-card" style="display:inline-block;margin-bottom:20px;">
+    <div class="stat-label">Total de Participantes</div>
+    <div class="stat-value">${fmtInt(parts.length)}</div>
+  </div>`;
+
+  if (parts.length > 0) {
+    const maxShow = Math.min(parts.length, 200);
+    html += `<div class="card"><div class="card-header">
+      <h3>Cadastro de Participantes (0150)</h3>
+      <div class="search-box">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input placeholder="Buscar participante..." oninput="filterTable('part-table',this.value)">
+      </div>
+    </div>
+    <div class="card-body" style="max-height:600px;overflow:auto;">
+    <table class="data-table" id="part-table"><thead><tr>
+      <th>Código</th><th>Nome</th><th>CNPJ</th><th>CPF</th><th>IE</th><th>UF/Mun</th>
+    </tr></thead><tbody>`;
+
+    for (let i = 0; i < maxShow; i++) {
+      const r = parts[i];
+      html += `<tr>
+        <td class="mono">${r[1] || ''}</td>
+        <td class="truncate">${r[2] || ''}</td>
+        <td class="mono">${r[4] ? formatCNPJ(r[4]) : ''}</td>
+        <td class="mono">${r[5] || ''}</td>
+        <td class="mono">${r[6] || ''}</td>
+        <td class="mono">${r[7] || ''}</td>
+      </tr>`;
+    }
+    html += '</tbody></table></div></div>';
+  }
+
+  el.innerHTML = html;
+}
+
+// ─── NCM CACHE & CONSULTATION STATE ───
+const ncmCache = {};      // { ncmCode: { siscomex: {...}, ibpt: {...}, ai: {...} } }
+let ncmSiscomexTable = null; // Full NCM table from Siscomex (loaded on demand)
+let ncmSiscomexLoading = false;
+const NCM_IBPT_URL = 'https://api-ibpt.seunegocionanuvem.com.br/api_ibpt.php';
+
+// ─── NCM API: Siscomex Classif (Official NCM Table) ───
+async function loadSiscomexTable() {
+  if (ncmSiscomexTable) return ncmSiscomexTable;
+  if (ncmSiscomexLoading) {
+    // Wait for existing load
+    while (ncmSiscomexLoading) await new Promise(r => setTimeout(r, 200));
+    return ncmSiscomexTable;
+  }
+  ncmSiscomexLoading = true;
+  try {
+    const resp = await fetch('https://portalunico.siscomex.gov.br/classif/api/publico/nomenclatura/download/json?perfil=PUBLICO');
+    if (!resp.ok) throw new Error('Siscomex API error: ' + resp.status);
+    const data = await resp.json();
+    ncmSiscomexTable = {};
+    if (data && data.Nomenclaturas) {
+      data.Nomenclaturas.forEach(n => {
+        ncmSiscomexTable[n.Codigo] = {
+          codigo: n.Codigo,
+          descricao: n.Descricao,
+          dataInicio: n.DataInicio,
+          dataFim: n.DataFim,
+          tipoAto: n.TipoAtoIni,
+          numeroAto: n.NumeroAtoIni,
+          anoAto: n.AnoAtoIni
+        };
+      });
+    }
+    return ncmSiscomexTable;
+  } catch (err) {
+    console.error('Erro ao carregar tabela Siscomex:', err);
+    return null;
+  } finally {
+    ncmSiscomexLoading = false;
+  }
+}
+
+function lookupSiscomex(ncmCode) {
+  if (!ncmSiscomexTable) return null;
+  // Try exact match
+  if (ncmSiscomexTable[ncmCode]) return ncmSiscomexTable[ncmCode];
+  // Try with dots removed
+  const clean = ncmCode.replace(/\./g, '');
+  if (ncmSiscomexTable[clean]) return ncmSiscomexTable[clean];
+  // Try partial matches (chapter, position)
+  const partial = clean.substring(0, 4);
+  for (const k of Object.keys(ncmSiscomexTable)) {
+    if (k.startsWith(clean)) return ncmSiscomexTable[k];
+  }
+  return null;
+}
+
+// Build full hierarchical description from NCM table
+function buildNCMHierarchy(ncmCode) {
+  if (!ncmSiscomexTable) return [];
+  const clean = ncmCode.replace(/\./g, '');
+  const hierarchy = [];
+  // Chapter (2 digits)
+  const ch2 = clean.substring(0, 2);
+  if (ncmSiscomexTable[ch2]) hierarchy.push({ level: 'Capítulo', code: ch2, desc: ncmSiscomexTable[ch2].descricao });
+  // Position (4 digits)
+  const ch4 = clean.substring(0, 4);
+  if (ncmSiscomexTable[ch4] && ch4 !== ch2) hierarchy.push({ level: 'Posição', code: ch4, desc: ncmSiscomexTable[ch4].descricao });
+  // Subposition (6 digits)
+  const ch6 = clean.substring(0, 6);
+  if (ncmSiscomexTable[ch6] && ch6 !== ch4) hierarchy.push({ level: 'Subposição', code: ch6, desc: ncmSiscomexTable[ch6].descricao });
+  // Full (8 digits)
+  if (ncmSiscomexTable[clean] && clean !== ch6) hierarchy.push({ level: 'Item', code: clean, desc: ncmSiscomexTable[clean].descricao });
+  return hierarchy;
+}
+
+// ─── NCM API: IBPT Taxation ───
+async function fetchIBPT(ncmCode, uf) {
+  const clean = ncmCode.replace(/\./g, '');
+  try {
+    const resp = await fetch(`${NCM_IBPT_URL}?codigo=${clean}&uf=${uf}`);
+    if (!resp.ok) throw new Error('IBPT error: ' + resp.status);
+    const data = await resp.json();
+    return {
+      codigo: data.codigo,
+      descricao: data.descricao,
+      nacionalfederal: parseFloat(data.nacionalfederal) || 0,
+      importadosfederal: parseFloat(data.importadosfederal) || 0,
+      estadual: parseFloat(data.estadual) || 0,
+      municipal: parseFloat(data.municipal) || 0,
+      vigenciainicio: data.vigenciainicio,
+      vigenciafim: data.vigenciafim,
+      versao: data.versao,
+      fonte: data.fonte,
+      uf: data.uf
+    };
+  } catch (err) {
+    console.error('Erro IBPT:', err);
+    return null;
+  }
+}
+
+// ─── NCM API: Claude AI Analysis ───
+async function fetchAIAnalysis(ncmCode, ncmDesc, uf, ibptData) {
+  try {
+    const prompt = `Você é um especialista tributário brasileiro. Analise o NCM ${ncmCode} (${ncmDesc || 'descrição não disponível'}) para a UF ${uf}.
+
+Forneça uma análise CONCISA e ESTRUTURADA nos seguintes tópicos:
+
+1. **ICMS – Regime Geral:**
+   - Alíquota interna padrão na UF ${uf}
+   - Alíquotas interestaduais aplicáveis (7% e 12%)
+   - Se há redução de base de cálculo (e fundamento legal)
+   - Se há diferimento (e condições)
+   - Se há isenção (Convênio ICMS aplicável)
+   - Se há substituição tributária (e MVA/protocolo se aplicável)
+
+2. **IPI – Regime:**
+   - Alíquota da TIPI vigente para este NCM
+   - Se há suspensão de IPI (e condições - ZFM, Drawback, etc)
+   - Se há isenção de IPI (e fundamento)
+   - Código de enquadramento aplicável
+
+3. **Base Legislativa Principal:**
+   - Convênios ICMS relevantes
+   - Protocolos ICMS de ST
+   - Decretos estaduais da UF ${uf}
+   - Decreto 7.212/2010 (RIPI) - artigos aplicáveis
+   - LC 214/2025 (IBS/CBS) - impacto futuro se aplicável
+
+4. **Alertas de Auditoria:**
+   - Pontos de atenção para este NCM
+   - Erros comuns de classificação
+   - Riscos fiscais
+
+${ibptData ? `Dados IBPT de referência: Federal ${ibptData.nacionalfederal}%, Importados ${ibptData.importadosfederal}%, Estadual ${ibptData.estadual}%, Municipal ${ibptData.municipal}%` : ''}
+
+Responda de forma objetiva, usando marcadores. Não inclua disclaimers.`;
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!resp.ok) throw new Error('AI API error: ' + resp.status);
+    const data = await resp.json();
+    const text = data.content.map(c => c.text || '').join('\n');
+    return text;
+  } catch (err) {
+    console.error('Erro AI:', err);
+    return null;
+  }
+}
+
+// ─── FULL NCM CONSULTATION ───
+async function consultNCM(ncmCode, uf) {
+  const clean = ncmCode.replace(/\./g, '').trim();
+  if (!clean || clean.length < 2) return null;
+
+  if (ncmCache[clean + '_' + uf]) return ncmCache[clean + '_' + uf];
+
+  const result = { ncm: clean, uf, siscomex: null, ibpt: null, ai: null, timestamp: Date.now() };
+
+  // Parallel fetch: Siscomex + IBPT
+  const [sisTable, ibptData] = await Promise.all([
+    loadSiscomexTable(),
+    fetchIBPT(clean, uf)
+  ]);
+
+  if (sisTable) {
+    result.siscomex = lookupSiscomex(clean);
+    result.hierarchy = buildNCMHierarchy(clean);
+  }
+  result.ibpt = ibptData;
+
+  // AI Analysis (uses results from above)
+  const desc = result.siscomex?.descricao || result.ibpt?.descricao || '';
+  result.ai = await fetchAIAnalysis(clean, desc, uf, ibptData);
+
+  ncmCache[clean + '_' + uf] = result;
+  return result;
+}
+
+// ─── RENDER NCM RESULT PANEL ───
+function renderNCMResult(result, targetId) {
+  const el = document.getElementById(targetId);
+  if (!el || !result) { if (el) el.innerHTML = '<p style="color:var(--danger);padding:20px;">NCM não encontrado ou erro na consulta.</p>'; return; }
+
+  const s = result.siscomex;
+  const ib = result.ibpt;
+  const hier = result.hierarchy || [];
+
+  let html = '';
+
+  // Hierarchy breadcrumb
+  if (hier.length > 0) {
+    html += `<div class="ncm-full-desc">
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Classificação Hierárquica NCM</div>
+      ${hier.map(h => `<div style="padding:3px 0;padding-left:${hier.indexOf(h)*16}px;">
+        <span class="mono" style="color:var(--accent);font-size:12px;font-weight:600;">${h.code}</span>
+        <span style="color:var(--text-muted);font-size:11px;margin:0 4px;">›</span>
+        <span style="font-size:12px;">${h.desc}</span>
+        <span class="tag tag-blue" style="font-size:9px;margin-left:6px;">${h.level}</span>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  html += '<div class="ncm-result-grid">';
+
+  // Siscomex Info
+  html += `<div class="ncm-info-box">
+    <h4><span class="icon-dot" style="background:var(--accent);"></span>Dados Oficiais Siscomex/Classif</h4>
+    ${s ? `
+      <div class="ncm-info-row"><span class="label">Código NCM</span><span class="value" style="color:var(--accent);">${s.codigo}</span></div>
+      <div class="ncm-info-row"><span class="label">Descrição</span><span class="value" style="font-size:12px;font-family:'DM Sans';max-width:200px;text-align:right;">${s.descricao}</span></div>
+      <div class="ncm-info-row"><span class="label">Vigência Início</span><span class="value">${s.dataInicio || 'N/I'}</span></div>
+      <div class="ncm-info-row"><span class="label">Vigência Fim</span><span class="value">${s.dataFim || 'Vigente'}</span></div>
+      ${s.tipoAto ? `<div class="ncm-info-row"><span class="label">Ato Legal</span><span class="value" style="font-size:11px;">${s.tipoAto} nº ${s.numeroAto}/${s.anoAto}</span></div>` : ''}
+    ` : '<div style="color:var(--text-muted);font-size:12px;">Tabela Siscomex indisponível. Verifique a conexão.</div>'}
+  </div>`;
+
+  // IBPT Taxation
+  html += `<div class="ncm-info-box">
+    <h4><span class="icon-dot" style="background:var(--warning);"></span>Tributação Aproximada (IBPT)</h4>
+    ${ib ? `
+      <div class="ncm-info-row"><span class="label">Descrição IBPT</span><span class="value" style="font-size:11px;font-family:'DM Sans';max-width:200px;text-align:right;">${ib.descricao}</span></div>
+      <div class="ncm-info-row"><span class="label">Federal (Nacional)</span><span class="value" style="color:var(--info);">${ib.nacionalfederal}%</span></div>
+      <div class="ncm-info-row"><span class="label">Federal (Importados)</span><span class="value" style="color:var(--purple);">${ib.importadosfederal}%</span></div>
+      <div class="ncm-info-row"><span class="label">Estadual (ICMS)</span><span class="value" style="color:var(--success);">${ib.estadual}%</span></div>
+      <div class="ncm-info-row"><span class="label">Municipal</span><span class="value">${ib.municipal}%</span></div>
+      <div class="ncm-info-row"><span class="label">Vigência</span><span class="value" style="font-size:11px;">${ib.vigenciainicio} a ${ib.vigenciafim}</span></div>
+      <div class="ncm-info-row"><span class="label">Versão / Fonte</span><span class="value" style="font-size:10px;">${ib.versao} · ${ib.fonte}</span></div>
+      <div class="ncm-info-row"><span class="label">UF</span><span class="value">${ib.uf}</span></div>
+      <div class="ncm-trib-bar">
+        <div class="ncm-trib-seg" style="flex:${ib.nacionalfederal};background:#4f6df5;" title="Federal Nacional: ${ib.nacionalfederal}%">${ib.nacionalfederal}%</div>
+        <div class="ncm-trib-seg" style="flex:${ib.estadual || 0.1};background:#22c55e;" title="Estadual: ${ib.estadual}%">${ib.estadual}%</div>
+        <div class="ncm-trib-seg" style="flex:${ib.municipal || 0.1};background:#f59e0b;" title="Municipal: ${ib.municipal}%">${ib.municipal}%</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:10px;color:var(--text-muted);">
+        <span>■ Federal</span><span>■ Estadual</span><span>■ Municipal</span>
+      </div>
+      <div style="margin-top:8px;padding:8px;background:var(--bg-card);border-radius:6px;font-size:12px;">
+        <strong style="color:var(--text-primary);">Carga tributária total estimada:</strong>
+        <span style="color:var(--danger);font-family:'JetBrains Mono';font-weight:700;font-size:14px;margin-left:8px;">
+          ${(ib.nacionalfederal + ib.estadual + ib.municipal).toFixed(2)}%
+        </span>
+      </div>
+    ` : '<div style="color:var(--text-muted);font-size:12px;">API IBPT indisponível. Verifique a conexão.</div>'}
+  </div>`;
+
+  html += '</div>'; // close grid
+
+  // AI Analysis
+  html += `<div class="ncm-ai-analysis">
+    <h4>
+      Análise ICMS/IPI – Base Legislativa e Condições
+      <span class="ai-badge">AI · Claude</span>
+    </h4>
+    <div class="ncm-ai-content" id="${targetId}-ai">
+      ${result.ai ? formatAIContent(result.ai) : '<div style="color:var(--text-muted);">Análise AI indisponível. A API pode estar inacessível.</div>'}
+    </div>
+  </div>`;
+
+  el.innerHTML = html;
+}
+
+function formatAIContent(text) {
+  // Convert markdown-like formatting to HTML
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/^### (.*?)$/gm, '<div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-top:14px;margin-bottom:6px;">$1</div>')
+    .replace(/^## (.*?)$/gm, '<div style="font-size:15px;font-weight:700;color:var(--accent);margin-top:16px;margin-bottom:8px;">$1</div>')
+    .replace(/^# (.*?)$/gm, '<div style="font-size:16px;font-weight:700;color:var(--accent);margin-top:16px;margin-bottom:8px;">$1</div>')
+    .replace(/^- (.*?)$/gm, '<div style="padding-left:12px;margin:2px 0;">• $1</div>')
+    .replace(/\n/g, '<br>');
+}
+
+// ─── RENDER: ITENS (with NCM integration) ───
+function renderItens(d) {
+  const el = document.getElementById('itens-content');
+  const itens = d.registers['0200'] || [];
+  const uf = d.entity.uf || 'SP';
+
+  // Collect unique NCMs
+  const ncmSet = {};
+  itens.forEach(r => {
+    const ncm = (r[7] || '').replace(/\./g, '').trim();
+    if (ncm && ncm.length >= 2) {
+      if (!ncmSet[ncm]) ncmSet[ncm] = { count: 0, items: [] };
+      ncmSet[ncm].count++;
+      ncmSet[ncm].items.push(r[1] || '');
+    }
+  });
+  const uniqueNCMs = Object.keys(ncmSet).sort();
+
+  const tipoItem = {'00':'Mercadoria p/ Revenda','01':'Matéria-Prima','02':'Embalagem','03':'Produto em Processo','04':'Produto Acabado','05':'Subproduto','06':'Produto Intermediário','07':'Material de Uso e Consumo','08':'Ativo Imobilizado','09':'Serviços','10':'Outros insumos','99':'Outras'};
+
+  let html = `
+    <div class="grid-4" style="margin-bottom:20px;">
+      <div class="stat-card">
+        <div class="stat-label">Total de Itens</div>
+        <div class="stat-value">${fmtInt(itens.length)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">NCMs Distintos</div>
+        <div class="stat-value" style="color:var(--accent);">${fmtInt(uniqueNCMs.length)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">UF da Escrituração</div>
+        <div class="stat-value" style="font-size:22px;">${uf}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">NCMs Consultados</div>
+        <div class="stat-value" id="ncm-consulted-count">0</div>
+      </div>
+    </div>
+
+    <!-- NCM CONSULTATION PANEL -->
+    <div class="ncm-panel">
+      <div class="ncm-panel-header">
+        <h3>🔍 Consulta NCM – Legislação ICMS & IPI</h3>
+        <div class="ncm-search-inline">
+          <input type="text" id="ncm-manual-input" placeholder="NCM (ex: 84719012)" maxlength="10">
+          <select id="ncm-uf-select">
+            ${['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'].map(u =>
+              `<option value="${u}" ${u === uf ? 'selected' : ''}>${u}</option>`
+            ).join('')}
+          </select>
+          <button class="ncm-btn-consult" onclick="doManualNCMConsult()" id="ncm-consult-btn">
+            <span class="btn-text">Consultar NCM</span>
+          </button>
+        </div>
+      </div>
+      <div id="ncm-consult-status" style="display:none;" class="ncm-batch-bar">
+        <span class="batch-text" id="ncm-status-text">Consultando...</span>
+        <div class="progress-bar"><div class="progress-fill" id="ncm-progress" style="width:0%;background:var(--accent);"></div></div>
+      </div>
+      <div id="ncm-result-panel"></div>
+    </div>
+
+    <!-- NCM SUMMARY BY UNIQUE NCM -->
+    <div class="card">
+      <div class="card-header">
+        <h3>NCMs Encontrados na Escrituração</h3>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn btn-sm btn-primary" onclick="batchConsultNCMs()" id="batch-btn">
+            Consultar Todos (${Math.min(uniqueNCMs.length, 30)})
+          </button>
+          <div class="search-box">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input placeholder="Filtrar NCM..." oninput="filterTable('ncm-summary-table',this.value)">
+          </div>
+        </div>
+      </div>
+      <div class="card-body" style="max-height:400px;overflow:auto;">
+        <table class="data-table" id="ncm-summary-table">
+          <thead><tr>
+            <th>NCM</th><th class="right">Qtd Itens</th><th>Consulta IBPT</th><th>Estadual</th><th>Federal</th><th></th>
+          </tr></thead>
+          <tbody>
+            ${uniqueNCMs.map(ncm => {
+              const cached = ncmCache[ncm + '_' + uf];
+              const ib = cached?.ibpt;
+              return `<tr data-ncm="${ncm}" id="ncm-row-${ncm}">
+                <td class="mono" style="font-weight:600;color:var(--accent);">${ncm.length === 8 ? ncm.substring(0,4)+'.'+ncm.substring(4,6)+'.'+ncm.substring(6) : ncm}</td>
+                <td class="mono right">${ncmSet[ncm].count}</td>
+                <td id="ncm-ibpt-${ncm}">${ib ? '<span class="tag tag-green">✓ Consultado</span>' : '<span class="tag tag-yellow">Pendente</span>'}</td>
+                <td class="mono right" id="ncm-est-${ncm}">${ib ? ib.estadual + '%' : '—'}</td>
+                <td class="mono right" id="ncm-fed-${ncm}">${ib ? ib.nacionalfederal + '%' : '—'}</td>
+                <td>
+                  <button class="ncm-table-btn ${cached ? 'consulted' : ''}" onclick="consultNCMFromTable('${ncm}')" id="ncm-btn-${ncm}">
+                    ${cached ? '✓ Ver' : 'Consultar'}
+                  </button>
+                </td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ITEMS TABLE -->
+    ${itens.length > 0 ? `
+    <div class="card" style="margin-top:20px;">
+      <div class="card-header">
+        <h3>Tabela de Identificação do Item (0200)</h3>
+        <div class="search-box">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input placeholder="Buscar item..." oninput="filterTable('itens-table',this.value)">
+        </div>
+      </div>
+      <div class="card-body" style="max-height:600px;overflow:auto;">
+        <table class="data-table" id="itens-table"><thead><tr>
+          <th>Código</th><th>Descrição</th><th>NCM</th><th>Tipo</th><th>Unidade</th><th>CEST</th><th>Trib.</th>
+        </tr></thead><tbody>
+          ${itens.slice(0, 300).map(r => {
+            const ncm = (r[7] || '').replace(/\./g, '');
+            const tipo = tipoItem[r[6]] || r[6] || '';
+            const cached = ncmCache[ncm + '_' + uf];
+            const ib = cached?.ibpt;
+            return `<tr>
+              <td class="mono">${r[1] || ''}</td>
+              <td class="truncate">${r[2] || ''}</td>
+              <td><span class="ncm-chip ${cached ? 'consulted' : ''}" onclick="consultNCMFromTable('${ncm}')" title="Clique para consultar">${r[7] || ''}</span></td>
+              <td><span class="tag tag-purple">${tipo}</span></td>
+              <td class="mono">${r[5] || ''}</td>
+              <td class="mono">${r[12] || ''}</td>
+              <td class="mono" style="font-size:11px;">${ib ? `<span style="color:var(--success);">${(ib.nacionalfederal + ib.estadual + ib.municipal).toFixed(1)}%</span>` : '—'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody></table>
+      </div>
+    </div>
+    ${itens.length > 300 ? `<p style="font-size:12px;color:var(--text-muted);margin-top:8px;">Mostrando 300 de ${fmtInt(itens.length)} itens.</p>` : ''}
+    ` : ''}
+  `;
+
+  el.innerHTML = html;
+  updateConsultedCount(uf);
+}
+
+function updateConsultedCount(uf) {
+  const countEl = document.getElementById('ncm-consulted-count');
+  if (countEl) {
+    const count = Object.keys(ncmCache).filter(k => k.endsWith('_' + uf)).length;
+    countEl.textContent = count;
+  }
+}
+
+// Manual consultation from the search bar
+async function doManualNCMConsult() {
+  const ncmInput = document.getElementById('ncm-manual-input');
+  const ufSelect = document.getElementById('ncm-uf-select');
+  const btn = document.getElementById('ncm-consult-btn');
+  const ncm = (ncmInput.value || '').replace(/\./g, '').trim();
+  const uf = ufSelect.value;
+
+  if (!ncm || ncm.length < 2) { alert('Informe um código NCM válido (mínimo 2 dígitos).'); return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="ncm-loading-inline"></span>';
+
+  const statusBar = document.getElementById('ncm-consult-status');
+  const statusText = document.getElementById('ncm-status-text');
+  const progress = document.getElementById('ncm-progress');
+  statusBar.style.display = 'flex';
+  statusText.textContent = `Consultando NCM ${ncm} na UF ${uf}...`;
+  progress.style.width = '30%';
+
+  const result = await consultNCM(ncm, uf);
+
+  progress.style.width = '100%';
+  statusText.textContent = result ? '✓ Consulta concluída!' : '✗ Erro na consulta';
+  setTimeout(() => { statusBar.style.display = 'none'; }, 3000);
+
+  btn.disabled = false;
+  btn.innerHTML = '<span class="btn-text">Consultar NCM</span>';
+
+  renderNCMResult(result, 'ncm-result-panel');
+  updateConsultedCount(uf);
+}
+
+// Consultation from table row click
+async function consultNCMFromTable(ncm) {
+  const ufSelect = document.getElementById('ncm-uf-select');
+  const uf = ufSelect ? ufSelect.value : (state.parsed[state.activeFile]?.entity?.uf || 'SP');
+
+  // Check cache first
+  if (ncmCache[ncm + '_' + uf]) {
+    renderNCMResult(ncmCache[ncm + '_' + uf], 'ncm-result-panel');
+    document.getElementById('ncm-result-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return;
+  }
+
+  // Show loading in the button
+  const btn = document.getElementById('ncm-btn-' + ncm);
+  if (btn) { btn.innerHTML = '<span class="ncm-loading-inline"></span>'; btn.disabled = true; }
+
+  const statusBar = document.getElementById('ncm-consult-status');
+  const statusText = document.getElementById('ncm-status-text');
+  if (statusBar) { statusBar.style.display = 'flex'; statusText.textContent = `Consultando NCM ${ncm}...`; }
+
+  const result = await consultNCM(ncm, uf);
+
+  if (statusBar) { statusBar.style.display = 'none'; }
+
+  // Update table row
+  if (btn) { btn.innerHTML = result ? '✓ Ver' : '✗ Erro'; btn.disabled = false; if (result) btn.classList.add('consulted'); }
+  const ibptCell = document.getElementById('ncm-ibpt-' + ncm);
+  const estCell = document.getElementById('ncm-est-' + ncm);
+  const fedCell = document.getElementById('ncm-fed-' + ncm);
+  if (result?.ibpt) {
+    if (ibptCell) ibptCell.innerHTML = '<span class="tag tag-green">✓ Consultado</span>';
+    if (estCell) estCell.textContent = result.ibpt.estadual + '%';
+    if (fedCell) fedCell.textContent = result.ibpt.nacionalfederal + '%';
+  }
+
+  renderNCMResult(result, 'ncm-result-panel');
+  document.getElementById('ncm-result-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  updateConsultedCount(uf);
+}
+
+// Batch consultation (up to 30 NCMs)
+async function batchConsultNCMs() {
+  const d = state.parsed[state.activeFile];
+  if (!d) return;
+
+  const uf = document.getElementById('ncm-uf-select')?.value || d.entity.uf || 'SP';
+  const itens = d.registers['0200'] || [];
+
+  // Collect unique NCMs not yet cached
+  const ncmSet = new Set();
+  itens.forEach(r => {
+    const ncm = (r[7] || '').replace(/\./g, '').trim();
+    if (ncm && ncm.length >= 4 && !ncmCache[ncm + '_' + uf]) ncmSet.add(ncm);
+  });
+  const ncmsToConsult = [...ncmSet].slice(0, 30);
+
+  if (ncmsToConsult.length === 0) {
+    alert('Todos os NCMs já foram consultados!');
+    return;
+  }
+
+  const batchBtn = document.getElementById('batch-btn');
+  batchBtn.disabled = true;
+  batchBtn.textContent = 'Consultando...';
+
+  const statusBar = document.getElementById('ncm-consult-status');
+  const statusText = document.getElementById('ncm-status-text');
+  const progress = document.getElementById('ncm-progress');
+  statusBar.style.display = 'flex';
+
+  for (let i = 0; i < ncmsToConsult.length; i++) {
+    const ncm = ncmsToConsult[i];
+    statusText.textContent = `Consultando ${i+1}/${ncmsToConsult.length}: NCM ${ncm}...`;
+    progress.style.width = ((i+1) / ncmsToConsult.length * 100) + '%';
+
+    await consultNCM(ncm, uf);
+
+    // Update row in table
+    const btn = document.getElementById('ncm-btn-' + ncm);
+    const cached = ncmCache[ncm + '_' + uf];
+    if (btn) { btn.innerHTML = cached ? '✓ Ver' : '✗'; if (cached) btn.classList.add('consulted'); }
+    if (cached?.ibpt) {
+      const ibptCell = document.getElementById('ncm-ibpt-' + ncm);
+      const estCell = document.getElementById('ncm-est-' + ncm);
+      const fedCell = document.getElementById('ncm-fed-' + ncm);
+      if (ibptCell) ibptCell.innerHTML = '<span class="tag tag-green">✓ Consultado</span>';
+      if (estCell) estCell.textContent = cached.ibpt.estadual + '%';
+      if (fedCell) fedCell.textContent = cached.ibpt.nacionalfederal + '%';
+    }
+
+    // Small delay to avoid rate limiting
+    if (i < ncmsToConsult.length - 1) await new Promise(r => setTimeout(r, 500));
+  }
+
+  statusText.textContent = `✓ ${ncmsToConsult.length} NCMs consultados com sucesso!`;
+  progress.style.width = '100%';
+  progress.style.background = 'var(--success)';
+  setTimeout(() => {
+    statusBar.style.display = 'none';
+    progress.style.background = 'var(--accent)';
+  }, 3000);
+
+  batchBtn.disabled = false;
+  batchBtn.textContent = 'Consultar Todos';
+  updateConsultedCount(uf);
+}
+
+// ─── RENDER: INVENTARIO ───
+function renderInventario(d) {
+  const el = document.getElementById('inventario-content');
+  const h005 = d.registers['H005'] || [];
+  const h010 = d.registers['H010'] || [];
+
+  let html = '';
+
+  if (h005.length > 0) {
+    html += '<div class="grid-3" style="margin-bottom:20px;">';
+    h005.forEach(r => {
+      const motivos = {'01':'Final do período','02':'Mudança de tributação','03':'Baixa cadastral','04':'Regime de pagamento','05':'Determinação dos fiscos'};
+      html += `<div class="stat-card">
+        <div class="stat-label">Inventário ${formatDate(r[1])}</div>
+        <div class="stat-value" style="font-size:20px;">R$ ${fmtMoney(parseNum(r[2]))}</div>
+        <div class="stat-sub">Motivo: ${motivos[r[3]] || r[3] || 'N/I'}</div>
+      </div>`;
+    });
+    html += '</div>';
+  }
+
+  if (h010.length > 0) {
+    const maxShow = Math.min(h010.length, 200);
+    html += `<div class="card"><div class="card-header">
+      <h3>H010 – Itens do Inventário</h3>
+      <span style="font-size:12px;color:var(--text-muted);">${fmtInt(h010.length)} itens</span>
+    </div>
+    <div class="card-body" style="max-height:500px;overflow:auto;">
+    <table class="data-table"><thead><tr>
+      <th>Código Item</th><th>Unid</th><th class="right">Qtd</th><th class="right">Vl. Unit.</th><th class="right">Vl. Total</th><th>Propriedade</th>
+    </tr></thead><tbody>`;
+
+    const indProp = {'0':'Próprio','1':'Terceiros','2':'De terceiros em posse'};
+    for (let i = 0; i < maxShow; i++) {
+      const r = h010[i];
+      html += `<tr>
+        <td class="mono">${r[1] || ''}</td>
+        <td class="mono">${r[2] || ''}</td>
+        <td class="mono right">${fmtMoney(parseNum(r[3]))}</td>
+        <td class="mono right">R$ ${fmtMoney(parseNum(r[4]))}</td>
+        <td class="mono right">R$ ${fmtMoney(parseNum(r[5]))}</td>
+        <td>${indProp[r[6]] || r[6] || ''}</td>
+      </tr>`;
+    }
+    html += '</tbody></table></div></div>';
+  }
+
+  if (!html) {
+    html = `<div class="empty-state">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+      <h3>Bloco H não encontrado</h3>
+      <p>O arquivo SPED não contém registros de inventário (Bloco H).</p>
+    </div>`;
+  }
+
+  el.innerHTML = html;
+}
+
+// ─── VALIDAÇÕES ───
+function runValidations(d) {
+  const alerts = [];
+  const s = d.summary;
+
+  // 1. Check 0000 mandatory fields
+  if (!d.entity.cnpj && !d.entity.cpf) {
+    alerts.push({ level: 'danger', title: 'CNPJ/CPF não informado', desc: 'O registro 0000 não contém CNPJ ou CPF da entidade.' });
+  }
+
+  // 2. Check block closure
+  const expectedClosures = { '0': '0990', 'B': 'B990', 'C': 'C990', 'D': 'D990', 'E': 'E990', 'G': 'G990', 'H': 'H990', 'K': 'K990', '1': '1990', '9': '9990' };
+  for (const [bid, closeReg] of Object.entries(expectedClosures)) {
+    if (d.blocks[bid] && !d.registers[closeReg]) {
+      alerts.push({ level: 'warning', title: `Bloco ${bid} sem encerramento`, desc: `O registro ${closeReg} de encerramento do Bloco ${bid} não foi encontrado.` });
+    }
+  }
+
+  // 3. Check 9999
+  if (!d.registers['9999']) {
+    alerts.push({ level: 'danger', title: 'Arquivo sem encerramento', desc: 'O registro 9999 (encerramento do arquivo) não foi encontrado.' });
+  }
+
+  // 4. Block line count validation
+  if (d.registers['0990'] && d.registers['0990'][0]) {
+    const declared = parseInt(d.registers['0990'][0][1]) || 0;
+    const actual = d.blocks['0'] ? d.blocks['0'].totalLines : 0;
+    if (declared !== actual) {
+      alerts.push({ level: 'warning', title: 'Divergência Bloco 0', desc: `Linhas declaradas no 0990: ${declared}. Linhas encontradas: ${actual}.` });
+    }
+  }
+
+  // 5. E110 balance check
+  if (d.registers['E110'] && d.registers['E110'][0]) {
+    const r = d.registers['E110'][0];
+    const debitos = parseNum(r[1]);
+    const creditos = parseNum(r[5]);
+    const sldApurado = parseNum(r[10]);
+    const recolher = parseNum(r[12]);
+    const sldCredor = parseNum(r[13]);
+    // Check if recolher and saldo credor are both > 0
+    if (recolher > 0 && sldCredor > 0) {
+      alerts.push({ level: 'danger', title: 'ICMS Recolher e Saldo Credor simultâneos', desc: 'O E110 apresenta valores tanto para ICMS a recolher quanto para saldo credor. Apenas um deve ter valor > 0.' });
+    }
+  }
+
+  // 6. Documents with irregular status
+  const irregDocs = (d.registers['C100'] || []).filter(r => !['00','01','02','03','04','05','06','07','08'].includes(r[5]));
+  if (irregDocs.length > 0) {
+    alerts.push({ level: 'warning', title: `${irregDocs.length} documentos com situação irregular`, desc: 'Existem documentos no C100 com código de situação não reconhecido.' });
+  }
+
+  // 7. Retification check
+  if (d.entity.codFin === '1') {
+    alerts.push({ level: 'info', title: 'Arquivo de Retificação', desc: 'Este arquivo SPED é uma retificação (COD_FIN = 1). Certifique-se de que está dentro do prazo permitido.' });
+  }
+
+  // 8. Empty blocks
+  for (const [bid, bdata] of Object.entries(d.blocks)) {
+    if (bid === '9') continue;
+    const opener = d.registers[`${bid}001`] || d.registers[`${bid === '0' ? '0001' : bid + '001'}`];
+    if (opener && opener[0] && opener[0][1] === '1' && bdata.totalLines > 2) {
+      alerts.push({ level: 'warning', title: `Bloco ${bid} declarado vazio mas contém dados`, desc: `O registro de abertura indica sem dados (IND_MOV=1), porém há ${bdata.totalLines} registros.` });
+    }
+  }
+
+  // 9. Check C100 without C190
+  const c100Count = (d.registers['C100'] || []).length;
+  const c190Count = (d.registers['C190'] || []).length;
+  if (c100Count > 0 && c190Count === 0) {
+    alerts.push({ level: 'danger', title: 'C100 sem C190', desc: 'Existem documentos no C100 mas nenhum registro analítico C190 foi encontrado.' });
+  }
+
+  // 10. Missing E100/E110 when C block has data
+  if (d.blocks['C'] && d.blocks['C'].totalLines > 2 && !d.registers['E110']) {
+    alerts.push({ level: 'warning', title: 'Sem apuração de ICMS', desc: 'O Bloco C contém documentos mas não há registro E110 de apuração do ICMS.' });
+  }
+
+  return alerts;
+}
+
+function renderValidacao(d) {
+  const el = document.getElementById('validacao-content');
+  const alerts = runValidations(d);
+
+  if (alerts.length === 0) {
+    el.innerHTML = `<div class="empty-state" style="padding:40px;">
+      <div style="font-size:60px;margin-bottom:16px;">✅</div>
+      <h3>Nenhum alerta encontrado</h3>
+      <p>A escrituração passou em todas as validações básicas de estrutura e consistência.</p>
+    </div>`;
+    return;
+  }
+
+  const icons = { danger: '🔴', warning: '🟡', info: '🔵' };
+  let html = `<div style="margin-bottom:16px;font-size:13px;color:var(--text-secondary);">
+    ${alerts.filter(a=>a.level==='danger').length} erros · 
+    ${alerts.filter(a=>a.level==='warning').length} avisos · 
+    ${alerts.filter(a=>a.level==='info').length} informações
+  </div>`;
+
+  alerts.forEach(a => {
+    html += `<div class="alert-item alert-${a.level}">
+      <div class="alert-icon">${icons[a.level]}</div>
+      <div class="alert-text">
+        <strong>${a.title}</strong>
+        ${a.desc}
+      </div>
+    </div>`;
+  });
+
+  el.innerHTML = html;
+}
+
+// ─── RENDER: RESUMO ───
+function renderResumo(d) {
+  const el = document.getElementById('resumo-content');
+  const s = d.summary;
+
+  // 9900 register counts
+  let reg9900HTML = '';
+  if (d.registers['9900'] && d.registers['9900'].length > 0) {
+    reg9900HTML = `<div class="card" style="margin-top:20px;"><div class="card-header"><h3>9900 – Contagem de Registros por Tipo</h3></div>
+      <div class="card-body" style="max-height:400px;overflow:auto;">
+      <table class="data-table"><thead><tr><th>Registro</th><th>Bloco</th><th class="right">Quantidade</th></tr></thead><tbody>`;
+    d.registers['9900'].sort((a,b) => (a[1]||'').localeCompare(b[1]||'')).forEach(r => {
+      if (r[1] === '9900' || r[1] === '9999') return; // skip self-reference
+      reg9900HTML += `<tr><td class="mono" style="font-weight:600;color:var(--accent);">${r[1] || ''}</td>
+        <td><span class="tag tag-blue">Bloco ${(r[1]||'')[0]}</span></td>
+        <td class="mono right">${fmtInt(parseInt(r[2]) || 0)}</td></tr>`;
+    });
+    reg9900HTML += '</tbody></table></div></div>';
+  }
+
+  el.innerHTML = `
+    <div class="card" style="border-left:3px solid var(--accent);">
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;">Entidade</div>
+            <div style="font-size:16px;font-weight:700;">${d.entity.nome || 'N/I'}</div>
+            <div style="font-size:13px;color:var(--text-secondary);margin-top:4px;">
+              ${d.entity.fantasia ? 'Fantasia: ' + d.entity.fantasia + '<br>' : ''}
+              ${d.entity.cnpj ? 'CNPJ: ' + formatCNPJ(d.entity.cnpj) : ''}${d.entity.cpf ? ' · CPF: ' + d.entity.cpf : ''}<br>
+              IE: ${d.entity.ie || 'N/I'} · UF: ${d.entity.uf || 'N/I'}<br>
+              ${d.entity.end ? d.entity.end + ', ' + (d.entity.num || '') + ' - ' + (d.entity.bairro || '') : ''}<br>
+              ${d.entity.email ? 'E-mail: ' + d.entity.email : ''}
+            </div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;">Escrituração</div>
+            <div style="font-size:13px;color:var(--text-secondary);line-height:1.8;">
+              Período: <strong>${d.period.dtIni} a ${d.period.dtFin}</strong><br>
+              Versão do Leiaute: <strong>${d.entity.codVer || 'N/I'}</strong><br>
+              Finalidade: <strong>${d.entity.codFin === '0' ? 'Original' : d.entity.codFin === '1' ? 'Retificação' : d.entity.codFin || 'N/I'}</strong><br>
+              Perfil: <strong>${d.entity.indPerfil || 'N/I'}</strong><br>
+              Atividade: <strong>${d.entity.indAtiv === '0' ? 'Industrial/Equiparado' : 'Outras'}</strong><br>
+              Total de linhas: <strong>${fmtInt(d.rawLines)}</strong><br>
+              Total de registros: <strong>${fmtInt(s.totalRegistros)}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
+      <div class="card-header"><h3>Resumo de Valores</h3></div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;">
+          <div>
+            <div style="font-size:12px;color:var(--text-muted);font-weight:600;margin-bottom:12px;">MOVIMENTAÇÃO</div>
+            <div class="comparison-row"><div class="comparison-label">Entradas</div><div class="comparison-val">R$ ${fmtMoney(s.vlTotalEntradas)}</div></div>
+            <div class="comparison-row"><div class="comparison-label">Saídas</div><div class="comparison-val">R$ ${fmtMoney(s.vlTotalSaidas)}</div></div>
+            <div class="comparison-row"><div class="comparison-label">Docs Entrada</div><div class="comparison-val">${fmtInt(s.totalDocEntrada)}</div></div>
+            <div class="comparison-row"><div class="comparison-label">Docs Saída</div><div class="comparison-val">${fmtInt(s.totalDocSaida)}</div></div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--text-muted);font-weight:600;margin-bottom:12px;">ICMS</div>
+            <div class="comparison-row"><div class="comparison-label">Débitos</div><div class="comparison-val" style="color:var(--danger);">R$ ${fmtMoney(s.icmsDebitos)}</div></div>
+            <div class="comparison-row"><div class="comparison-label">Créditos</div><div class="comparison-val" style="color:var(--success);">R$ ${fmtMoney(s.icmsCreditos)}</div></div>
+            <div class="comparison-row"><div class="comparison-label">A Recolher</div><div class="comparison-val">R$ ${fmtMoney(s.icmsRecolher)}</div></div>
+            <div class="comparison-row"><div class="comparison-label">Saldo Credor</div><div class="comparison-val">R$ ${fmtMoney(s.icmsSaldoCredor)}</div></div>
+            <div class="comparison-row"><div class="comparison-label">ST a Recolher</div><div class="comparison-val">R$ ${fmtMoney(s.icmsSTRecolher)}</div></div>
+          </div>
+          <div>
+            <div style="font-size:12px;color:var(--text-muted);font-weight:600;margin-bottom:12px;">IPI / OUTROS</div>
+            <div class="comparison-row"><div class="comparison-label">IPI Débitos</div><div class="comparison-val">R$ ${fmtMoney(s.ipiDebitos)}</div></div>
+            <div class="comparison-row"><div class="comparison-label">IPI Créditos</div><div class="comparison-val">R$ ${fmtMoney(s.ipiCreditos)}</div></div>
+            <div class="comparison-row"><div class="comparison-label">IPI Saldo</div><div class="comparison-val">R$ ${fmtMoney(s.ipiSaldo)}</div></div>
+            <div class="comparison-row"><div class="comparison-label">Inventário</div><div class="comparison-val">R$ ${fmtMoney(s.vlInventario)}</div></div>
+            <div class="comparison-row"><div class="comparison-label">Participantes</div><div class="comparison-val">${fmtInt(s.totalParticipantes)}</div></div>
+            <div class="comparison-row"><div class="comparison-label">Itens</div><div class="comparison-val">${fmtInt(s.totalItens)}</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    ${d.registers['0100'] && d.registers['0100'][0] ? `
+    <div class="card" style="margin-top:20px;">
+      <div class="card-header"><h3>Contabilista Responsável</h3></div>
+      <div class="card-body" style="font-size:13px;color:var(--text-secondary);line-height:1.8;">
+        Nome: <strong>${d.registers['0100'][0][1] || ''}</strong><br>
+        CPF: ${d.registers['0100'][0][2] || ''} · CRC: ${d.registers['0100'][0][3] || ''}<br>
+        ${d.registers['0100'][0][12] ? 'E-mail: ' + d.registers['0100'][0][12] : ''}
+      </div>
+    </div>` : ''}
+
+    ${reg9900HTML}
+  `;
+}
+
+// ─── TABLE FILTER ───
+function filterTable(tableId, val) {
+  const rows = document.querySelectorAll(`#${tableId} tbody tr`);
+  const v = val.toLowerCase();
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    row.style.display = text.includes(v) ? '' : 'none';
+  });
+}
+
+// ─── MODAL ───
+function openModal(title, bodyHTML) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = bodyHTML;
+  document.getElementById('modal-overlay').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('active');
+}
+
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+// ─── SIDEBAR TOGGLE ───
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// Init
+document.querySelectorAll('.hidden').forEach(el => el.style.display = 'none');
+</script>
+</body>
+</html>

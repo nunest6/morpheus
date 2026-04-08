@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Ajuste LC 224/2025 — CST 06 e CST 73</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#f5f5f5;color:#1f2937;padding:32px 20px;min-height:100vh;font-size:13px}
+  .container{max-width:1100px;margin:0 auto}
+  h1{font-size:17px;font-weight:600;color:#111;margin-bottom:2px;letter-spacing:-.2px}
+  .subtitle{font-size:12px;color:#6b7280;margin-bottom:22px}
+
+  .card{background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:20px;margin-bottom:14px}
+
+  .drop{border:1px dashed #9ca3af;background:#fafafa;text-align:center;padding:24px 20px;cursor:pointer;border-radius:6px;transition:background .15s;display:block}
+  .drop:hover{background:#f3f4f6;border-color:#6b7280}
+  .drop input{display:none}
+  .drop-label{font-size:13px;font-weight:500;color:#374151;margin-bottom:4px}
+  .drop-hint{font-size:11px;color:#6b7280}
+  #status{margin-top:12px;font-size:11px;color:#6b7280;font-family:'Consolas',monospace}
+  #status.ok{color:#15803d}
+  #status.err{color:#b91c1c}
+
+  .regime-row{display:flex;align-items:center;gap:20px;flex-wrap:wrap;padding:14px 18px;background:#fff;border:1px solid #e5e7eb;border-radius:6px;margin-bottom:14px}
+  .regime-label{font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px}
+  .regime-val{font-size:13px;font-weight:600;color:#111}
+  .divider{width:1px;height:32px;background:#e5e7eb}
+  .counts{margin-left:auto;font-size:11px;color:#6b7280;text-align:right;line-height:1.5}
+
+  .dual-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+  @media (max-width:780px){.dual-grid{grid-template-columns:1fr}}
+
+  .block{background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:20px}
+  .block-header{display:flex;align-items:baseline;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid #e5e7eb;margin-bottom:8px}
+  .block-title{font-size:13px;font-weight:600;color:#111}
+  .block-sub{font-size:11px;color:#6b7280}
+
+  .line{display:flex;justify-content:space-between;align-items:baseline;padding:8px 0;border-bottom:1px solid #f3f4f6}
+  .line:last-of-type{border-bottom:none}
+  .line-label{font-size:12px;color:#4b5563}
+  .line-val{font-size:13px;font-weight:500;font-family:'Consolas',monospace;color:#111}
+
+  .bc-line{background:#f9fafb;padding:10px 12px;border-radius:4px;margin:8px 0;border-left:3px solid #6b7280}
+  .bc-line .line-label{font-weight:600;color:#374151}
+  .bc-line .line-val{font-size:15px;font-weight:700}
+
+  .total-line{padding:12px 0 4px;margin-top:8px;border-top:2px solid #111}
+  .total-line .line-label{font-size:11px;font-weight:700;color:#111;text-transform:uppercase;letter-spacing:.4px}
+  .total-line .line-val{font-size:18px;font-weight:700}
+  .debit .total-line .line-val{color:#b91c1c}
+  .credit .total-line .line-val{color:#15803d}
+
+  .saldo-card{background:#fff;border:1px solid #e5e7eb;border-radius:6px;padding:18px 22px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+  .saldo-label{font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.4px}
+  .saldo-hint{font-size:11px;color:#9ca3af;margin-top:2px;font-family:'Consolas',monospace}
+  .saldo-val{font-size:22px;font-weight:700;font-family:'Consolas',monospace;color:#111}
+
+  table{width:100%;font-size:11px;font-family:'Consolas',monospace;border-collapse:collapse;margin-top:10px}
+  th{padding:8px;text-align:left;border-bottom:1px solid #d1d5db;color:#6b7280;text-transform:uppercase;font-size:10px;font-weight:600;letter-spacing:.3px}
+  th.r,td.r{text-align:right}
+  td{padding:6px 8px;border-bottom:1px solid #f3f4f6;color:#374151}
+  .table-title{font-size:12px;font-weight:600;color:#111;margin-bottom:4px}
+  .empty{text-align:center;color:#9ca3af;padding:24px 20px;font-size:12px}
+  .err-box{background:#fef2f2;border:1px solid #fecaca;padding:14px;color:#991b1b;font-family:'Consolas',monospace;font-size:11px;white-space:pre-wrap;border-radius:4px}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Ajuste LC 224/2025</h1>
+  <div class="subtitle">CST 06 (débito) e CST 73 (crédito) — vigência 1º/04/2026</div>
+
+  <label class="drop" for="file-inp">
+    <div class="drop-label">Selecione o arquivo SPED (.txt)</div>
+    <div class="drop-hint">Clique ou arraste o arquivo aqui</div>
+    <input type="file" id="file-inp" accept=".txt">
+    <div id="status"></div>
+  </label>
+
+  <div style="height:14px"></div>
+
+  <div id="result">
+    <div class="card empty">Importe um arquivo SPED para ver o cálculo.</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var inp = document.getElementById('file-inp');
+  var drop = document.querySelector('.drop');
+  var status = document.getElementById('status');
+  var result = document.getElementById('result');
+
+  inp.addEventListener('change', function(e){
+    var f = e.target.files[0];
+    if(f) readFile(f);
+  });
+  drop.addEventListener('dragover', function(e){ e.preventDefault(); drop.style.background = '#f3f4f6'; });
+  drop.addEventListener('dragleave', function(){ drop.style.background = ''; });
+  drop.addEventListener('drop', function(e){
+    e.preventDefault();
+    drop.style.background = '';
+    var f = e.dataTransfer.files[0];
+    if(f) readFile(f);
+  });
+
+  function readFile(f){
+    status.className = '';
+    status.textContent = 'Lendo ' + f.name + '...';
+    var r = new FileReader();
+    r.onload = function(ev){
+      try { calcular(ev.target.result, f.name); }
+      catch(err){
+        status.className = 'err';
+        status.textContent = 'Erro: ' + err.message;
+        result.innerHTML = '<div class="card"><div class="err-box">' + err.message + '\n\n' + (err.stack||'') + '</div></div>';
+      }
+    };
+    r.onerror = function(){ status.className = 'err'; status.textContent = 'Falha ao ler arquivo'; };
+    r.readAsText(f, 'ISO-8859-1');
+  }
+
+  function brn(s){ var n = parseFloat(String(s||'0').replace(',','.')); return isNaN(n) ? 0 : n; }
+  function fmBR(v){ return v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function fiBR(v){ return v.toLocaleString('pt-BR'); }
+
+  function calcular(raw, nomeArq){
+    var regime = 'LR';
+    var m0110 = raw.match(/\|0110\|([^|]*)\|/);
+    if(m0110){
+      var c = m0110[1];
+      if(c === '1') regime = 'LR';
+      else if(c === '2' || c === '3') regime = 'LP';
+      else regime = 'SN';
+    }
+    var ALIQ = {
+      LR: {pis:0.00165, cofins:0.0076, pisPct:'0,1650%', cofPct:'0,7600%', label:'Lucro Real'},
+      LP: {pis:0.00065, cofins:0.003,  pisPct:'0,0650%', cofPct:'0,3000%', label:'Lucro Presumido'},
+      SN: {pis:0.00165, cofins:0.0076, pisPct:'0,1650%', cofPct:'0,7600%', label:'Simples Nacional'}
+    };
+    var aliq = ALIQ[regime];
+
+    var linhas = raw.split('\n');
+    var totalC175 = 0, cnt06 = 0, vlOprTot06 = 0, vlDescTot06 = 0, bcTotal06 = 0;
+    var amostras06 = [];
+    var totalC170 = 0, cnt73 = 0, vlItemTot73 = 0, vlDescTot73 = 0, bcTotal73 = 0;
+    var amostras73 = [];
+
+    for(var i=0; i<linhas.length; i++){
+      var l = linhas[i].trim();
+      if(l.indexOf('|C175|') === 0){
+        totalC175++;
+        var f = l.split('|');
+        if(f[5] === '06'){
+          var vo = brn(f[3]);
+          var vd = brn(f[4]);
+          var bc = Math.max(vo - vd, 0);
+          vlOprTot06 += vo; vlDescTot06 += vd; bcTotal06 += bc; cnt06++;
+          if(amostras06.length < 15) amostras06.push({cfop:f[2], vl:vo, vd:vd, bc:bc, codCta:f[17]||''});
+        }
+      } else if(l.indexOf('|C170|') === 0){
+        totalC170++;
+        var g = l.split('|');
+        if(g[25] === '73'){
+          var vi = brn(g[7]);
+          var vdc = brn(g[8]);
+          var bc2 = Math.max(vi - vdc, 0);
+          vlItemTot73 += vi; vlDescTot73 += vdc; bcTotal73 += bc2; cnt73++;
+          if(amostras73.length < 15) amostras73.push({cfop:g[11], descr:g[4], vl:vi, vd:vdc, bc:bc2, codCta:g[37]||''});
+        }
+      }
+    }
+
+    var ajDebPis  = bcTotal06 * aliq.pis;
+    var ajDebCof  = bcTotal06 * aliq.cofins;
+    var ajDebTot  = ajDebPis + ajDebCof;
+    var ajCredPis = bcTotal73 * aliq.pis;
+    var ajCredCof = bcTotal73 * aliq.cofins;
+    var ajCredTot = ajCredPis + ajCredCof;
+    var saldo = ajDebTot - ajCredTot;
+
+    status.className = 'ok';
+    status.textContent = nomeArq + ' — C175: ' + fiBR(totalC175) + ' (CST 06: ' + fiBR(cnt06) + ') | C170: ' + fiBR(totalC170) + ' (CST 73: ' + fiBR(cnt73) + ')';
+
+    var html = '';
+
+    html +=
+      '<div class="regime-row">' +
+        '<div><div class="regime-label">Regime (0110)</div><div class="regime-val">' + aliq.label + '</div></div>' +
+        '<div class="divider"></div>' +
+        '<div><div class="regime-label">PIS</div><div class="regime-val">' + aliq.pisPct + '</div></div>' +
+        '<div><div class="regime-label">COFINS</div><div class="regime-val">' + aliq.cofPct + '</div></div>' +
+        '<div class="counts">' +
+          'CST 06 (C175): <strong>' + fiBR(cnt06) + '</strong><br>' +
+          'CST 73 (C170): <strong>' + fiBR(cnt73) + '</strong>' +
+        '</div>' +
+      '</div>';
+
+    html += '<div class="dual-grid">';
+
+    html += '<div class="block debit">';
+    html += '<div class="block-header"><div class="block-title">Ajuste de Débito</div><div class="block-sub">CST 06 — C175</div></div>';
+    if(cnt06 > 0){
+      html +=
+        '<div class="line"><div class="line-label">Soma VL_OPR</div><div class="line-val">R$ ' + fmBR(vlOprTot06) + '</div></div>' +
+        '<div class="line"><div class="line-label">Soma VL_DESC</div><div class="line-val">R$ ' + fmBR(vlDescTot06) + '</div></div>' +
+        '<div class="bc-line line"><div class="line-label">Base de cálculo</div><div class="line-val">R$ ' + fmBR(bcTotal06) + '</div></div>' +
+        '<div class="line"><div class="line-label">PIS (' + aliq.pisPct + ')</div><div class="line-val">R$ ' + fmBR(ajDebPis) + '</div></div>' +
+        '<div class="line"><div class="line-label">COFINS (' + aliq.cofPct + ')</div><div class="line-val">R$ ' + fmBR(ajDebCof) + '</div></div>' +
+        '<div class="total-line line"><div class="line-label">Ajuste de débito</div><div class="line-val">R$ ' + fmBR(ajDebTot) + '</div></div>';
+    } else {
+      html += '<div class="empty">Nenhuma linha C175 com CST 06.</div>';
+    }
+    html += '</div>';
+
+    html += '<div class="block credit">';
+    html += '<div class="block-header"><div class="block-title">Ajuste de Crédito</div><div class="block-sub">CST 73 — C170</div></div>';
+    if(cnt73 > 0){
+      html +=
+        '<div class="line"><div class="line-label">Soma VL_ITEM</div><div class="line-val">R$ ' + fmBR(vlItemTot73) + '</div></div>' +
+        '<div class="line"><div class="line-label">Soma VL_DESC</div><div class="line-val">R$ ' + fmBR(vlDescTot73) + '</div></div>' +
+        '<div class="bc-line line"><div class="line-label">Base de cálculo</div><div class="line-val">R$ ' + fmBR(bcTotal73) + '</div></div>' +
+        '<div class="line"><div class="line-label">PIS (' + aliq.pisPct + ')</div><div class="line-val">R$ ' + fmBR(ajCredPis) + '</div></div>' +
+        '<div class="line"><div class="line-label">COFINS (' + aliq.cofPct + ')</div><div class="line-val">R$ ' + fmBR(ajCredCof) + '</div></div>' +
+        '<div class="total-line line"><div class="line-label">Ajuste de crédito</div><div class="line-val">R$ ' + fmBR(ajCredTot) + '</div></div>';
+    } else {
+      html += '<div class="empty">Nenhuma linha C170 com CST 73.</div>';
+    }
+    html += '</div>';
+
+    html += '</div>';
+
+    if(cnt06 > 0 || cnt73 > 0){
+      html +=
+        '<div class="saldo-card">' +
+          '<div>' +
+            '<div class="saldo-label">Saldo líquido (débito − crédito)</div>' +
+            '<div class="saldo-hint">R$ ' + fmBR(ajDebTot) + ' − R$ ' + fmBR(ajCredTot) + '</div>' +
+          '</div>' +
+          '<div class="saldo-val">R$ ' + fmBR(saldo) + '</div>' +
+        '</div>';
+    }
+
+    if(amostras06.length > 0){
+      var rows06 = '';
+      for(var j=0; j<amostras06.length; j++){
+        var a = amostras06[j];
+        rows06 += '<tr><td>' + a.cfop + '</td><td class="r">' + fmBR(a.vl) + '</td><td class="r">' + fmBR(a.vd) + '</td><td class="r">' + fmBR(a.bc) + '</td><td>' + a.codCta + '</td></tr>';
+      }
+      html +=
+        '<div class="card">' +
+          '<div class="table-title">Amostra C175 / CST 06 (primeiras ' + amostras06.length + ')</div>' +
+          '<table><thead><tr><th>CFOP</th><th class="r">VL_OPR</th><th class="r">VL_DESC</th><th class="r">BC</th><th>Cód. Conta</th></tr></thead><tbody>' + rows06 + '</tbody></table>' +
+        '</div>';
+    }
+
+    if(amostras73.length > 0){
+      var rows73 = '';
+      for(var k=0; k<amostras73.length; k++){
+        var b = amostras73[k];
+        rows73 += '<tr><td>' + b.cfop + '</td><td>' + (b.descr||'').substring(0,30) + '</td><td class="r">' + fmBR(b.vl) + '</td><td class="r">' + fmBR(b.vd) + '</td><td class="r">' + fmBR(b.bc) + '</td><td>' + b.codCta + '</td></tr>';
+      }
+      html +=
+        '<div class="card">' +
+          '<div class="table-title">Amostra C170 / CST 73 (primeiras ' + amostras73.length + ')</div>' +
+          '<table><thead><tr><th>CFOP</th><th>Descrição</th><th class="r">VL_ITEM</th><th class="r">VL_DESC</th><th class="r">BC</th><th>Cód. Conta</th></tr></thead><tbody>' + rows73 + '</tbody></table>' +
+        '</div>';
+    }
+
+    result.innerHTML = html;
+  }
+})();
+</script>
+
+</body>
+</html>

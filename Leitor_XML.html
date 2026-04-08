@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leitor XML NF-e / NFC-e — Mod. 55 e 65</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --bg-primary:#0a0e1a; --bg-secondary:#111827; --bg-card:#1a2035; --bg-card-hover:#1f2847;
+  --border:#2a3455; --border-active:#4f6df5;
+  --text-primary:#e8ecf4; --text-secondary:#8b95b0; --text-muted:#5a6580;
+  --accent:#4f6df5; --accent-light:#6b85f7; --accent-glow:rgba(79,109,245,.15);
+  --success:#22c55e; --success-bg:rgba(34,197,94,.1);
+  --warning:#f59e0b; --warning-bg:rgba(245,158,11,.1);
+  --danger:#ef4444; --danger-bg:rgba(239,68,68,.1);
+  --info:#06b6d4; --info-bg:rgba(6,182,212,.1);
+  --purple:#a855f7; --purple-bg:rgba(168,85,247,.1);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'DM Sans',sans-serif;background:var(--bg-primary);color:var(--text-primary);min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg-secondary)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
+
+.app-container{display:flex;min-height:100vh}
+.sidebar{width:260px;background:var(--bg-secondary);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.main-content{margin-left:260px;flex:1;min-height:100vh;display:flex;flex-direction:column}
+
+.logo-area{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.logo-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--accent),var(--purple));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#fff}
+.logo-text h1{font-size:14px;font-weight:700;letter-spacing:-.3px}
+.logo-text span{font-size:11px;color:var(--text-muted)}
+
+.nav-section{padding:16px 12px 8px}
+.nav-section-title{font-size:10px;font-weight:600;letter-spacing:1px;color:var(--text-muted);text-transform:uppercase;padding:0 8px 8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;color:var(--text-secondary);cursor:pointer;font-size:13px;font-weight:500;transition:all .15s;margin-bottom:2px}
+.nav-item:hover{background:var(--bg-card);color:var(--text-primary)}
+.nav-item.active{background:var(--accent-glow);color:var(--accent-light);border:1px solid rgba(79,109,245,.25)}
+.nav-item svg{width:18px;height:18px;flex-shrink:0}
+.nav-badge{margin-left:auto;background:var(--accent);color:#fff;font-size:10px;font-weight:600;padding:2px 6px;border-radius:10px}
+
+.topbar{height:56px;background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:50}
+.topbar-title{font-size:15px;font-weight:600}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+.topbar-badge{font-size:11px;padding:4px 10px;border-radius:20px;font-weight:600}
+.badge-success{background:var(--success-bg);color:var(--success)}
+.badge-info{background:var(--info-bg);color:var(--info)}
+.badge-warning{background:var(--warning-bg);color:var(--warning)}
+
+.page-content{padding:24px;flex:1}
+
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-header h3{font-size:14px;font-weight:600}
+.card-body{padding:20px}
+
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+
+.stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;transition:all .2s}
+.stat-card:hover{border-color:var(--border-active);transform:translateY(-1px)}
+.stat-label{font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.stat-value{font-size:26px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.stat-sub{font-size:12px;color:var(--text-secondary);margin-top:4px}
+
+.upload-zone{display:block;width:100%;border:2px dashed var(--border);border-radius:16px;padding:60px 40px;text-align:center;cursor:pointer;transition:all .3s;background:var(--bg-card);position:relative;box-sizing:border-box}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:var(--accent-glow)}
+.upload-zone svg{margin:0 auto 16px;opacity:.5}
+.upload-zone h3{font-size:18px;margin-bottom:8px}
+.upload-zone p{color:var(--text-muted);font-size:13px}
+.upload-zone input{display:none}
+
+.file-list{margin-top:20px}
+.file-item{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;font-size:13px}
+.file-item .name{flex:1;font-weight:500}
+.file-item .size{color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-size:11px}
+.file-item .status{font-size:11px;font-weight:600}
+
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th{text-align:left;padding:10px 14px;font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg-card);z-index:1}
+.data-table td{padding:10px 14px;border-bottom:1px solid rgba(42,52,85,.5);color:var(--text-secondary)}
+.data-table tr:hover td{background:rgba(79,109,245,.03);color:var(--text-primary)}
+.data-table .mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.data-table .right{text-align:right}
+
+.tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:600;font-family:'DM Sans',sans-serif}
+.tag-green{background:var(--success-bg);color:var(--success)}
+.tag-red{background:var(--danger-bg);color:var(--danger)}
+.tag-blue{background:var(--info-bg);color:var(--info)}
+.tag-purple{background:var(--purple-bg);color:var(--purple)}
+.tag-yellow{background:var(--warning-bg);color:var(--warning)}
+.tag-gray{background:rgba(139,149,176,.15);color:var(--text-secondary)}
+
+.tabs{display:flex;gap:2px;background:var(--bg-secondary);border-radius:10px;padding:3px;border:1px solid var(--border);width:fit-content;margin-bottom:20px}
+.tab-btn{padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;color:var(--text-muted);cursor:pointer;border:none;background:transparent;transition:all .15s;font-family:inherit}
+.tab-btn:hover{color:var(--text-secondary)}
+.tab-btn.active{background:var(--accent);color:#fff}
+
+.btn{background:var(--accent);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:all .15s}
+.btn:hover{background:var(--accent-light)}
+.btn-secondary{background:var(--bg-secondary);color:var(--text-secondary);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--bg-card);color:var(--text-primary)}
+.btn-success{background:var(--success);color:#fff}
+.btn-success:hover{filter:brightness(1.1)}
+
+.config-input{background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);padding:9px 12px;border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:13px;width:100%}
+.config-input:focus{outline:none;border-color:var(--accent)}
+.config-label{font-size:11px;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:block}
+
+.empty{text-align:center;color:var(--text-muted);padding:40px 20px;font-size:13px}
+
+.chart-container{position:relative;height:280px}
+
+.summary-pill{display:inline-flex;align-items:center;gap:6px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:12px;color:var(--text-secondary)}
+.summary-pill strong{color:var(--text-primary);font-family:'JetBrains Mono',monospace}
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  <aside class="sidebar">
+    <div class="logo-area">
+      <div class="logo-icon">XL</div>
+      <div class="logo-text">
+        <h1>Leitor XML NF-e</h1>
+        <span>Mod. 55 / 65</span>
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">Navegação</div>
+      <div class="nav-item active" data-tab="upload" onclick="switchTab('upload')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        Upload
+      </div>
+      <div class="nav-item" data-tab="dashboard" onclick="switchTab('dashboard')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" data-tab="entradas" onclick="switchTab('entradas')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Entradas <span class="nav-badge" id="badge-entradas">0</span>
+      </div>
+      <div class="nav-item" data-tab="saidas" onclick="switchTab('saidas')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        Saídas <span class="nav-badge" id="badge-saidas">0</span>
+      </div>
+      <div class="nav-item" data-tab="participantes" onclick="switchTab('participantes')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Participantes
+      </div>
+      <div class="nav-item" data-tab="produtos" onclick="switchTab('produtos')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        Produtos
+      </div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">Exportar</div>
+      <div class="nav-item" onclick="exportXLSX()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Excel completo
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">Upload</div>
+      <div class="topbar-right">
+        <span class="topbar-badge badge-info" id="topbar-cnpj">CNPJ não definido</span>
+        <span class="topbar-badge badge-success" id="topbar-count">0 notas</span>
+      </div>
+    </div>
+    <div class="page-content" id="page-content"></div>
+  </main>
+</div>
+
+<script>
+// ─── STATE ───
+const state = {
+  notas: [],          // [{...nota, itens:[...]}]
+  cnpjProprio: '',
+  activeTab: 'upload'
+};
+
+// ─── HELPERS ───
+function limparCnpj(s){ return String(s||'').replace(/\D/g,''); }
+function fmCnpj(s){
+  const c = limparCnpj(s);
+  if(c.length === 14) return c.substr(0,2)+'.'+c.substr(2,3)+'.'+c.substr(5,3)+'/'+c.substr(8,4)+'-'+c.substr(12,2);
+  if(c.length === 11) return c.substr(0,3)+'.'+c.substr(3,3)+'.'+c.substr(6,3)+'-'+c.substr(9,2);
+  return s||'';
+}
+function fmtMoney(v){ return Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtInt(v){ return Number(v||0).toLocaleString('pt-BR'); }
+function fmtDate(s){ if(!s) return ''; const m=s.match(/^(\d{4})-(\d{2})-(\d{2})/); return m? m[3]+'/'+m[2]+'/'+m[1] : s; }
+function getTag(xml, tag){ const re=new RegExp('<'+tag+'[^>]*>([^<]*)</'+tag+'>'); const m=xml.match(re); return m? m[1] : ''; }
+function getAllTags(xml, tag){
+  const re = new RegExp('<'+tag+'[^>]*>([\\s\\S]*?)</'+tag+'>','g');
+  const out=[]; let m;
+  while((m=re.exec(xml))!==null) out.push(m[1]);
+  return out;
+}
+
+// ─── PARSER ───
+function parseXml(xml, nomeArq){
+  const mod = getTag(xml,'mod');
+  if(mod !== '55' && mod !== '65') return null;
+
+  const serie = getTag(xml,'serie');
+  const nNF = getTag(xml,'nNF');
+  const dhEmi = getTag(xml,'dhEmi') || getTag(xml,'dEmi');
+  const tpNF = getTag(xml,'tpNF');
+  const natOp = getTag(xml,'natOp');
+  const finNFe = getTag(xml,'finNFe');
+
+  // emit
+  const emitMatch = xml.match(/<emit>([\s\S]*?)<\/emit>/);
+  const emitXml = emitMatch ? emitMatch[1] : '';
+  const emitCnpj = getTag(emitXml,'CNPJ') || getTag(emitXml,'CPF');
+  const emitNome = getTag(emitXml,'xNome');
+  const emitFant = getTag(emitXml,'xFant');
+  const emitUF = getTag(emitXml,'UF');
+
+  // dest
+  const destMatch = xml.match(/<dest>([\s\S]*?)<\/dest>/);
+  const destXml = destMatch ? destMatch[1] : '';
+  const destCnpj = getTag(destXml,'CNPJ') || getTag(destXml,'CPF');
+  const destNome = getTag(destXml,'xNome');
+  const destUF = getTag(destXml,'UF');
+
+  // totais
+  const totMatch = xml.match(/<ICMSTot>([\s\S]*?)<\/ICMSTot>/);
+  const totXml = totMatch ? totMatch[1] : '';
+  const tot = {
+    vBC:           parseFloat(getTag(totXml,'vBC'))||0,
+    vICMS:         parseFloat(getTag(totXml,'vICMS'))||0,
+    vICMSDeson:    parseFloat(getTag(totXml,'vICMSDeson'))||0,
+    vFCP:          parseFloat(getTag(totXml,'vFCP'))||0,
+    vBCST:         parseFloat(getTag(totXml,'vBCST'))||0,
+    vST:           parseFloat(getTag(totXml,'vST'))||0,
+    vFCPST:        parseFloat(getTag(totXml,'vFCPST'))||0,
+    vFCPSTRet:     parseFloat(getTag(totXml,'vFCPSTRet'))||0,
+    vProd:         parseFloat(getTag(totXml,'vProd'))||0,
+    vFrete:        parseFloat(getTag(totXml,'vFrete'))||0,
+    vSeg:          parseFloat(getTag(totXml,'vSeg'))||0,
+    vDesc:         parseFloat(getTag(totXml,'vDesc'))||0,
+    vII:           parseFloat(getTag(totXml,'vII'))||0,
+    vIPI:          parseFloat(getTag(totXml,'vIPI'))||0,
+    vIPIDevol:     parseFloat(getTag(totXml,'vIPIDevol'))||0,
+    vPIS:          parseFloat(getTag(totXml,'vPIS'))||0,
+    vCOFINS:       parseFloat(getTag(totXml,'vCOFINS'))||0,
+    vOutro:        parseFloat(getTag(totXml,'vOutro'))||0,
+    vNF:           parseFloat(getTag(totXml,'vNF'))||0,
+    vTotTrib:      parseFloat(getTag(totXml,'vTotTrib'))||0,
+    // ISSQN (quando houver)
+    vServ:         parseFloat(getTag(totXml,'vServ'))||0,
+    vISS:          parseFloat(getTag(totXml,'vISS'))||0
+  };
+
+  // chave
+  const chMatch = xml.match(/Id="NFe(\d{44})"/);
+  const chave = chMatch ? chMatch[1] : '';
+
+  // status / cancelamento
+  const cStat = getTag(xml,'cStat');
+  let status = 'autorizada';
+  if(['101','151','135'].includes(cStat)) status = 'cancelada';
+
+  // itens (det)
+  const itens = [];
+  const detRe = /<det\s+nItem="(\d+)">([\s\S]*?)<\/det>/g;
+  let dm;
+  while((dm = detRe.exec(xml)) !== null){
+    const nItem = dm[1];
+    const detXml = dm[2];
+    const prodMatch = detXml.match(/<prod>([\s\S]*?)<\/prod>/);
+    const prodXml = prodMatch ? prodMatch[1] : '';
+    const impMatch = detXml.match(/<imposto>([\s\S]*?)<\/imposto>/);
+    const impXml = impMatch ? impMatch[1] : '';
+
+    // Blocos de imposto — captura o primeiro grupo de cada
+    const icmsBlock    = (impXml.match(/<ICMS[A-Za-z0-9]*>[\s\S]*?<\/ICMS[A-Za-z0-9]*>/)||[''])[0];
+    const icmsSnBlock  = (impXml.match(/<ICMSSN[0-9]*>[\s\S]*?<\/ICMSSN[0-9]*>/)||[''])[0];
+    const icmsAny      = icmsSnBlock || icmsBlock;
+    const ipiBlock     = (impXml.match(/<IPI>[\s\S]*?<\/IPI>/)||[''])[0];
+    const ipiTribBlock = (ipiBlock.match(/<IPITrib>[\s\S]*?<\/IPITrib>/)||[''])[0];
+    const ipiNTBlock   = (ipiBlock.match(/<IPINT>[\s\S]*?<\/IPINT>/)||[''])[0];
+    const pisBlock     = (impXml.match(/<PIS>[\s\S]*?<\/PIS>/)||[''])[0];
+    const cofBlock     = (impXml.match(/<COFINS>[\s\S]*?<\/COFINS>/)||[''])[0];
+    const iiBlock      = (impXml.match(/<II>[\s\S]*?<\/II>/)||[''])[0];
+    const issqnBlock   = (impXml.match(/<ISSQN>[\s\S]*?<\/ISSQN>/)||[''])[0];
+    const icmsUFDestBl = (detXml.match(/<ICMSUFDest>[\s\S]*?<\/ICMSUFDest>/)||[''])[0];
+
+    // GTIN
+    const cEAN     = getTag(prodXml,'cEAN');
+    const cEANTrib = getTag(prodXml,'cEANTrib');
+    const gtin     = (cEAN && cEAN !== 'SEM GTIN') ? cEAN : (cEANTrib && cEANTrib !== 'SEM GTIN' ? cEANTrib : '');
+
+    itens.push({
+      nItem, chave, mod, serie, nNF, dhEmi,
+      // Produto
+      cProd: getTag(prodXml,'cProd'),
+      cEAN, cEANTrib, gtin,
+      xProd: getTag(prodXml,'xProd'),
+      NCM: getTag(prodXml,'NCM'),
+      CEST: getTag(prodXml,'CEST'),
+      CFOP: getTag(prodXml,'CFOP'),
+      uCom: getTag(prodXml,'uCom'),
+      qCom: parseFloat(getTag(prodXml,'qCom'))||0,
+      vUnCom: parseFloat(getTag(prodXml,'vUnCom'))||0,
+      uTrib: getTag(prodXml,'uTrib'),
+      qTrib: parseFloat(getTag(prodXml,'qTrib'))||0,
+      vUnTrib: parseFloat(getTag(prodXml,'vUnTrib'))||0,
+      vProd: parseFloat(getTag(prodXml,'vProd'))||0,
+      vDesc: parseFloat(getTag(prodXml,'vDesc'))||0,
+      vFrete: parseFloat(getTag(prodXml,'vFrete'))||0,
+      vSeg: parseFloat(getTag(prodXml,'vSeg'))||0,
+      vOutro: parseFloat(getTag(prodXml,'vOutro'))||0,
+      indTot: getTag(prodXml,'indTot'),
+
+      // ICMS
+      orig:      getTag(icmsAny,'orig'),
+      CST_ICMS:  getTag(icmsAny,'CST') || getTag(icmsAny,'CSOSN'),
+      modBC:     getTag(icmsAny,'modBC'),
+      vBC_ICMS:  parseFloat(getTag(icmsAny,'vBC'))||0,
+      pICMS:     parseFloat(getTag(icmsAny,'pICMS'))||0,
+      vICMS:     parseFloat(getTag(icmsAny,'vICMS'))||0,
+      pRedBC:    parseFloat(getTag(icmsAny,'pRedBC'))||0,
+      // ICMS-ST
+      modBCST:   getTag(icmsAny,'modBCST'),
+      pMVAST:    parseFloat(getTag(icmsAny,'pMVAST'))||0,
+      pRedBCST:  parseFloat(getTag(icmsAny,'pRedBCST'))||0,
+      vBCST:     parseFloat(getTag(icmsAny,'vBCST'))||0,
+      pICMSST:   parseFloat(getTag(icmsAny,'pICMSST'))||0,
+      vICMSST:   parseFloat(getTag(icmsAny,'vICMSST'))||0,
+      vBCSTRet:  parseFloat(getTag(icmsAny,'vBCSTRet'))||0,
+      vICMSSTRet:parseFloat(getTag(icmsAny,'vICMSSTRet'))||0,
+      // FCP
+      pFCP:      parseFloat(getTag(icmsAny,'pFCP'))||0,
+      vFCP:      parseFloat(getTag(icmsAny,'vFCP'))||0,
+      pFCPST:    parseFloat(getTag(icmsAny,'pFCPST'))||0,
+      vFCPST:    parseFloat(getTag(icmsAny,'vFCPST'))||0,
+      vFCPSTRet: parseFloat(getTag(icmsAny,'vFCPSTRet'))||0,
+      // ICMS Desonerado
+      vICMSDeson: parseFloat(getTag(icmsAny,'vICMSDeson'))||0,
+      motDesICMS: getTag(icmsAny,'motDesICMS'),
+      // CSOSN específicos
+      pCredSN:   parseFloat(getTag(icmsAny,'pCredSN'))||0,
+      vCredICMSSN: parseFloat(getTag(icmsAny,'vCredICMSSN'))||0,
+
+      // IPI
+      cEnq:      getTag(ipiBlock,'cEnq'),
+      CST_IPI:   getTag(ipiTribBlock,'CST') || getTag(ipiNTBlock,'CST') || getTag(ipiBlock,'CST'),
+      vBC_IPI:   parseFloat(getTag(ipiTribBlock,'vBC'))||0,
+      pIPI:      parseFloat(getTag(ipiTribBlock,'pIPI'))||0,
+      qUnid_IPI: parseFloat(getTag(ipiTribBlock,'qUnid'))||0,
+      vUnid_IPI: parseFloat(getTag(ipiTribBlock,'vUnid'))||0,
+      vIPI:      parseFloat(getTag(ipiTribBlock,'vIPI'))||0,
+
+      // PIS
+      CST_PIS:   getTag(pisBlock,'CST'),
+      vBC_PIS:   parseFloat(getTag(pisBlock,'vBC'))||0,
+      pPIS:      parseFloat(getTag(pisBlock,'pPIS'))||0,
+      qBCProd_PIS: parseFloat(getTag(pisBlock,'qBCProd'))||0,
+      vAliqProd_PIS: parseFloat(getTag(pisBlock,'vAliqProd'))||0,
+      vPIS:      parseFloat(getTag(pisBlock,'vPIS'))||0,
+
+      // COFINS
+      CST_COFINS:getTag(cofBlock,'CST'),
+      vBC_COFINS:parseFloat(getTag(cofBlock,'vBC'))||0,
+      pCOFINS:   parseFloat(getTag(cofBlock,'pCOFINS'))||0,
+      qBCProd_COFINS: parseFloat(getTag(cofBlock,'qBCProd'))||0,
+      vAliqProd_COFINS: parseFloat(getTag(cofBlock,'vAliqProd'))||0,
+      vCOFINS:   parseFloat(getTag(cofBlock,'vCOFINS'))||0,
+
+      // II
+      vBC_II:    parseFloat(getTag(iiBlock,'vBC'))||0,
+      vDespAdu:  parseFloat(getTag(iiBlock,'vDespAdu'))||0,
+      vII:       parseFloat(getTag(iiBlock,'vII'))||0,
+      vIOF:      parseFloat(getTag(iiBlock,'vIOF'))||0,
+
+      // ISSQN
+      vBC_ISS:   parseFloat(getTag(issqnBlock,'vBC'))||0,
+      vAliq_ISS: parseFloat(getTag(issqnBlock,'vAliq'))||0,
+      vISSQN:    parseFloat(getTag(issqnBlock,'vISSQN'))||0,
+      cMunFG:    getTag(issqnBlock,'cMunFG'),
+      cListServ: getTag(issqnBlock,'cListServ'),
+
+      // Partilha / DIFAL (ICMSUFDest)
+      vBCUFDest:    parseFloat(getTag(icmsUFDestBl,'vBCUFDest'))||0,
+      vBCFCPUFDest: parseFloat(getTag(icmsUFDestBl,'vBCFCPUFDest'))||0,
+      pFCPUFDest:   parseFloat(getTag(icmsUFDestBl,'pFCPUFDest'))||0,
+      pICMSUFDest:  parseFloat(getTag(icmsUFDestBl,'pICMSUFDest'))||0,
+      pICMSInter:   parseFloat(getTag(icmsUFDestBl,'pICMSInter'))||0,
+      pICMSInterPart: parseFloat(getTag(icmsUFDestBl,'pICMSInterPart'))||0,
+      vFCPUFDest:   parseFloat(getTag(icmsUFDestBl,'vFCPUFDest'))||0,
+      vICMSUFDest:  parseFloat(getTag(icmsUFDestBl,'vICMSUFDest'))||0,
+      vICMSUFRemet: parseFloat(getTag(icmsUFDestBl,'vICMSUFRemet'))||0,
+
+      // Tributos aprox.
+      vTotTrib:  parseFloat(getTag(impXml,'vTotTrib'))||0,
+      // Info adicional
+      infAdProd: getTag(detXml,'infAdProd')
+    });
+  }
+
+  return {
+    arq: nomeArq, chave, mod, serie, nNF, dhEmi, tpNF, natOp, finNFe, status,
+    emitCnpj, emitNome, emitFant, emitUF,
+    destCnpj, destNome, destUF,
+    ...tot,
+    itens
+  };
+}
+
+function classificar(nota, cnpjProprio){
+  if(cnpjProprio){
+    if(limparCnpj(nota.emitCnpj) === cnpjProprio) return 'saida';
+    if(limparCnpj(nota.destCnpj) === cnpjProprio) return 'entrada';
+    return 'externa';
+  }
+  if(nota.tpNF === '0') return 'entrada';
+  if(nota.tpNF === '1') return 'saida';
+  return 'externa';
+}
+
+function autoDetectCNPJ(){
+  if(state.cnpjProprio) return state.cnpjProprio;
+  if(state.notas.length < 2) return '';
+  const freq = {};
+  state.notas.forEach(n => {
+    const e = limparCnpj(n.emitCnpj); if(e) freq[e] = (freq[e]||0)+1;
+    const d = limparCnpj(n.destCnpj); if(d) freq[d] = (freq[d]||0)+1;
+  });
+  const top = Object.keys(freq).sort((a,b)=> freq[b]-freq[a])[0];
+  return (top && freq[top] > 1) ? top : '';
+}
+
+function classificarTodas(){
+  const cnpj = autoDetectCNPJ();
+  state.notas.forEach(n => n._cls = classificar(n, cnpj));
+  return cnpj;
+}
+
+// ─── FILE READ ───
+async function readFiles(files){
+  const status = document.getElementById('upload-status');
+  status.textContent = `Processando ${files.length} arquivo(s)...`;
+  status.style.color = 'var(--text-muted)';
+  let lidos = 0, ignorados = 0;
+  for(const f of files){
+    try {
+      const text = await f.text();
+      const nota = parseXml(text, f.name);
+      if(nota){ state.notas.push(nota); lidos++; }
+      else ignorados++;
+    } catch(e){ ignorados++; console.warn(f.name, e); }
+  }
+  status.textContent = `✓ ${lidos} nota(s) lida(s)${ignorados? ' • '+ignorados+' ignorada(s)':''} • Total acumulado: ${state.notas.length}`;
+  status.style.color = 'var(--success)';
+  classificarTodas();
+  updateTopbar();
+  renderUpload();
+}
+
+function updateTopbar(){
+  const cnpj = autoDetectCNPJ();
+  document.getElementById('topbar-cnpj').textContent = cnpj ? 'CNPJ: '+fmCnpj(cnpj) : 'CNPJ não definido';
+  document.getElementById('topbar-count').textContent = state.notas.length+' notas';
+  const ent = state.notas.filter(n=>n._cls==='entrada').length;
+  const sai = state.notas.filter(n=>n._cls==='saida').length;
+  document.getElementById('badge-entradas').textContent = ent;
+  document.getElementById('badge-saidas').textContent = sai;
+}
+
+// ─── TABS ───
+function switchTab(tab){
+  state.activeTab = tab;
+  document.querySelectorAll('.nav-item[data-tab]').forEach(el => {
+    el.classList.toggle('active', el.dataset.tab === tab);
+  });
+  const titles = {upload:'Upload',dashboard:'Dashboard',entradas:'Entradas',saidas:'Saídas',participantes:'Participantes',produtos:'Produtos'};
+  document.getElementById('topbar-title').textContent = titles[tab] || tab;
+  if(tab==='upload') renderUpload();
+  else if(tab==='dashboard') renderDashboard();
+  else if(tab==='entradas') renderLista('entrada');
+  else if(tab==='saidas') renderLista('saida');
+  else if(tab==='participantes') renderParticipantes();
+  else if(tab==='produtos') renderProdutos();
+}
+
+// ─── RENDER: UPLOAD ───
+function renderUpload(){
+  const el = document.getElementById('page-content');
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-header"><h3>Configuração</h3></div>
+      <div class="card-body">
+        <label class="config-label">CNPJ próprio (separação automática entrada/saída)</label>
+        <input type="text" id="cnpj-input" class="config-input" placeholder="00.000.000/0000-00" value="${state.cnpjProprio? fmCnpj(state.cnpjProprio):''}" style="max-width:340px;">
+        <p style="margin-top:8px;font-size:12px;color:var(--text-muted);">Se vazio, o CNPJ mais frequente é detectado automaticamente.</p>
+      </div>
+    </div>
+
+    <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+      <h3>Selecione ou arraste arquivos XML</h3>
+      <p>NF-e (Mod. 55) e NFC-e (Mod. 65) — múltipla seleção</p>
+      <input type="file" id="file-input" accept=".xml" multiple>
+      <div id="upload-status" style="margin-top:14px;font-size:12px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;"></div>
+    </div>
+
+    ${state.notas.length ? `
+    <div class="card" style="margin-top:20px;">
+      <div class="card-header">
+        <h3>Arquivos processados (${state.notas.length})</h3>
+        <button class="btn btn-secondary" onclick="limparTudo()">Limpar tudo</button>
+      </div>
+      <div class="card-body" style="max-height:400px;overflow:auto;">
+        <div class="file-list">
+          ${state.notas.slice(-50).reverse().map(n => `
+            <div class="file-item">
+              <span class="tag tag-${n.mod==='55'?'blue':'purple'}">Mod ${n.mod}</span>
+              <span class="name">${n.arq}</span>
+              <span class="size">${n.nNF}/${n.serie}</span>
+              <span class="status tag tag-${n._cls==='entrada'?'green':n._cls==='saida'?'red':'gray'}">${n._cls||'?'}</span>
+            </div>
+          `).join('')}
+        </div>
+        ${state.notas.length>50?`<p style="color:var(--text-muted);font-size:11px;margin-top:10px;text-align:center;">Mostrando 50 de ${state.notas.length}</p>`:''}
+      </div>
+    </div>
+    `:''}
+  `;
+
+  const inp = document.getElementById('file-input');
+  const drop = document.getElementById('drop-zone');
+  inp.addEventListener('change', e => { if(e.target.files.length) readFiles(e.target.files); });
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragover'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+  drop.addEventListener('drop', e => {
+    e.preventDefault(); drop.classList.remove('dragover');
+    if(e.dataTransfer.files.length) readFiles(e.dataTransfer.files);
+  });
+  document.getElementById('cnpj-input').addEventListener('input', e => {
+    state.cnpjProprio = limparCnpj(e.target.value);
+    classificarTodas(); updateTopbar();
+  });
+}
+
+function limparTudo(){
+  state.notas = []; state.cnpjProprio = '';
+  updateTopbar(); renderUpload();
+}
+
+// ─── RENDER: DASHBOARD ───
+function totalizar(arr){
+  const t = {n:arr.length, vNF:0, vProd:0, vDesc:0, vFrete:0, vSeg:0, vOutro:0,
+    vBC:0, vICMS:0, vICMSDeson:0, vFCP:0, vBCST:0, vST:0, vFCPST:0, vFCPSTRet:0,
+    vIPI:0, vIPIDevol:0, vPIS:0, vCOFINS:0, vII:0, vISS:0, vServ:0, vTotTrib:0,
+    mod55:0, mod65:0, canc:0};
+  arr.forEach(n => {
+    t.vNF+=n.vNF; t.vProd+=n.vProd; t.vDesc+=n.vDesc; t.vFrete+=n.vFrete; t.vSeg+=n.vSeg; t.vOutro+=n.vOutro;
+    t.vBC+=n.vBC; t.vICMS+=n.vICMS; t.vICMSDeson+=n.vICMSDeson||0; t.vFCP+=n.vFCP||0;
+    t.vBCST+=n.vBCST; t.vST+=n.vST; t.vFCPST+=n.vFCPST||0; t.vFCPSTRet+=n.vFCPSTRet||0;
+    t.vIPI+=n.vIPI; t.vIPIDevol+=n.vIPIDevol||0; t.vPIS+=n.vPIS; t.vCOFINS+=n.vCOFINS;
+    t.vII+=n.vII||0; t.vISS+=n.vISS||0; t.vServ+=n.vServ||0; t.vTotTrib+=n.vTotTrib||0;
+    if(n.mod==='55') t.mod55++;
+    if(n.mod==='65') t.mod65++;
+    if(n.status==='cancelada') t.canc++;
+  });
+  return t;
+}
+
+function renderDashboard(){
+  const el = document.getElementById('page-content');
+  if(!state.notas.length){ el.innerHTML = `<div class="card"><div class="empty">Nenhuma nota carregada. Vá para Upload.</div></div>`; return; }
+  const ent = state.notas.filter(n=>n._cls==='entrada');
+  const sai = state.notas.filter(n=>n._cls==='saida');
+  const tEnt = totalizar(ent), tSai = totalizar(sai), tAll = totalizar(state.notas);
+
+  el.innerHTML = `
+    <div class="grid-4" style="margin-bottom:20px;">
+      <div class="stat-card">
+        <div class="stat-label">Total Notas</div>
+        <div class="stat-value">${fmtInt(tAll.n)}</div>
+        <div class="stat-sub">${tAll.mod55} mod.55 • ${tAll.mod65} mod.65</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Entradas</div>
+        <div class="stat-value" style="color:var(--success);">${fmtInt(tEnt.n)}</div>
+        <div class="stat-sub">R$ ${fmtMoney(tEnt.vNF)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Saídas</div>
+        <div class="stat-value" style="color:var(--info);">${fmtInt(tSai.n)}</div>
+        <div class="stat-sub">R$ ${fmtMoney(tSai.vNF)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Canceladas</div>
+        <div class="stat-value" style="color:var(--danger);">${fmtInt(tAll.canc)}</div>
+        <div class="stat-sub">${((tAll.canc/Math.max(tAll.n,1))*100).toFixed(1)}% do total</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><h3>Saídas — Composição Tributária</h3></div>
+        <div class="card-body">
+          ${linhasTotais(tSai)}
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Entradas — Composição Tributária</h3></div>
+        <div class="card-body">
+          ${linhasTotais(tEnt)}
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><h3>Evolução por Dia</h3></div>
+        <div class="card-body"><div class="chart-container"><canvas id="ch-evol"></canvas></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>Top 10 CFOP (valor)</h3></div>
+        <div class="card-body"><div class="chart-container"><canvas id="ch-cfop"></canvas></div></div>
+      </div>
+    </div>
+  `;
+
+  renderChartEvol();
+  renderChartCfop();
+}
+
+function linhasTotais(t){
+  const linha = (lab,val,col,bold) => `
+    <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;${bold?'font-weight:600;':''}">
+      <span style="color:${bold?'var(--text-primary)':'var(--text-secondary)'};">${lab}</span>
+      <span class="mono" style="font-family:'JetBrains Mono',monospace;${col?'color:'+col+';':''}">R$ ${fmtMoney(val)}</span>
+    </div>`;
+  return linha('Vl. Produtos', t.vProd) +
+         linha('Vl. Frete', t.vFrete) +
+         linha('Vl. Seguro', t.vSeg) +
+         linha('Vl. Outras Desp.', t.vOutro) +
+         linha('Vl. Desconto', t.vDesc, 'var(--warning)') +
+         linha('BC ICMS', t.vBC, null, true) +
+         linha('Vl. ICMS', t.vICMS, 'var(--accent-light)') +
+         linha('Vl. ICMS Desonerado', t.vICMSDeson) +
+         linha('Vl. FCP', t.vFCP) +
+         linha('BC ICMS-ST', t.vBCST, null, true) +
+         linha('Vl. ICMS-ST', t.vST, 'var(--purple)') +
+         linha('Vl. FCP-ST', t.vFCPST) +
+         linha('Vl. IPI', t.vIPI, 'var(--info)') +
+         linha('Vl. PIS', t.vPIS) +
+         linha('Vl. COFINS', t.vCOFINS) +
+         (t.vII>0 ? linha('Vl. II', t.vII) : '') +
+         (t.vISS>0 ? linha('Vl. ISS', t.vISS) : '') +
+         (t.vTotTrib>0 ? linha('Vl. Trib. Aprox.', t.vTotTrib, 'var(--text-muted)') : '') +
+         `<div style="display:flex;justify-content:space-between;padding:14px 0 4px;font-size:14px;font-weight:700;border-top:2px solid var(--border);margin-top:6px;">
+            <span>Total NF</span>
+            <span class="mono" style="font-family:'JetBrains Mono',monospace;color:var(--accent-light);">R$ ${fmtMoney(t.vNF)}</span>
+          </div>`;
+}
+
+let chartEvol, chartCfop;
+function renderChartEvol(){
+  const byDay = {};
+  state.notas.forEach(n => {
+    const d = (n.dhEmi||'').slice(0,10);
+    if(!d) return;
+    if(!byDay[d]) byDay[d] = {ent:0,sai:0};
+    if(n._cls==='entrada') byDay[d].ent += n.vNF;
+    else if(n._cls==='saida') byDay[d].sai += n.vNF;
+  });
+  const labels = Object.keys(byDay).sort();
+  const ctx = document.getElementById('ch-evol').getContext('2d');
+  if(chartEvol) chartEvol.destroy();
+  chartEvol = new Chart(ctx, {
+    type:'line',
+    data:{labels:labels.map(d=>fmtDate(d+'T00:00:00')),datasets:[
+      {label:'Saídas',data:labels.map(d=>byDay[d].sai),borderColor:'#06b6d4',backgroundColor:'rgba(6,182,212,.15)',tension:.3,fill:true},
+      {label:'Entradas',data:labels.map(d=>byDay[d].ent),borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.15)',tension:.3,fill:true}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8b95b0'}}},scales:{x:{ticks:{color:'#8b95b0'},grid:{display:false}},y:{ticks:{color:'#8b95b0',callback:v=>'R$ '+fmtMoney(v)},grid:{color:'rgba(42,52,85,.3)'}}}}
+  });
+}
+
+function renderChartCfop(){
+  const byCfop = {};
+  state.notas.forEach(n => n.itens.forEach(it => {
+    if(!it.CFOP) return;
+    byCfop[it.CFOP] = (byCfop[it.CFOP]||0) + it.vProd;
+  }));
+  const top = Object.entries(byCfop).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const ctx = document.getElementById('ch-cfop').getContext('2d');
+  if(chartCfop) chartCfop.destroy();
+  chartCfop = new Chart(ctx, {
+    type:'bar',
+    data:{labels:top.map(t=>t[0]),datasets:[{label:'Valor',data:top.map(t=>t[1]),backgroundColor:'rgba(79,109,245,.6)',borderColor:'#4f6df5',borderWidth:1}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#8b95b0'},grid:{display:false}},y:{ticks:{color:'#8b95b0',callback:v=>'R$ '+fmtMoney(v)},grid:{color:'rgba(42,52,85,.3)'}}}}
+  });
+}
+
+// ─── RENDER: LISTA (entradas/saidas) ───
+function renderLista(cls){
+  const el = document.getElementById('page-content');
+  const arr = state.notas.filter(n=>n._cls===cls).sort((a,b)=>(a.dhEmi||'').localeCompare(b.dhEmi||''));
+  const t = totalizar(arr);
+  if(!arr.length){ el.innerHTML = `<div class="card"><div class="empty">Nenhuma nota de ${cls}.</div></div>`; return; }
+
+  el.innerHTML = `
+    <div class="grid-4" style="margin-bottom:20px;">
+      <div class="stat-card"><div class="stat-label">Notas</div><div class="stat-value">${fmtInt(t.n)}</div></div>
+      <div class="stat-card"><div class="stat-label">Vl. Produtos</div><div class="stat-value" style="font-size:20px;">R$ ${fmtMoney(t.vProd)}</div></div>
+      <div class="stat-card"><div class="stat-label">Vl. ICMS</div><div class="stat-value" style="font-size:20px;">R$ ${fmtMoney(t.vICMS)}</div></div>
+      <div class="stat-card"><div class="stat-label">Vl. Total NF</div><div class="stat-value" style="font-size:20px;color:var(--accent-light);">R$ ${fmtMoney(t.vNF)}</div></div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:20px;">
+      <div class="stat-card"><div class="stat-label">Vl. ICMS-ST</div><div class="stat-value" style="font-size:18px;color:var(--purple);">R$ ${fmtMoney(t.vST)}</div></div>
+      <div class="stat-card"><div class="stat-label">Vl. IPI</div><div class="stat-value" style="font-size:18px;color:var(--info);">R$ ${fmtMoney(t.vIPI)}</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3>Notas de ${cls === 'entrada' ? 'Entrada' : 'Saída'}</h3>
+        <span style="font-size:12px;color:var(--text-muted);">${arr.length} documento(s) — clique para detalhar</span>
+      </div>
+      <div class="card-body" style="max-height:600px;overflow:auto;padding:0;">
+        <table class="data-table">
+          <thead><tr>
+            <th>Emissão</th><th>Mod</th><th>Sér</th><th>Núm</th><th>Contraparte</th><th>CNPJ</th><th>UF</th><th>Status</th>
+            <th class="right">Vl. Prod</th><th class="right">BC ICMS</th><th class="right">Vl. ICMS</th><th class="right">Vl. ST</th><th class="right">Vl. IPI</th><th class="right">Vl. NF</th>
+          </tr></thead>
+          <tbody>
+            ${arr.map((n,idx) => {
+              const contraNome = cls==='saida'? n.destNome : n.emitNome;
+              const contraCnpj = cls==='saida'? n.destCnpj : n.emitCnpj;
+              const contraUF = cls==='saida'? n.destUF : n.emitUF;
+              const realIdx = state.notas.indexOf(n);
+              return `<tr style="cursor:pointer;" onclick="abrirDetalheNota(${realIdx})">
+                <td class="mono">${fmtDate(n.dhEmi)}</td>
+                <td><span class="tag tag-${n.mod==='55'?'blue':'purple'}">${n.mod}</span></td>
+                <td class="mono">${n.serie}</td>
+                <td class="mono">${n.nNF}</td>
+                <td>${(contraNome||'').substring(0,35)}</td>
+                <td class="mono">${fmCnpj(contraCnpj)}</td>
+                <td class="mono">${contraUF||''}</td>
+                <td>${n.status==='cancelada'?'<span class="tag tag-red">Canc</span>':'<span class="tag tag-green">OK</span>'}</td>
+                <td class="mono right">${fmtMoney(n.vProd)}</td>
+                <td class="mono right">${fmtMoney(n.vBC)}</td>
+                <td class="mono right">${fmtMoney(n.vICMS)}</td>
+                <td class="mono right">${fmtMoney(n.vST)}</td>
+                <td class="mono right">${fmtMoney(n.vIPI)}</td>
+                <td class="mono right" style="font-weight:600;color:var(--text-primary);">${fmtMoney(n.vNF)}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ─── MODAL DETALHE NOTA ───
+function abrirDetalheNota(idx){
+  const n = state.notas[idx];
+  if(!n) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'modal-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center;padding:30px;backdrop-filter:blur(4px);';
+  overlay.onclick = (e) => { if(e.target===overlay) overlay.remove(); };
+
+  const linha = (lab,val,col) => `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;"><span style="color:var(--text-secondary);">${lab}</span><span class="mono" style="font-family:'JetBrains Mono',monospace;${col?'color:'+col+';':''}">${val}</span></div>`;
+
+  const itensHtml = n.itens.map(it => `
+    <tr>
+      <td class="mono">${it.nItem}</td>
+      <td class="mono">${it.cProd||''}</td>
+      <td>${(it.xProd||'').substring(0,40)}</td>
+      <td class="mono">${it.gtin||'<span style="color:var(--text-muted);">—</span>'}</td>
+      <td class="mono">${it.NCM||''}</td>
+      <td class="mono">${it.CEST||''}</td>
+      <td class="mono">${it.CFOP||''}</td>
+      <td class="mono">${it.uCom||''}</td>
+      <td class="mono right">${fmtMoney(it.qCom)}</td>
+      <td class="mono right">${fmtMoney(it.vUnCom)}</td>
+      <td class="mono right" style="font-weight:600;">${fmtMoney(it.vProd)}</td>
+      <td class="mono">${it.CST_ICMS||''}</td>
+      <td class="mono right">${fmtMoney(it.vBC_ICMS)}</td>
+      <td class="mono right">${it.pICMS?it.pICMS.toFixed(2)+'%':''}</td>
+      <td class="mono right" style="color:var(--accent-light);">${fmtMoney(it.vICMS)}</td>
+      <td class="mono right">${fmtMoney(it.vBCST)}</td>
+      <td class="mono right" style="color:var(--purple);">${fmtMoney(it.vICMSST)}</td>
+      <td class="mono right">${fmtMoney(it.vFCP)}</td>
+      <td class="mono right">${fmtMoney(it.vFCPST)}</td>
+      <td class="mono right">${fmtMoney(it.vICMSDeson)}</td>
+      <td class="mono">${it.CST_IPI||''}</td>
+      <td class="mono right">${it.pIPI?it.pIPI.toFixed(2)+'%':''}</td>
+      <td class="mono right" style="color:var(--info);">${fmtMoney(it.vIPI)}</td>
+      <td class="mono">${it.CST_PIS||''}</td>
+      <td class="mono right">${it.pPIS?it.pPIS.toFixed(2)+'%':''}</td>
+      <td class="mono right">${fmtMoney(it.vPIS)}</td>
+      <td class="mono">${it.CST_COFINS||''}</td>
+      <td class="mono right">${it.pCOFINS?it.pCOFINS.toFixed(2)+'%':''}</td>
+      <td class="mono right">${fmtMoney(it.vCOFINS)}</td>
+      <td class="mono right">${fmtMoney(it.vII)}</td>
+      <td class="mono right">${fmtMoney(it.vISSQN)}</td>
+      <td class="mono right">${fmtMoney(it.vICMSUFDest)}</td>
+      <td class="mono right">${fmtMoney(it.vICMSUFRemet)}</td>
+    </tr>
+  `).join('');
+
+  overlay.innerHTML = `
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:14px;max-width:1500px;width:100%;max-height:90vh;overflow:auto;">
+      <div style="padding:20px 24px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--bg-card);z-index:10;">
+        <div>
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">NF-e Mod ${n.mod} • ${n._cls.toUpperCase()}</div>
+          <div style="font-size:18px;font-weight:700;margin-top:2px;">Nº ${n.nNF} / Série ${n.serie} <span style="color:var(--text-muted);font-weight:400;font-size:13px;">— ${fmtDate(n.dhEmi)}</span></div>
+        </div>
+        <button onclick="document.getElementById('modal-overlay').remove()" style="background:transparent;border:1px solid var(--border);color:var(--text-secondary);width:36px;height:36px;border-radius:8px;cursor:pointer;font-size:18px;">×</button>
+      </div>
+
+      <div style="padding:24px;">
+        <div class="grid-2" style="margin-bottom:20px;">
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:600;margin-bottom:8px;">Emitente</div>
+            <div style="font-weight:600;font-size:13px;">${n.emitNome||''}</div>
+            <div class="mono" style="font-size:12px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">${fmCnpj(n.emitCnpj)} • ${n.emitUF||''}</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;font-weight:600;margin-bottom:8px;">Destinatário</div>
+            <div style="font-weight:600;font-size:13px;">${n.destNome||''}</div>
+            <div class="mono" style="font-size:12px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">${fmCnpj(n.destCnpj)} • ${n.destUF||''}</div>
+          </div>
+        </div>
+
+        <div style="padding:10px 14px;background:var(--bg-secondary);border-radius:8px;margin-bottom:20px;font-size:12px;">
+          <span style="color:var(--text-muted);">Chave:</span> <span class="mono" style="font-family:'JetBrains Mono',monospace;">${n.chave}</span><br>
+          <span style="color:var(--text-muted);">Nat. Operação:</span> ${n.natOp||''}
+        </div>
+
+        <div class="grid-2" style="margin-bottom:24px;">
+          <div class="card" style="margin:0;">
+            <div class="card-header"><h3>Totais da Nota</h3></div>
+            <div class="card-body">${linhasTotais({...totalizar([n]),n:1})}</div>
+          </div>
+          <div class="card" style="margin:0;">
+            <div class="card-header"><h3>Resumo Tributário</h3></div>
+            <div class="card-body">
+              ${linha('Total Trib. Aprox.', 'R$ '+fmtMoney(n.vTotTrib), 'var(--warning)')}
+              ${linha('% sobre Vl. Prod', n.vProd? ((n.vTotTrib/n.vProd)*100).toFixed(2)+'%' : '—')}
+              ${linha('Carga ICMS efetiva', n.vProd? ((n.vICMS/n.vProd)*100).toFixed(2)+'%' : '—')}
+              ${linha('Carga IPI efetiva', n.vProd? ((n.vIPI/n.vProd)*100).toFixed(2)+'%' : '—')}
+              ${linha('Carga PIS+COFINS', n.vProd? (((n.vPIS+n.vCOFINS)/n.vProd)*100).toFixed(2)+'%' : '—')}
+              ${linha('Itens', fmtInt(n.itens.length))}
+              ${linha('Status', n.status==='cancelada'?'❌ CANCELADA':'✓ Autorizada', n.status==='cancelada'?'var(--danger)':'var(--success)')}
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin:0;">
+          <div class="card-header"><h3>Itens (${n.itens.length}) — Destaque Completo de Impostos</h3></div>
+          <div style="overflow:auto;max-height:500px;">
+            <table class="data-table" style="font-size:11px;">
+              <thead><tr>
+                <th>#</th><th>Cód</th><th>Descrição</th><th>GTIN</th><th>NCM</th><th>CEST</th><th>CFOP</th><th>Un</th>
+                <th class="right">Qtd</th><th class="right">V.Unit</th><th class="right">V.Prod</th>
+                <th>CST</th><th class="right">BC ICMS</th><th class="right">%ICMS</th><th class="right">V.ICMS</th>
+                <th class="right">BC ST</th><th class="right">V.ST</th><th class="right">V.FCP</th><th class="right">V.FCPST</th><th class="right">V.Deson</th>
+                <th>CST IPI</th><th class="right">%IPI</th><th class="right">V.IPI</th>
+                <th>CST PIS</th><th class="right">%PIS</th><th class="right">V.PIS</th>
+                <th>CST COF</th><th class="right">%COF</th><th class="right">V.COF</th>
+                <th class="right">V.II</th><th class="right">V.ISS</th><th class="right">DIFAL Dest</th><th class="right">DIFAL Rem</th>
+              </tr></thead>
+              <tbody>${itensHtml}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+// ─── RENDER: PARTICIPANTES ───
+function renderParticipantes(){
+  const el = document.getElementById('page-content');
+  if(!state.notas.length){ el.innerHTML = `<div class="card"><div class="empty">Nenhuma nota carregada.</div></div>`; return; }
+  const map = {};
+  const cnpjProprio = autoDetectCNPJ();
+  state.notas.forEach(n => {
+    [['emit',n.emitCnpj,n.emitNome,n.emitUF],['dest',n.destCnpj,n.destNome,n.destUF]].forEach(([t,c,nm,uf]) => {
+      const key = limparCnpj(c);
+      if(!key || key===cnpjProprio) return;
+      if(!map[key]) map[key] = {cnpj:key, nome:nm, uf:uf, qtd:0, valor:0};
+      map[key].qtd++;
+      map[key].valor += n.vNF;
+    });
+  });
+  const list = Object.values(map).sort((a,b)=>b.valor-a.valor);
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-header"><h3>Participantes (${list.length})</h3></div>
+      <div class="card-body" style="max-height:700px;overflow:auto;padding:0;">
+        <table class="data-table">
+          <thead><tr><th>CNPJ/CPF</th><th>Nome</th><th>UF</th><th class="right">Qtd Notas</th><th class="right">Vl. Total</th></tr></thead>
+          <tbody>
+            ${list.map(p => `<tr>
+              <td class="mono">${fmCnpj(p.cnpj)}</td>
+              <td>${(p.nome||'').substring(0,60)}</td>
+              <td class="mono">${p.uf||''}</td>
+              <td class="mono right">${fmtInt(p.qtd)}</td>
+              <td class="mono right">R$ ${fmtMoney(p.valor)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ─── RENDER: PRODUTOS ───
+function renderProdutos(){
+  const el = document.getElementById('page-content');
+  if(!state.notas.length){ el.innerHTML = `<div class="card"><div class="empty">Nenhuma nota carregada.</div></div>`; return; }
+  const map = {};
+  state.notas.forEach(n => n.itens.forEach(it => {
+    const key = (it.cProd||'') + '|' + (it.gtin||'');
+    if(!key.replace('|','')) return;
+    if(!map[key]) map[key] = {cProd:it.cProd, gtin:it.gtin, xProd:it.xProd, NCM:it.NCM, CEST:it.CEST, CFOP:it.CFOP, uCom:it.uCom, qtd:0, vProd:0, vBC:0, vICMS:0, vST:0, vFCP:0, vIPI:0, vPIS:0, vCOFINS:0};
+    map[key].qtd += it.qCom;
+    map[key].vProd += it.vProd;
+    map[key].vBC += it.vBC_ICMS;
+    map[key].vICMS += it.vICMS;
+    map[key].vST += it.vICMSST;
+    map[key].vFCP += (it.vFCP||0) + (it.vFCPST||0);
+    map[key].vIPI += it.vIPI;
+    map[key].vPIS += it.vPIS;
+    map[key].vCOFINS += it.vCOFINS;
+  }));
+  const list = Object.values(map).sort((a,b)=>b.vProd-a.vProd);
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-header"><h3>Produtos (${list.length}) — Destaque de Impostos</h3></div>
+      <div class="card-body" style="max-height:700px;overflow:auto;padding:0;">
+        <table class="data-table" style="font-size:12px;">
+          <thead><tr>
+            <th>Código</th><th>GTIN</th><th>Descrição</th><th>NCM</th><th>CEST</th><th>CFOP</th><th>Un</th>
+            <th class="right">Qtd</th><th class="right">Vl. Prod</th><th class="right">BC ICMS</th><th class="right">Vl. ICMS</th><th class="right">Vl. ST</th><th class="right">Vl. FCP</th><th class="right">Vl. IPI</th><th class="right">Vl. PIS</th><th class="right">Vl. COFINS</th>
+          </tr></thead>
+          <tbody>
+            ${list.map(p => `<tr>
+              <td class="mono">${p.cProd||''}</td>
+              <td class="mono">${p.gtin||'<span style="color:var(--text-muted);">—</span>'}</td>
+              <td>${(p.xProd||'').substring(0,40)}</td>
+              <td class="mono">${p.NCM||''}</td>
+              <td class="mono">${p.CEST||''}</td>
+              <td class="mono">${p.CFOP||''}</td>
+              <td class="mono">${p.uCom||''}</td>
+              <td class="mono right">${fmtMoney(p.qtd)}</td>
+              <td class="mono right">${fmtMoney(p.vProd)}</td>
+              <td class="mono right">${fmtMoney(p.vBC)}</td>
+              <td class="mono right" style="color:var(--accent-light);">${fmtMoney(p.vICMS)}</td>
+              <td class="mono right" style="color:var(--purple);">${fmtMoney(p.vST)}</td>
+              <td class="mono right">${fmtMoney(p.vFCP)}</td>
+              <td class="mono right" style="color:var(--info);">${fmtMoney(p.vIPI)}</td>
+              <td class="mono right">${fmtMoney(p.vPIS)}</td>
+              <td class="mono right">${fmtMoney(p.vCOFINS)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+// ─── EXPORT EXCEL ───
+function exportXLSX(){
+  if(!state.notas.length){ alert('Nenhuma nota carregada.'); return; }
+  classificarTodas();
+  const cnpjProprio = autoDetectCNPJ();
+
+  // Aba 1: Resumo
+  const tEnt = totalizar(state.notas.filter(n=>n._cls==='entrada'));
+  const tSai = totalizar(state.notas.filter(n=>n._cls==='saida'));
+  const tExt = totalizar(state.notas.filter(n=>n._cls==='externa'));
+  const blocoTot = (lab,t) => [
+    {Indicador:'', Valor:''},
+    {Indicador:'— '+lab+' —', Valor:''},
+    {Indicador:'Qtd notas', Valor:t.n},
+    {Indicador:'Vl. Produtos', Valor:t.vProd},
+    {Indicador:'Vl. Frete', Valor:t.vFrete},
+    {Indicador:'Vl. Seguro', Valor:t.vSeg},
+    {Indicador:'Vl. Outras Desp.', Valor:t.vOutro},
+    {Indicador:'Vl. Desconto', Valor:t.vDesc},
+    {Indicador:'BC ICMS', Valor:t.vBC},
+    {Indicador:'Vl. ICMS', Valor:t.vICMS},
+    {Indicador:'Vl. ICMS Desonerado', Valor:t.vICMSDeson},
+    {Indicador:'Vl. FCP', Valor:t.vFCP},
+    {Indicador:'BC ICMS-ST', Valor:t.vBCST},
+    {Indicador:'Vl. ICMS-ST', Valor:t.vST},
+    {Indicador:'Vl. FCP-ST', Valor:t.vFCPST},
+    {Indicador:'Vl. FCP-ST Retido', Valor:t.vFCPSTRet},
+    {Indicador:'Vl. II', Valor:t.vII},
+    {Indicador:'Vl. IPI', Valor:t.vIPI},
+    {Indicador:'Vl. IPI Devol.', Valor:t.vIPIDevol},
+    {Indicador:'Vl. PIS', Valor:t.vPIS},
+    {Indicador:'Vl. COFINS', Valor:t.vCOFINS},
+    {Indicador:'Vl. Serviços', Valor:t.vServ},
+    {Indicador:'Vl. ISS', Valor:t.vISS},
+    {Indicador:'Vl. Trib. Aprox.', Valor:t.vTotTrib},
+    {Indicador:'Vl. Total NF', Valor:t.vNF}
+  ];
+  const resumo = [
+    {Indicador:'CNPJ próprio', Valor: cnpjProprio? fmCnpj(cnpjProprio):'(não definido)'},
+    {Indicador:'Total de notas', Valor: state.notas.length},
+    {Indicador:'Mod. 55 (NF-e)', Valor: state.notas.filter(n=>n.mod==='55').length},
+    {Indicador:'Mod. 65 (NFC-e)', Valor: state.notas.filter(n=>n.mod==='65').length},
+    {Indicador:'Canceladas', Valor: state.notas.filter(n=>n.status==='cancelada').length},
+    ...blocoTot('ENTRADAS', tEnt),
+    ...blocoTot('SAÍDAS', tSai),
+    ...(tExt.n? blocoTot('EXTERNAS', tExt) : [])
+  ];
+
+  // Aba 2: Notas (cabeçalho)
+  const notasRows = state.notas.map(n => ({
+    Classificacao: n._cls,
+    Arquivo: n.arq,
+    Chave: n.chave,
+    Modelo: n.mod,
+    Serie: n.serie,
+    Numero: n.nNF,
+    Emissao: fmtDate(n.dhEmi),
+    NaturezaOp: n.natOp,
+    FinNFe: n.finNFe,
+    Status: n.status,
+    Emit_CNPJ: n.emitCnpj,
+    Emit_Nome: n.emitNome,
+    Emit_UF: n.emitUF,
+    Dest_CNPJ: n.destCnpj,
+    Dest_Nome: n.destNome,
+    Dest_UF: n.destUF,
+    vBC: n.vBC,
+    vICMS: n.vICMS,
+    vICMSDeson: n.vICMSDeson,
+    vFCP: n.vFCP,
+    vBCST: n.vBCST,
+    vST: n.vST,
+    vFCPST: n.vFCPST,
+    vFCPSTRet: n.vFCPSTRet,
+    vProd: n.vProd,
+    vFrete: n.vFrete,
+    vSeg: n.vSeg,
+    vDesc: n.vDesc,
+    vOutro: n.vOutro,
+    vII: n.vII,
+    vIPI: n.vIPI,
+    vIPIDevol: n.vIPIDevol,
+    vPIS: n.vPIS,
+    vCOFINS: n.vCOFINS,
+    vISS: n.vISS,
+    vServ: n.vServ,
+    vNF: n.vNF,
+    vTotTrib: n.vTotTrib,
+    Qtd_Itens: n.itens.length
+  }));
+
+  // Aba 3: Itens — DESTAQUE COMPLETO DE IMPOSTOS
+  const itensRows = [];
+  state.notas.forEach(n => {
+    n.itens.forEach(it => {
+      itensRows.push({
+        Classificacao: n._cls,
+        Chave: n.chave,
+        Modelo: n.mod,
+        Serie: n.serie,
+        Numero: n.nNF,
+        Emissao: fmtDate(n.dhEmi),
+        Status: n.status,
+        Emit_CNPJ: n.emitCnpj,
+        Emit_Nome: n.emitNome,
+        Emit_UF: n.emitUF,
+        Dest_CNPJ: n.destCnpj,
+        Dest_Nome: n.destNome,
+        Dest_UF: n.destUF,
+        // Produto
+        nItem: it.nItem,
+        cProd: it.cProd,
+        GTIN: it.gtin,
+        cEAN: it.cEAN,
+        cEANTrib: it.cEANTrib,
+        xProd: it.xProd,
+        NCM: it.NCM,
+        CEST: it.CEST,
+        CFOP: it.CFOP,
+        uCom: it.uCom,
+        qCom: it.qCom,
+        vUnCom: it.vUnCom,
+        uTrib: it.uTrib,
+        qTrib: it.qTrib,
+        vUnTrib: it.vUnTrib,
+        vProd: it.vProd,
+        vDesc: it.vDesc,
+        vFrete: it.vFrete,
+        vSeg: it.vSeg,
+        vOutro: it.vOutro,
+        indTot: it.indTot,
+        // ICMS
+        Origem: it.orig,
+        CST_CSOSN: it.CST_ICMS,
+        modBC_ICMS: it.modBC,
+        vBC_ICMS: it.vBC_ICMS,
+        pRedBC_ICMS: it.pRedBC,
+        pICMS: it.pICMS,
+        vICMS: it.vICMS,
+        vICMSDeson: it.vICMSDeson,
+        motDesICMS: it.motDesICMS,
+        // ICMS-ST
+        modBCST: it.modBCST,
+        pMVAST: it.pMVAST,
+        pRedBCST: it.pRedBCST,
+        vBCST: it.vBCST,
+        pICMSST: it.pICMSST,
+        vICMSST: it.vICMSST,
+        vBCSTRet: it.vBCSTRet,
+        vICMSSTRet: it.vICMSSTRet,
+        // FCP
+        pFCP: it.pFCP,
+        vFCP: it.vFCP,
+        pFCPST: it.pFCPST,
+        vFCPST: it.vFCPST,
+        vFCPSTRet: it.vFCPSTRet,
+        // CSOSN
+        pCredSN: it.pCredSN,
+        vCredICMSSN: it.vCredICMSSN,
+        // IPI
+        cEnq_IPI: it.cEnq,
+        CST_IPI: it.CST_IPI,
+        vBC_IPI: it.vBC_IPI,
+        pIPI: it.pIPI,
+        qUnid_IPI: it.qUnid_IPI,
+        vUnid_IPI: it.vUnid_IPI,
+        vIPI: it.vIPI,
+        // PIS
+        CST_PIS: it.CST_PIS,
+        vBC_PIS: it.vBC_PIS,
+        pPIS: it.pPIS,
+        qBCProd_PIS: it.qBCProd_PIS,
+        vAliqProd_PIS: it.vAliqProd_PIS,
+        vPIS: it.vPIS,
+        // COFINS
+        CST_COFINS: it.CST_COFINS,
+        vBC_COFINS: it.vBC_COFINS,
+        pCOFINS: it.pCOFINS,
+        qBCProd_COFINS: it.qBCProd_COFINS,
+        vAliqProd_COFINS: it.vAliqProd_COFINS,
+        vCOFINS: it.vCOFINS,
+        // II
+        vBC_II: it.vBC_II,
+        vDespAdu: it.vDespAdu,
+        vII: it.vII,
+        vIOF: it.vIOF,
+        // ISSQN
+        vBC_ISS: it.vBC_ISS,
+        vAliq_ISS: it.vAliq_ISS,
+        vISSQN: it.vISSQN,
+        cMunFG: it.cMunFG,
+        cListServ: it.cListServ,
+        // DIFAL / Partilha
+        vBCUFDest: it.vBCUFDest,
+        vBCFCPUFDest: it.vBCFCPUFDest,
+        pFCPUFDest: it.pFCPUFDest,
+        pICMSUFDest: it.pICMSUFDest,
+        pICMSInter: it.pICMSInter,
+        pICMSInterPart: it.pICMSInterPart,
+        vFCPUFDest: it.vFCPUFDest,
+        vICMSUFDest: it.vICMSUFDest,
+        vICMSUFRemet: it.vICMSUFRemet,
+        // Totais aprox.
+        vTotTrib_Item: it.vTotTrib,
+        infAdProd: it.infAdProd
+      });
+    });
+  });
+
+  // Aba: Produtos consolidados
+  const prodMap = {};
+  state.notas.forEach(n => n.itens.forEach(it => {
+    const key = (it.cProd||'') + '|' + (it.gtin||'');
+    if(!key.replace('|','')) return;
+    if(!prodMap[key]) prodMap[key] = {Codigo:it.cProd, GTIN:it.gtin, Descricao:it.xProd, NCM:it.NCM, CEST:it.CEST, CFOP:it.CFOP, Un:it.uCom, Qtd:0, vProd:0, vBC_ICMS:0, vICMS:0, vBCST:0, vICMSST:0, vFCP:0, vFCPST:0, vIPI:0, vPIS:0, vCOFINS:0};
+    prodMap[key].Qtd += it.qCom;
+    prodMap[key].vProd += it.vProd;
+    prodMap[key].vBC_ICMS += it.vBC_ICMS;
+    prodMap[key].vICMS += it.vICMS;
+    prodMap[key].vBCST += it.vBCST;
+    prodMap[key].vICMSST += it.vICMSST;
+    prodMap[key].vFCP += it.vFCP||0;
+    prodMap[key].vFCPST += it.vFCPST||0;
+    prodMap[key].vIPI += it.vIPI;
+    prodMap[key].vPIS += it.vPIS;
+    prodMap[key].vCOFINS += it.vCOFINS;
+  }));
+  const prodRows = Object.values(prodMap).sort((a,b)=>b.vProd-a.vProd);
+
+  // Aba 4: Participantes
+  const partMap = {};
+  state.notas.forEach(n => {
+    [['emit',n.emitCnpj,n.emitNome,n.emitUF],['dest',n.destCnpj,n.destNome,n.destUF]].forEach(([t,c,nm,uf]) => {
+      const key = limparCnpj(c);
+      if(!key) return;
+      if(!partMap[key]) partMap[key] = {CNPJ:key,Nome:nm,UF:uf,Qtd:0,Valor:0};
+      partMap[key].Qtd++;
+      partMap[key].Valor += n.vNF;
+    });
+  });
+  const partRows = Object.values(partMap).sort((a,b)=>b.Valor-a.Valor);
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(resumo), 'Resumo');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(notasRows), 'Notas');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(itensRows), 'Itens');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(prodRows), 'Produtos');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(partRows), 'Participantes');
+
+  const fname = `XML_NFe_Relatorio_${new Date().toISOString().slice(0,10)}.xlsx`;
+  XLSX.writeFile(wb, fname);
+}
+
+// ─── INIT ───
+renderUpload();
+</script>
+</body>
+</html>
