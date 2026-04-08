@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -7,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 :root {
   --bg-primary:#0a0e1a; --bg-secondary:#111827; --bg-card:#1a2035; --bg-card-hover:#1f2847;
@@ -452,16 +454,40 @@ async function readFiles(files){
   const status = document.getElementById('upload-status');
   status.textContent = `Processando ${files.length} arquivo(s)...`;
   status.style.color = 'var(--text-muted)';
-  let lidos = 0, ignorados = 0;
+  let lidos = 0, ignorados = 0, zips = 0;
+
+  // Expande zips para lista de {name, text}
+  const toProcess = [];
   for(const f of files){
+    const lower = f.name.toLowerCase();
+    if(lower.endsWith('.zip')){
+      try {
+        zips++;
+        const zip = await JSZip.loadAsync(f);
+        const entries = Object.values(zip.files).filter(e => !e.dir && e.name.toLowerCase().endsWith('.xml'));
+        status.textContent = `Descompactando ${f.name} (${entries.length} XMLs)...`;
+        for(const e of entries){
+          const text = await e.async('string');
+          toProcess.push({name: e.name.split('/').pop(), text});
+        }
+      } catch(err){ ignorados++; console.warn('ZIP',f.name,err); }
+    } else if(lower.endsWith('.xml')){
+      try { toProcess.push({name: f.name, text: await f.text()}); }
+      catch(err){ ignorados++; }
+    } else {
+      ignorados++;
+    }
+  }
+
+  for(const item of toProcess){
     try {
-      const text = await f.text();
-      const nota = parseXml(text, f.name);
+      const nota = parseXml(item.text, item.name);
       if(nota){ state.notas.push(nota); lidos++; }
       else ignorados++;
-    } catch(e){ ignorados++; console.warn(f.name, e); }
+    } catch(e){ ignorados++; console.warn(item.name, e); }
   }
-  status.textContent = `✓ ${lidos} nota(s) lida(s)${ignorados? ' • '+ignorados+' ignorada(s)':''} • Total acumulado: ${state.notas.length}`;
+
+  status.textContent = `✓ ${lidos} nota(s) lida(s)${zips? ' • '+zips+' ZIP(s)':''}${ignorados? ' • '+ignorados+' ignorada(s)':''} • Total acumulado: ${state.notas.length}`;
   status.style.color = 'var(--success)';
   classificarTodas();
   updateTopbar();
@@ -510,8 +536,8 @@ function renderUpload(){
     <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
       <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
       <h3>Selecione ou arraste arquivos XML</h3>
-      <p>NF-e (Mod. 55) e NFC-e (Mod. 65) — múltipla seleção</p>
-      <input type="file" id="file-input" accept=".xml" multiple>
+      <p>NF-e (Mod. 55) e NFC-e (Mod. 65) — XML ou ZIP, múltipla seleção</p>
+      <input type="file" id="file-input" accept=".xml,.zip" multiple>
       <div id="upload-status" style="margin-top:14px;font-size:12px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;"></div>
     </div>
 
