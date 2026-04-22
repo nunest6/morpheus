@@ -7,192 +7,114 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-
 :root {
-  --bg: #f5f6f8; --bg-alt: #ebedf2; --bg-card: #ffffff; --bg-dark: #1e2330;
-  --border: #dfe2e8; --border-hover: #b4bac6;
-  --text: #1a1d26; --text-2: #4a5068; --text-3: #8891a5;
-  --blue: #3563e9; --blue-light: #eef2ff; --blue-dark: #2549b5;
-  --green: #16a34a; --green-bg: #f0fdf4;
-  --red: #dc2626; --red-bg: #fef2f2;
-  --amber: #d97706; --amber-bg: #fffbeb;
-  --purple: #7c3aed; --purple-bg: #f5f3ff;
-  --cyan: #0891b2; --cyan-bg: #ecfeff;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,.04);
-  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
-  --shadow-md: 0 4px 6px rgba(0,0,0,.05), 0 2px 4px rgba(0,0,0,.03);
-  --radius: 10px; --radius-lg: 14px;
+  --bg:#f5f6f8;--bg-alt:#ebedf2;--bg-card:#ffffff;--bg-dark:#1e2330;
+  --border:#dfe2e8;--border-hover:#b4bac6;
+  --text:#1a1d26;--text-2:#4a5068;--text-3:#8891a5;
+  --blue:#3563e9;--blue-light:#eef2ff;--blue-dark:#2549b5;
+  --green:#16a34a;--green-bg:#f0fdf4;
+  --red:#dc2626;--red-bg:#fef2f2;
+  --amber:#d97706;--amber-bg:#fffbeb;
+  --purple:#7c3aed;--purple-bg:#f5f3ff;
+  --cyan:#0891b2;--cyan-bg:#ecfeff;
+  --orange:#ea580c;--orange-bg:#fff7ed;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.04);
+  --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 6px rgba(0,0,0,.05),0 2px 4px rgba(0,0,0,.03);
+  --radius:10px;--radius-lg:14px;
 }
-* { margin:0;padding:0;box-sizing:border-box; }
-body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
-::-webkit-scrollbar { width:6px;height:6px; }
-::-webkit-scrollbar-track { background:var(--bg-alt); }
-::-webkit-scrollbar-thumb { background:var(--border-hover); border-radius:3px; }
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:var(--bg-alt);}
+::-webkit-scrollbar-thumb{background:var(--border-hover);border-radius:3px;}
 
-/* ─── LAYOUT ─── */
-.shell { display:flex; min-height:100vh; }
-.sidebar {
-  width:256px; background:var(--bg-dark); color:#c5cad6;
-  position:fixed; top:0; left:0; bottom:0; z-index:100;
-  display:flex; flex-direction:column; overflow-y:auto;
-}
-.main { margin-left:256px; flex:1; min-height:100vh; }
+.shell{display:flex;min-height:100vh;}
+.sidebar{width:256px;background:var(--bg-dark);color:#c5cad6;position:fixed;top:0;left:0;bottom:0;z-index:100;display:flex;flex-direction:column;overflow-y:auto;}
+.main{margin-left:256px;flex:1;min-height:100vh;}
 
-/* ─── SIDEBAR ─── */
-.sb-logo { padding:20px 18px; display:flex; align-items:center; gap:10px; border-bottom:1px solid rgba(255,255,255,.07); }
-.sb-logo-icon { width:36px;height:36px;border-radius:8px;background:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff; }
-.sb-logo h1 { font-size:14px;font-weight:700;color:#fff;letter-spacing:-.3px; }
-.sb-logo span { font-size:11px;color:#6b7280; }
-.sb-section { padding:14px 10px 6px; }
-.sb-section-title { font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#555c6e;padding:0 8px 6px; }
-.sb-item {
-  display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:8px;
-  font-size:13px;font-weight:500;cursor:pointer;transition:all .12s;margin-bottom:1px;
-}
-.sb-item:hover { background:rgba(255,255,255,.06);color:#e5e7eb; }
-.sb-item.active { background:rgba(53,99,233,.2);color:#93b4ff; }
-.sb-item svg { width:17px;height:17px;flex-shrink:0;opacity:.6; }
-.sb-item.active svg { opacity:1; }
-.sb-badge { margin-left:auto;background:var(--blue);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px; }
-.sb-footer { margin-top:auto;padding:14px 18px;border-top:1px solid rgba(255,255,255,.07);font-size:11px;color:#555c6e; }
+.sb-logo{padding:20px 18px;display:flex;align-items:center;gap:10px;border-bottom:1px solid rgba(255,255,255,.07);}
+.sb-logo-icon{width:36px;height:36px;border-radius:8px;background:var(--blue);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;}
+.sb-logo h1{font-size:14px;font-weight:700;color:#fff;letter-spacing:-.3px;}
+.sb-logo span{font-size:11px;color:#6b7280;}
+.sb-section{padding:14px 10px 6px;}
+.sb-section-title{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:#555c6e;padding:0 8px 6px;}
+.sb-item{display:flex;align-items:center;gap:9px;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all .12s;margin-bottom:1px;}
+.sb-item:hover{background:rgba(255,255,255,.06);color:#e5e7eb;}
+.sb-item.active{background:rgba(53,99,233,.2);color:#93b4ff;}
+.sb-item svg{width:17px;height:17px;flex-shrink:0;opacity:.6;}
+.sb-item.active svg{opacity:1;}
+.sb-badge{margin-left:auto;background:var(--blue);color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;}
+/* Itens LP */
+.sb-item.lp-item{display:none;}
+.sb-item.lr-item{display:none;}
+.lp-mode .sb-item.lp-item{display:flex;}
+.lr-mode .sb-item.lr-item{display:flex;}
+.sb-footer{margin-top:auto;padding:14px 18px;border-top:1px solid rgba(255,255,255,.07);font-size:11px;color:#555c6e;}
 
-/* ─── TOPBAR ─── */
-.topbar {
-  height:54px;background:var(--bg-card);border-bottom:1px solid var(--border);
-  display:flex;align-items:center;padding:0 24px;gap:16px;
-  position:sticky;top:0;z-index:50;box-shadow:var(--shadow-sm);
-}
-.topbar-title { font-size:15px;font-weight:700;color:var(--text); }
-.topbar-right { margin-left:auto;display:flex;align-items:center;gap:10px; }
-.topbar-badge { font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px; }
-.badge-blue { background:var(--blue-light);color:var(--blue); }
+.topbar{height:54px;background:var(--bg-card);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:50;box-shadow:var(--shadow-sm);}
+.topbar-title{font-size:15px;font-weight:700;color:var(--text);}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.topbar-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;}
+.badge-blue{background:var(--blue-light);color:var(--blue);}
+.badge-purple{background:var(--purple-bg);color:var(--purple);}
+.badge-orange{background:var(--orange-bg);color:var(--orange);}
 
-/* ─── CONTENT ─── */
-.content { padding:24px; }
-.page { display:none; }
-.page.active { display:block; }
+.content{padding:24px;}
+.page{display:none;}
+.page.active{display:block;}
 
-/* ─── CARDS ─── */
-.card { background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);margin-bottom:20px;overflow:hidden; }
-.card-h { padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between; }
-.card-h h3 { font-size:13px;font-weight:700; }
-.card-b { padding:18px; }
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);margin-bottom:20px;overflow:hidden;}
+.card-h{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-h h3{font-size:13px;font-weight:700;}
+.card-b{padding:18px;}
 
-/* ─── GRIDS ─── */
-.g2 { display:grid;grid-template-columns:1fr 1fr;gap:18px; }
-.g3 { display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px; }
-.g4 { display:grid;grid-template-columns:repeat(4,1fr);gap:14px; }
-@media(max-width:1100px) { .g4{grid-template-columns:repeat(2,1fr);} }
-@media(max-width:900px) { .g2,.g3{grid-template-columns:1fr;} .sidebar{display:none;} .main{margin-left:0;} }
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+@media(max-width:1100px){.g4{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:900px){.g2,.g3{grid-template-columns:1fr;}.sidebar{display:none;}.main{margin-left:0;}}
 
-/* ─── STAT ─── */
-.stat { background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow-sm);transition:all .15s; }
-.stat:hover { box-shadow:var(--shadow-md);border-color:var(--border-hover); }
-.stat-label { font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px; }
-.stat-val { font-size:24px;font-weight:800;font-family:'IBM Plex Mono',monospace;letter-spacing:-.5px; }
-.stat-sub { font-size:12px;color:var(--text-3);margin-top:3px; }
+.stat{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow-sm);transition:all .15s;}
+.stat:hover{box-shadow:var(--shadow-md);border-color:var(--border-hover);}
+.stat-label{font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px;}
+.stat-val{font-size:24px;font-weight:800;font-family:'IBM Plex Mono',monospace;letter-spacing:-.5px;}
+.stat-sub{font-size:12px;color:var(--text-3);margin-top:3px;}
 
-/* ─── TABLE ─── */
-.tbl { width:100%;border-collapse:collapse;font-size:13px; }
-.tbl th { text-align:left;padding:9px 12px;font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:2; }
-.tbl td { padding:8px 12px;border-bottom:1px solid var(--bg-alt);color:var(--text-2); }
-.tbl tr:hover td { background:var(--blue-light); }
-.tbl .mono { font-family:'IBM Plex Mono',monospace;font-size:12px; }
-.tbl .r { text-align:right; }
-.tbl .D { color:var(--blue); }
-.tbl .C { color:var(--red); }
+.tbl{width:100%;border-collapse:collapse;font-size:13px;}
+.tbl th{text-align:left;padding:9px 12px;font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:2;}
+.tbl td{padding:8px 12px;border-bottom:1px solid var(--bg-alt);color:var(--text-2);}
+.tbl tr:hover td{background:var(--blue-light);}
+.tbl .mono{font-family:'IBM Plex Mono',monospace;font-size:12px;}
+.tbl .r{text-align:right;}
 
-/* ─── BUTTONS ─── */
-.btn { padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--bg-card);color:var(--text);display:inline-flex;align-items:center;gap:5px;transition:all .12s; }
-.btn:hover { border-color:var(--blue);color:var(--blue);box-shadow:var(--shadow-sm); }
-.btn-blue { background:var(--blue);border-color:var(--blue);color:#fff; }
-.btn-blue:hover { background:var(--blue-dark);color:#fff; }
-.btn-sm { padding:4px 10px;font-size:11px; }
+.btn{padding:7px 16px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--bg-card);color:var(--text);display:inline-flex;align-items:center;gap:5px;transition:all .12s;}
+.btn:hover{border-color:var(--blue);color:var(--blue);box-shadow:var(--shadow-sm);}
+.btn-blue{background:var(--blue);border-color:var(--blue);color:#fff;}
+.btn-blue:hover{background:var(--blue-dark);color:#fff;}
 
-/* ─── TAGS ─── */
-.tag { display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600; }
-.tag-blue { background:var(--blue-light);color:var(--blue); }
-.tag-green { background:var(--green-bg);color:var(--green); }
-.tag-red { background:var(--red-bg);color:var(--red); }
-.tag-amber { background:var(--amber-bg);color:var(--amber); }
-.tag-purple { background:var(--purple-bg);color:var(--purple); }
+.tag{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;}
+.tag-blue{background:var(--blue-light);color:var(--blue);}
+.tag-green{background:var(--green-bg);color:var(--green);}
+.tag-red{background:var(--red-bg);color:var(--red);}
+.tag-amber{background:var(--amber-bg);color:var(--amber);}
+.tag-purple{background:var(--purple-bg);color:var(--purple);}
+.tag-orange{background:var(--orange-bg);color:var(--orange);}
 
-/* ─── UPLOAD ─── */
-.upload-zone { border:2px dashed var(--border);border-radius:var(--radius-lg);padding:50px 30px;text-align:center;cursor:pointer;background:var(--bg-card);transition:all .2s; }
-.upload-zone:hover,.upload-zone.over { border-color:var(--blue);background:var(--blue-light); }
-.upload-zone h3 { font-size:17px;font-weight:700;margin:12px 0 4px; }
-.upload-zone p { font-size:13px;color:var(--text-3); }
-.upload-zone input { display:none; }
+.upload-zone{border:2px dashed var(--border);border-radius:var(--radius-lg);padding:50px 30px;text-align:center;cursor:pointer;background:var(--bg-card);transition:all .2s;}
+.upload-zone:hover,.upload-zone.over{border-color:var(--blue);background:var(--blue-light);}
+.upload-zone h3{font-size:17px;font-weight:700;margin:12px 0 4px;}
+.upload-zone p{font-size:13px;color:var(--text-3);}
+.upload-zone input{display:none;}
 
-/* ─── SEARCH ─── */
-.search { display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:0 10px; }
-.search input { background:transparent;border:none;outline:none;font-size:12px;padding:7px 0;width:180px;font-family:inherit;color:var(--text); }
+.search{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:0 10px;}
+.search input{background:transparent;border:none;outline:none;font-size:12px;padding:7px 0;width:180px;font-family:inherit;color:var(--text);}
 
-/* ─── MODAL ─── */
-.modal-bg { position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:200;opacity:0;pointer-events:none;transition:opacity .15s; }
-.modal-bg.on { opacity:1;pointer-events:all; }
-.modal { background:var(--bg-card);border-radius:var(--radius-lg);max-width:1100px;width:96%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.15); }
-.modal-h { padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between; }
-.modal-h h3 { font-size:15px;font-weight:700; }
-.modal-close { cursor:pointer;color:var(--text-3);font-size:18px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:6px; }
-.modal-close:hover { background:var(--bg-alt); }
-.modal-body { padding:20px;overflow-y:auto;flex:1; }
-
-/* ─── RAZÃO ─── */
-.razao-header { display:flex;align-items:flex-start;gap:16px;margin-bottom:20px; }
-.razao-acct { flex:1; }
-.razao-acct h2 { font-size:20px;font-weight:800;letter-spacing:-.3px; }
-.razao-acct .acct-code { font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--blue);font-weight:600; }
-.razao-acct .acct-meta { font-size:12px;color:var(--text-3);margin-top:4px; }
-.razao-saldos { display:flex;gap:20px; }
-.razao-saldo-box { text-align:center;padding:10px 18px;background:var(--bg);border-radius:8px;border:1px solid var(--border); }
-.razao-saldo-box .sl { font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px; }
-.razao-saldo-box .sv { font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:700;margin-top:2px; }
-.razao-filter { display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap; }
-.razao-filter select { padding:6px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;background:var(--bg-card);color:var(--text);cursor:pointer; }
-.razao-running { font-family:'IBM Plex Mono',monospace;font-weight:600; }
-
-/* ─── TREE ─── */
-.tree-item { display:flex;align-items:center;gap:6px;padding:5px 0;font-size:13px;cursor:pointer; }
-.tree-item:hover { color:var(--blue); }
-.tree-indent { display:inline-block; }
-.tree-icon { width:16px;height:16px;flex-shrink:0; }
-.tree-code { font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--blue);min-width:80px; }
-.tree-name { flex:1;color:var(--text-2); }
-.tree-saldo { font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;min-width:100px;text-align:right; }
-.tree-synth { font-weight:700;color:var(--text); }
-.tree-synth .tree-code { color:var(--text); }
-.tree-analytic .tree-code { color:var(--blue); }
-.tree-analytic:hover .tree-code { text-decoration:underline; }
-
-/* ─── CHART ─── */
-.chart-box { position:relative;height:280px; }
-.chart-box canvas { max-height:100%; }
-
-/* ─── ANIMATIONS ─── */
-@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
-.anim { animation:fadeUp .25s ease-out; }
-@keyframes spin { to{transform:rotate(360deg)} }
-.spinner { width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .8s linear infinite;margin:30px auto; }
-
-.truncate { white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:250px; }
-.section-title { font-size:18px;font-weight:800;margin-bottom:4px;letter-spacing:-.3px; }
-.section-sub { font-size:13px;color:var(--text-3);margin-bottom:18px; }
-.empty { text-align:center;padding:60px 30px; }
-.empty h3 { font-size:16px;color:var(--text-2);margin-bottom:6px; }
-.empty p { font-size:13px;color:var(--text-3); }
-.file-item { display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;font-size:13px; }
-.file-item .fname { flex:1;font-weight:500; }
-.file-item .fsize { color:var(--text-3);font-family:'IBM Plex Mono',monospace;font-size:11px; }
-.file-remove { cursor:pointer;color:var(--red);font-size:14px; }
-
-
-/* PERIOD TABS */
 .period-tabs{display:flex;gap:6px;margin-bottom:0;flex-wrap:wrap;}
 .period-tab{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--bg-card);color:var(--text-2);transition:all .12s;}
 .period-tab:hover{border-color:var(--blue);color:var(--blue);}
 .period-tab.active{background:var(--blue);border-color:var(--blue);color:#fff;}
-/* LALUR TABLE */
+
 .ltbl{width:100%;border-collapse:collapse;}
 .ltbl td{padding:7px 12px;border-bottom:1px solid var(--bg-alt);font-size:13px;}
 .ltbl .lcod{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-3);width:70px;}
@@ -203,22 +125,44 @@ body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--bg); color:v
 .ltbl tr.total-row td{background:var(--blue-light);font-weight:800;}
 .ltbl tr.total-row .lval{color:var(--blue);font-size:14px;}
 .ltbl tr:not(.secao):not(.total-row):hover td{background:var(--blue-light);}
-/* INFO GRID */
+
+/* LP apuração table */
+.ptbl{width:100%;border-collapse:collapse;}
+.ptbl td{padding:7px 14px;border-bottom:1px solid var(--bg-alt);font-size:13px;}
+.ptbl .pnum{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--text-3);width:60px;}
+.ptbl .pdesc{color:var(--text-2);}
+.ptbl .pval{font-family:'IBM Plex Mono',monospace;font-weight:700;text-align:right;white-space:nowrap;min-width:140px;}
+.ptbl tr.ph td{background:var(--bg);font-weight:800;color:var(--text);padding:10px 14px;font-size:12px;letter-spacing:.3px;text-transform:uppercase;}
+.ptbl tr.ptotal td{background:var(--blue-light);font-weight:800;}
+.ptbl tr.ptotal .pval{color:var(--blue);font-size:14px;}
+.ptbl tr:not(.ph):not(.ptotal):hover td{background:var(--blue-light);}
+
 .info-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin-bottom:0;}
 .ifield .ilbl{font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px;}
 .ifield .ival{font-size:13px;font-weight:600;color:var(--text);}
-.badge-purple{background:var(--purple-bg);color:var(--purple);}
-.topbar-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;}
 
+.section-title{font-size:18px;font-weight:800;margin-bottom:4px;letter-spacing:-.3px;}
+.section-sub{font-size:13px;color:var(--text-3);margin-bottom:18px;}
+.empty{text-align:center;padding:60px 30px;}
+.empty h3{font-size:16px;color:var(--text-2);margin-bottom:6px;}
+.empty p{font-size:13px;color:var(--text-3);}
+.file-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;font-size:13px;}
+.file-item .fname{flex:1;font-weight:500;}
+.file-item .fsize{color:var(--text-3);font-family:'IBM Plex Mono',monospace;font-size:11px;}
+.file-remove{cursor:pointer;color:var(--red);font-size:14px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.anim{animation:fadeUp .25s ease-out;}
+.truncate{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:250px;}
 </style>
 </head>
 <body>
 <div class="shell">
-  <aside class="sidebar">
+  <aside class="sidebar" id="sidebar">
     <div class="sb-logo">
-      <div class="sb-logo-icon" style="background:#7c3aed;font-size:11px;">ECF</div>
-      <div><h1>Leitor ECF</h1><span>Escrituração Contábil Fiscal</span></div>
+      <div class="sb-logo-icon" id="sb-icon" style="background:#7c3aed;font-size:11px;">ECF</div>
+      <div><h1>Leitor ECF</h1><span id="sb-regime-label">Escrituração Contábil Fiscal</span></div>
     </div>
+    <!-- Seções comuns -->
     <div class="sb-section">
       <div class="sb-section-title">Principal</div>
       <div class="sb-item active" data-p="import" onclick="nav('import')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Importar Arquivo</div>
@@ -227,7 +171,7 @@ body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--bg); color:v
     <div class="sb-section">
       <div class="sb-section-title">Identificação</div>
       <div class="sb-item" data-p="ident" onclick="nav('ident')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Empresa e Parâmetros</div>
-      <div class="sb-item" data-p="periodos" onclick="nav('periodos')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Períodos (K030)</div>
+      <div class="sb-item" data-p="periodos" onclick="nav('periodos')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Períodos</div>
       <div class="sb-item" data-p="signatarios" onclick="nav('signatarios')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Signatários (0930)</div>
     </div>
     <div class="sb-section">
@@ -235,82 +179,254 @@ body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--bg); color:v
       <div class="sb-item" data-p="plano" onclick="nav('plano')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>Plano de Contas (J050)<span class="sb-badge" id="badge-plano" style="display:none">0</span></div>
       <div class="sb-item" data-p="saldos" onclick="nav('saldos')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M6 20V4M18 20v-6"/></svg>Saldos Contábeis (K155)<span class="sb-badge" id="badge-saldos" style="display:none">0</span></div>
     </div>
+    <!-- Demonstrações: LP usa P100/P150, LR usa L100/L300 -->
     <div class="sb-section">
       <div class="sb-section-title">Demonstrações</div>
-      <div class="sb-item" data-p="bp" onclick="nav('bp')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>Balanço Patrimonial (L100)<span class="sb-badge" id="badge-bp" style="display:none">0</span></div>
-      <div class="sb-item" data-p="dre" onclick="nav('dre')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>Resultado (L300)<span class="sb-badge" id="badge-dre" style="display:none">0</span></div>
-      <div class="sb-item" data-p="custos" onclick="nav('custos')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><line x1="9" y1="12" x2="15" y2="12"/></svg>Composição de Custos (L210)</div>
+      <!-- Lucro Real -->
+      <div class="sb-item lr-item" data-p="bp" onclick="nav('bp')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>Balanço Patrimonial (L100)<span class="sb-badge" id="badge-bp" style="display:none">0</span></div>
+      <div class="sb-item lr-item" data-p="dre" onclick="nav('dre')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>Resultado (L300)<span class="sb-badge" id="badge-dre" style="display:none">0</span></div>
+      <div class="sb-item lr-item" data-p="custos" onclick="nav('custos')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><line x1="9" y1="12" x2="15" y2="12"/></svg>Composição de Custos (L210)</div>
+      <!-- Lucro Presumido -->
+      <div class="sb-item lp-item" data-p="p-bp" onclick="nav('p-bp')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>Balanço Patrimonial (P100)<span class="sb-badge" id="badge-pbp" style="display:none">0</span></div>
+      <div class="sb-item lp-item" data-p="p-dre" onclick="nav('p-dre')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>Demonstração de Resultado (P150)<span class="sb-badge" id="badge-pdre" style="display:none">0</span></div>
     </div>
-    <div class="sb-section">
+    <!-- Apuração LR -->
+    <div class="sb-section lr-item">
       <div class="sb-section-title">Apuração – Lucro Real</div>
-      <div class="sb-item" data-p="lalur" onclick="nav('lalur')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>e-LALUR – Lucro Real (M300)<span class="sb-badge" id="badge-lalur" style="display:none">0</span></div>
-      <div class="sb-item" data-p="lacs" onclick="nav('lacs')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>e-LACS – BC CSLL (M350)<span class="sb-badge" id="badge-lacs" style="display:none">0</span></div>
-      <div class="sb-item" data-p="parteb" onclick="nav('parteb')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Parte B – Prejuízos (M500/M510)</div>
+      <div class="sb-item lr-item" data-p="lalur" onclick="nav('lalur')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>e-LALUR – Lucro Real (M300)<span class="sb-badge" id="badge-lalur" style="display:none">0</span></div>
+      <div class="sb-item lr-item" data-p="lacs" onclick="nav('lacs')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>e-LACS – BC CSLL (M350)<span class="sb-badge" id="badge-lacs" style="display:none">0</span></div>
+      <div class="sb-item lr-item" data-p="parteb" onclick="nav('parteb')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>Parte B – Prejuízos (M500/M510)</div>
+    </div>
+    <!-- Apuração LP -->
+    <div class="sb-section lp-item">
+      <div class="sb-section-title">Apuração – Lucro Presumido</div>
+      <div class="sb-item lp-item" data-p="p200" onclick="nav('p200')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg>Base de Cálculo IRPJ (P200)</div>
+      <div class="sb-item lp-item" data-p="p300" onclick="nav('p300')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Apuração IRPJ (P300)</div>
+      <div class="sb-item lp-item" data-p="p400" onclick="nav('p400')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Apuração CSLL (P400)</div>
     </div>
     <div class="sb-section">
       <div class="sb-section-title">Arquivo</div>
       <div class="sb-item" data-p="registros" onclick="nav('registros')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>Registros (9900)</div>
     </div>
-    <div class="sb-footer">ECF Leitor v1.0<br>IRPJ / CSLL – Lucro Real</div>
+    <div class="sb-footer">ECF Leitor v2.0<br><span id="sb-footer-regime">IRPJ/CSLL – Multi-regime</span></div>
   </aside>
+
   <main class="main">
     <div class="topbar">
       <span class="topbar-title" id="tt">Importar Arquivo ECF</span>
       <div class="topbar-right">
+        <span class="topbar-badge" id="tt-regime" style="display:none"></span>
         <span class="topbar-badge badge-purple" id="tt-empresa" style="display:none"></span>
         <span class="topbar-badge badge-blue" id="tt-periodo" style="display:none"></span>
       </div>
     </div>
     <div class="content">
 
-<div class="page active" id="p-import"><div class="section-title">Importar Arquivo ECF</div>
-        <div class="section-sub">Importe o arquivo .txt da Escrituração Contábil Fiscal (IRPJ/CSLL). Leiaute SPED ECF.</div>
-        <div class="upload-zone" id="uzone">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <h3>Arraste o arquivo ECF (.txt) aqui</h3><p>ou clique para selecionar</p>
-          <input type="file" id="finput" accept=".txt,.TXT">
-        </div>
-        <div id="flist"></div>
-        <div id="import-bar" style="display:none;margin-top:16px;display:flex;gap:10px;align-items:center;">
-          <button class="btn btn-blue" onclick="processFile()">Processar</button>
-          <button class="btn" onclick="clearFile()">Limpar</button>
-          <span id="pstatus" style="font-size:13px;color:var(--text-3);"></span>
-        </div></div>
-<div class="page" id="p-dash"><div id="dash-c"></div></div>
-<div class="page" id="p-ident"><div class="section-title">Empresa e Parâmetros</div><div class="section-sub">Registros 0000, 0010 e 0020.</div><div id="ident-c"></div></div>
-<div class="page" id="p-periodos"><div class="section-title">Períodos de Apuração</div><div class="section-sub">Registros K030 e L030 – trimestres e datas de apuração.</div><div id="periodos-c"></div></div>
-<div class="page" id="p-signatarios"><div class="section-title">Signatários – 0930</div><div class="section-sub">Responsáveis pela assinatura da ECF.</div><div id="signatarios-c"></div></div>
-<div class="page" id="p-plano"><div class="section-title">Plano de Contas – J050</div><div class="section-sub">Contas contábeis com hierarquia e mapeamento referencial (J051).</div>
-        <div style="display:flex;gap:8px;margin-bottom:16px;"><div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input placeholder="Código, nome..." oninput="filterTbl('plano-tbl',this.value)"></div><button class="btn" onclick="exportExcel('plano')">Excel</button></div>
-        <div id="plano-c"></div></div>
-<div class="page" id="p-saldos"><div class="section-title">Saldos Contábeis – K155</div><div class="section-sub">Saldo inicial, movimentos e saldo final por período.</div>
-        <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;"><div id="saldos-tabs" class="period-tabs"></div><div style="margin-left:auto;display:flex;gap:8px;"><div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input placeholder="Código da conta..." oninput="filterTbl('saldos-tbl',this.value)"></div><button class="btn" onclick="exportExcel('saldos')">Excel</button></div></div>
-        <div id="saldos-c"></div></div>
-<div class="page" id="p-bp"><div class="section-title">Balanço Patrimonial – L100</div><div class="section-sub">Contas referenciais com saldos por período.</div>
-        <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;"><div id="bp-tabs" class="period-tabs"></div><div style="margin-left:auto;display:flex;gap:8px;"><div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input placeholder="Código, descrição..." oninput="filterTbl('bp-tbl',this.value)"></div><button class="btn" onclick="exportExcel('bp')">Excel</button></div></div>
-        <div id="bp-c"></div></div>
-<div class="page" id="p-dre"><div class="section-title">Demonstração do Resultado – L300</div><div class="section-sub">DRE por conta referencial com saldo final de cada período.</div>
-        <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;"><div id="dre-tabs" class="period-tabs"></div><div style="margin-left:auto;display:flex;gap:8px;"><div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input placeholder="Código, descrição..." oninput="filterTbl('dre-tbl',this.value)"></div><button class="btn" onclick="exportExcel('dre')">Excel</button></div></div>
-        <div id="dre-c"></div></div>
-<div class="page" id="p-custos"><div class="section-title">Composição de Custos – L210</div><div class="section-sub">Informativo de custos por período.</div>
-        <div id="custos-tabs" class="period-tabs" style="margin-bottom:16px;"></div><div id="custos-c"></div></div>
-<div class="page" id="p-lalur"><div class="section-title">e-LALUR – Demonstração do Lucro Real (M300)</div><div class="section-sub">Adições, exclusões e compensações para apuração do IRPJ.</div>
-        <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;"><div id="lalur-tabs" class="period-tabs"></div><div style="margin-left:auto;display:flex;gap:8px;"><label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;cursor:pointer;"><input type="checkbox" id="lalur-filter" onchange="renderLalur()" checked>Só com valor</label><button class="btn" onclick="exportExcel('lalur')">Excel</button></div></div>
-        <div id="lalur-c"></div></div>
-<div class="page" id="p-lacs"><div class="section-title">e-LACS – Base de Cálculo da CSLL (M350)</div><div class="section-sub">Adições, exclusões e compensações para apuração da CSLL.</div>
-        <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;"><div id="lacs-tabs" class="period-tabs"></div><div style="margin-left:auto;display:flex;gap:8px;"><label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;cursor:pointer;"><input type="checkbox" id="lacs-filter" onchange="renderLacs()" checked>Só com valor</label><button class="btn" onclick="exportExcel('lacs')">Excel</button></div></div>
-        <div id="lacs-c"></div></div>
-<div class="page" id="p-parteb"><div class="section-title">Parte B – Controle de Prejuízos (M500 / M510)</div><div class="section-sub">Saldos das contas da Parte B do e-LALUR e e-LACS por período.</div>
-        <div id="parteb-tabs" class="period-tabs" style="margin-bottom:16px;"></div><div id="parteb-c"></div></div>
-<div class="page" id="p-registros"><div class="section-title">Registros do Arquivo – 9900</div><div class="section-sub">Contagem de registros por tipo.</div><div id="registros-c"></div></div>
-
-    </div>
-  </main>
+<!-- IMPORT -->
+<div class="page active" id="p-import">
+  <div class="section-title">Importar Arquivo ECF</div>
+  <div class="section-sub">Arquivo .txt da ECF (Lucro Real ou Lucro Presumido). O regime é detectado automaticamente pelo campo FORMA_TRIB_PER do registro 0010.</div>
+  <div class="upload-zone" id="uzone">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <h3>Arraste o arquivo ECF (.txt) aqui</h3><p>ou clique para selecionar</p>
+    <input type="file" id="finput" accept=".txt,.TXT">
+  </div>
+  <div id="flist"></div>
+  <div id="import-bar" style="display:none;margin-top:16px;display:flex;gap:10px;align-items:center;">
+    <button class="btn btn-blue" onclick="processFile()">Processar</button>
+    <button class="btn" onclick="clearFile()">Limpar</button>
+    <span id="pstatus" style="font-size:13px;color:var(--text-3);"></span>
+  </div>
 </div>
-<script>
-let FILE=null, D=null, PER=0, charts={};
 
-const pn=v=>{if(!v)return 0;return parseFloat((v+'').replace(',','.'))||0;};
+<!-- DASHBOARD -->
+<div class="page" id="p-dash"><div id="dash-c"></div></div>
+
+<!-- IDENT -->
+<div class="page" id="p-ident">
+  <div class="section-title">Empresa e Parâmetros</div>
+  <div class="section-sub">Registros 0000, 0010 e 0020.</div>
+  <div id="ident-c"></div>
+</div>
+
+<!-- PERÍODOS -->
+<div class="page" id="p-periodos">
+  <div class="section-title">Períodos de Apuração</div>
+  <div class="section-sub" id="periodos-sub">Períodos do arquivo.</div>
+  <div id="periodos-c"></div>
+</div>
+
+<!-- SIGNATÁRIOS -->
+<div class="page" id="p-signatarios">
+  <div class="section-title">Signatários – 0930</div>
+  <div class="section-sub">Responsáveis pela assinatura da ECF.</div>
+  <div id="signatarios-c"></div>
+</div>
+
+<!-- PLANO -->
+<div class="page" id="p-plano">
+  <div class="section-title">Plano de Contas – J050</div>
+  <div class="section-sub">Contas contábeis com hierarquia e mapeamento referencial (J051).</div>
+  <div style="display:flex;gap:8px;margin-bottom:16px;">
+    <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input placeholder="Código, nome..." oninput="filterTbl('plano-tbl',this.value)"></div>
+    <button class="btn" onclick="exportExcel('plano')">Excel</button>
+  </div>
+  <div id="plano-c"></div>
+</div>
+
+<!-- SALDOS K155 -->
+<div class="page" id="p-saldos">
+  <div class="section-title">Saldos Contábeis – K155</div>
+  <div class="section-sub">Saldo inicial, movimentos e saldo final por período.</div>
+  <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">
+    <div id="saldos-tabs" class="period-tabs"></div>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+      <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input placeholder="Código da conta..." oninput="filterTbl('saldos-tbl',this.value)"></div>
+      <button class="btn" onclick="exportExcel('saldos')">Excel</button>
+    </div>
+  </div>
+  <div id="saldos-c"></div>
+</div>
+
+<!-- BP LR -->
+<div class="page" id="p-bp">
+  <div class="section-title">Balanço Patrimonial – L100</div>
+  <div class="section-sub">Contas referenciais com saldos por período.</div>
+  <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">
+    <div id="bp-tabs" class="period-tabs"></div>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+      <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input placeholder="Código, descrição..." oninput="filterTbl('bp-tbl',this.value)"></div>
+      <button class="btn" onclick="exportExcel('bp')">Excel</button>
+    </div>
+  </div>
+  <div id="bp-c"></div>
+</div>
+
+<!-- DRE LR -->
+<div class="page" id="p-dre">
+  <div class="section-title">Demonstração do Resultado – L300</div>
+  <div class="section-sub">DRE por conta referencial.</div>
+  <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">
+    <div id="dre-tabs" class="period-tabs"></div>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+      <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input placeholder="Código, descrição..." oninput="filterTbl('dre-tbl',this.value)"></div>
+      <button class="btn" onclick="exportExcel('dre')">Excel</button>
+    </div>
+  </div>
+  <div id="dre-c"></div>
+</div>
+
+<!-- CUSTOS LR -->
+<div class="page" id="p-custos">
+  <div class="section-title">Composição de Custos – L210</div>
+  <div class="section-sub">Informativo de custos por período (Lucro Real).</div>
+  <div id="custos-tabs" class="period-tabs" style="margin-bottom:16px;"></div>
+  <div id="custos-c"></div>
+</div>
+
+<!-- LALUR LR -->
+<div class="page" id="p-lalur">
+  <div class="section-title">e-LALUR – Demonstração do Lucro Real (M300)</div>
+  <div class="section-sub">Adições, exclusões e compensações para apuração do IRPJ.</div>
+  <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">
+    <div id="lalur-tabs" class="period-tabs"></div>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;cursor:pointer;"><input type="checkbox" id="lalur-filter" onchange="renderLalur()" checked>Só com valor</label>
+      <button class="btn" onclick="exportExcel('lalur')">Excel</button>
+    </div>
+  </div>
+  <div id="lalur-c"></div>
+</div>
+
+<!-- LACS LR -->
+<div class="page" id="p-lacs">
+  <div class="section-title">e-LACS – Base de Cálculo da CSLL (M350)</div>
+  <div class="section-sub">Adições, exclusões e compensações para apuração da CSLL.</div>
+  <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">
+    <div id="lacs-tabs" class="period-tabs"></div>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;cursor:pointer;"><input type="checkbox" id="lacs-filter" onchange="renderLacs()" checked>Só com valor</label>
+      <button class="btn" onclick="exportExcel('lacs')">Excel</button>
+    </div>
+  </div>
+  <div id="lacs-c"></div>
+</div>
+
+<!-- PARTE B LR -->
+<div class="page" id="p-parteb">
+  <div class="section-title">Parte B – Controle de Prejuízos (M500 / M510)</div>
+  <div class="section-sub">Saldos das contas da Parte B do e-LALUR e e-LACS por período.</div>
+  <div id="parteb-tabs" class="period-tabs" style="margin-bottom:16px;"></div>
+  <div id="parteb-c"></div>
+</div>
+
+<!-- BP LP (P100) -->
+<div class="page" id="p-p-bp">
+  <div class="section-title">Balanço Patrimonial – P100</div>
+  <div class="section-sub">Contas referenciais SPED com saldos por período (Lucro Presumido).</div>
+  <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">
+    <div id="pbp-tabs" class="period-tabs"></div>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+      <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input placeholder="Código, descrição..." oninput="filterTbl('pbp-tbl',this.value)"></div>
+      <button class="btn" onclick="exportExcel('pbp')">Excel</button>
+    </div>
+  </div>
+  <div id="pbp-c"></div>
+</div>
+
+<!-- DRE LP (P150) -->
+<div class="page" id="p-p-dre">
+  <div class="section-title">Demonstração de Resultado – P150</div>
+  <div class="section-sub">DRE referencial por período (Lucro Presumido).</div>
+  <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">
+    <div id="pdre-tabs" class="period-tabs"></div>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+      <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input placeholder="Código, descrição..." oninput="filterTbl('pdre-tbl',this.value)"></div>
+      <button class="btn" onclick="exportExcel('pdre')">Excel</button>
+    </div>
+  </div>
+  <div id="pdre-c"></div>
+</div>
+
+<!-- APURAÇÃO LP – P200 -->
+<div class="page" id="p-p200">
+  <div class="section-title">Base de Cálculo IRPJ – P200</div>
+  <div class="section-sub">Discriminação da receita bruta e cálculo da base de cálculo do IRPJ por período.</div>
+  <div id="p200-tabs" class="period-tabs" style="margin-bottom:16px;"></div>
+  <div id="p200-c"></div>
+</div>
+
+<!-- APURAÇÃO LP – P300 -->
+<div class="page" id="p-p300">
+  <div class="section-title">Apuração IRPJ – P300</div>
+  <div class="section-sub">Cálculo do IRPJ sobre o Lucro Presumido por período.</div>
+  <div id="p300-tabs" class="period-tabs" style="margin-bottom:16px;"></div>
+  <div id="p300-c"></div>
+</div>
+
+<!-- APURAÇÃO LP – P400 -->
+<div class="page" id="p-p400">
+  <div class="section-title">Apuração CSLL – P400</div>
+  <div class="section-sub">Cálculo da CSLL sobre o Lucro Presumido por período.</div>
+  <div id="p400-tabs" class="period-tabs" style="margin-bottom:16px;"></div>
+  <div id="p400-c"></div>
+</div>
+
+<!-- REGISTROS 9900 -->
+<div class="page" id="p-registros">
+  <div class="section-title">Registros do Arquivo – 9900</div>
+  <div class="section-sub">Contagem de registros por tipo.</div>
+  <div id="registros-c"></div>
+</div>
+
+    </div><!-- /content -->
+  </main>
+</div><!-- /shell -->
+
+<script>
+let FILE=null, D=null, PER=0;
+
+const pn=v=>{if(!v&&v!==0)return 0;const s=(v+'').replace(/\./g,'').replace(',','.');return parseFloat(s)||0;};
 const fm=v=>(+v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const fi=v=>(+v||0).toLocaleString('pt-BR');
 const fmtDt=s=>s&&s.length===8?`${s.substr(0,2)}/${s.substr(2,2)}/${s.substr(4)}`:s||'';
@@ -318,40 +434,107 @@ const fmtCNPJ=c=>{if(!c)return'—';const d=c.replace(/\D/g,'');return d.length=
 const sp=l=>l.replace(/^\|/,'').replace(/\|$/,'').split('|');
 function filterTbl(id,val){const v=val.toLowerCase();document.querySelectorAll(`#${id} tbody tr`).forEach(r=>{r.style.display=r.textContent.toLowerCase().includes(v)?'':'none';});}
 
+// ─── DETECÇÃO DE REGIME ───
+// 0010: |0010|HASH|IND_REFIS|IND_DFC|FORMA_APUR|COD_QUALIF|FORMA_TRIB_PER|...
+// FORMA_TRIB_PER: "PPPP"=Presumido todo ano, "RRRR"=Real, "7"=LP anual, etc.
+// Regras: se qualquer caractere da FORMA_TRIB_PER = P,7,8,9 => LP
+function detectRegime(params0010) {
+  const ftrib = (params0010.formaTribPer||'').toUpperCase();
+  // Se vazio, usa formaTrib
+  const ft = params0010.formaTrib||'';
+  // formaTrib: 1=LR Anual, 2=LR Trimestral, 7=LP, 8=Imune, 9=Isenta
+  if(['7','8','9'].includes(ft)) return 'LP';
+  if(['1','2','3','4'].includes(ft)) return 'LR';
+  // fallback: FORMA_TRIB_PER
+  if(ftrib && /[P789]/.test(ftrib)) return 'LP';
+  if(ftrib && /[R1234]/.test(ftrib)) return 'LR';
+  return 'LP'; // default para arquivo real que veio com P
+}
+
+// ─── NAV ───
 function nav(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.sb-item').forEach(n=>n.classList.remove('active'));
   document.getElementById('p-'+id)?.classList.add('active');
   document.querySelector(`.sb-item[data-p="${id}"]`)?.classList.add('active');
-  const T={import:'Importar Arquivo ECF',dash:'Dashboard',ident:'Empresa e Parâmetros',periodos:'Períodos de Apuração',signatarios:'Signatários – 0930',plano:'Plano de Contas – J050',saldos:'Saldos Contábeis – K155',bp:'Balanço Patrimonial – L100',dre:'Demonstração do Resultado – L300',custos:'Composição de Custos – L210',lalur:'e-LALUR – Lucro Real (M300)',lacs:'e-LACS – BC CSLL (M350)',parteb:'Parte B – Prejuízos (M500/M510)',registros:'Registros – 9900'};
+  const T={
+    import:'Importar Arquivo ECF',dash:'Dashboard',ident:'Empresa e Parâmetros',
+    periodos:'Períodos de Apuração',signatarios:'Signatários – 0930',
+    plano:'Plano de Contas – J050',saldos:'Saldos Contábeis – K155',
+    // LR
+    bp:'Balanço Patrimonial – L100',dre:'Demonstração do Resultado – L300',
+    custos:'Composição de Custos – L210',lalur:'e-LALUR – Lucro Real (M300)',
+    lacs:'e-LACS – BC CSLL (M350)',parteb:'Parte B – Prejuízos (M500/M510)',
+    // LP
+    'p-bp':'Balanço Patrimonial – P100','p-dre':'Demonstração de Resultado – P150',
+    p200:'Base de Cálculo IRPJ – P200',p300:'Apuração IRPJ – P300',p400:'Apuração CSLL – P400',
+    registros:'Registros – 9900'
+  };
   document.getElementById('tt').textContent=T[id]||id;
   if(D) render(id);
 }
+
 function render(id){
-  const m={dash:renderDash,ident:renderIdent,periodos:renderPeriodos,signatarios:renderSignatarios,plano:renderPlano,saldos:renderSaldos,bp:renderBP,dre:renderDRE,custos:renderCustos,lalur:renderLalur,lacs:renderLacs,parteb:renderParteB,registros:renderRegistros};
+  const m={
+    dash:renderDash,ident:renderIdent,periodos:renderPeriodos,signatarios:renderSignatarios,
+    plano:renderPlano,saldos:renderSaldos,
+    bp:renderBP,dre:renderDRE,custos:renderCustos,lalur:renderLalur,lacs:renderLacs,parteb:renderParteB,
+    'p-bp':renderPBP,'p-dre':renderPDRE,
+    p200:renderP200,p300:renderP300,p400:renderP400,
+    registros:renderRegistros
+  };
   if(m[id]) m[id]();
 }
 
-// UPLOAD
+// ─── MODO REGIME sidebar ───
+function applyRegimeMode(regime){
+  const sb=document.getElementById('sidebar');
+  sb.classList.remove('lp-mode','lr-mode');
+  sb.classList.add(regime==='LP'?'lp-mode':'lr-mode');
+  const icon=document.getElementById('sb-icon');
+  const label=document.getElementById('sb-regime-label');
+  const footer=document.getElementById('sb-footer-regime');
+  const ttRegime=document.getElementById('tt-regime');
+  if(regime==='LP'){
+    icon.style.background='#ea580c';
+    label.textContent='Lucro Presumido';
+    footer.textContent='IRPJ/CSLL – Lucro Presumido';
+    ttRegime.className='topbar-badge badge-orange';
+    ttRegime.textContent='Lucro Presumido';
+    ttRegime.style.display='';
+  } else {
+    icon.style.background='#7c3aed';
+    label.textContent='Lucro Real';
+    footer.textContent='IRPJ/CSLL – Lucro Real';
+    ttRegime.className='topbar-badge badge-purple';
+    ttRegime.textContent='Lucro Real';
+    ttRegime.style.display='';
+  }
+}
+
+// ─── UPLOAD ───
 const uzone=document.getElementById('uzone'),finput=document.getElementById('finput');
 uzone.addEventListener('click',()=>finput.click());
 uzone.addEventListener('dragover',e=>{e.preventDefault();uzone.classList.add('over');});
 uzone.addEventListener('dragleave',()=>uzone.classList.remove('over'));
 uzone.addEventListener('drop',e=>{e.preventDefault();uzone.classList.remove('over');if(e.dataTransfer.files[0]){FILE=e.dataTransfer.files[0];showFile();}});
 finput.addEventListener('change',e=>{if(e.target.files[0]){FILE=e.target.files[0];showFile();}});
+
 function showFile(){
   document.getElementById('flist').innerHTML=`<div class="file-item anim"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--purple,#7c3aed)" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span class="fname">${FILE.name}</span><span class="fsize">${(FILE.size/1024/1024).toFixed(2)} MB</span><span class="file-remove" onclick="clearFile()">✕</span></div>`;
   document.getElementById('import-bar').style.display='flex';
 }
+
 function clearFile(){
   FILE=null;D=null;
   document.getElementById('flist').innerHTML='';
   document.getElementById('import-bar').style.display='none';
   document.getElementById('pstatus').textContent='';
-  ['plano','saldos','bp','dre','lalur','lacs'].forEach(k=>{const b=document.getElementById('badge-'+k);if(b)b.style.display='none';});
-  document.getElementById('tt-empresa').style.display='none';
-  document.getElementById('tt-periodo').style.display='none';
+  ['plano','saldos','bp','dre','lalur','lacs','pbp','pdre'].forEach(k=>{const b=document.getElementById('badge-'+k);if(b)b.style.display='none';});
+  ['tt-empresa','tt-periodo','tt-regime'].forEach(id=>{document.getElementById(id).style.display='none';});
+  document.getElementById('sidebar').classList.remove('lp-mode','lr-mode');
 }
+
 async function processFile(){
   if(!FILE)return;
   const st=document.getElementById('pstatus');
@@ -365,131 +548,326 @@ async function processFile(){
     }
     st.textContent='Processando registros...';
     D=parseECF(text,FILE.name);
-    const BS={plano:D.j050.length,saldos:Object.values(D.k155).reduce((s,a)=>s+a.length,0),bp:Object.values(D.l100).reduce((s,a)=>s+a.length,0),dre:Object.values(D.l300).reduce((s,a)=>s+a.length,0),lalur:Object.values(D.m300).reduce((s,a)=>s+a.length,0),lacs:Object.values(D.m350).reduce((s,a)=>s+a.length,0)};
+    applyRegimeMode(D.regime);
+    const BS={
+      plano:D.j050.length,
+      saldos:Object.values(D.k155).reduce((s,a)=>s+a.length,0),
+      bp:Object.values(D.l100).reduce((s,a)=>s+a.length,0),
+      dre:Object.values(D.l300).reduce((s,a)=>s+a.length,0),
+      lalur:Object.values(D.m300).reduce((s,a)=>s+a.length,0),
+      lacs:Object.values(D.m350).reduce((s,a)=>s+a.length,0),
+      pbp:Object.values(D.p100).reduce((s,a)=>s+a.length,0),
+      pdre:Object.values(D.p150).reduce((s,a)=>s+a.length,0)
+    };
     Object.entries(BS).forEach(([k,v])=>{const b=document.getElementById('badge-'+k);if(b){b.textContent=v;b.style.display=v?'':'none';}});
     const e=document.getElementById('tt-empresa');e.textContent=D.empresa.nome;e.style.display='';
     const p=document.getElementById('tt-periodo');p.textContent=`${fmtDt(D.empresa.dtIni)} a ${fmtDt(D.empresa.dtFin)}`;p.style.display='';
-    st.textContent=`Concluído: ${D.totalLinhas.toLocaleString('pt-BR')} linhas · ${D.periodos.length} período(s) · ${D.j050.length} contas`;
+    st.textContent=`Concluído: ${D.totalLinhas.toLocaleString('pt-BR')} linhas · ${D.periodos.length} período(s) · ${D.j050.length} contas · Regime: ${D.regime==='LP'?'Lucro Presumido':'Lucro Real'}`;
     st.style.color='var(--green)';
     nav('dash');
   }catch(e){console.error(e);st.textContent='Erro: '+e.message;st.style.color='var(--red)';}
 }
 
-// PARSER
+// ─── PARSER ───
 function parseECF(text,fname){
   const lines=text.split(/\r?\n/);
-  const d={fname,totalLinhas:lines.length,empresa:{},params0010:{},params0020:{},periodos:[],j050:[],k155:{},l100:{},l300:{},l210:{},m300:{},m350:{},m500:{},m510:{},s930:[],regs9900:[],regs:{}};
-  let curK=null,curL=null,curM=null;
+  const d={
+    fname,totalLinhas:lines.length,regime:'LP',
+    empresa:{},params0010:{},params0020:{},
+    periodos:[],
+    j050:[],
+    k155:{},
+    // LR
+    l100:{},l300:{},l210:{},
+    m300:{},m350:{},m500:{},m510:{},
+    // LP
+    p100:{},p150:{},p200:{},p230:{},p300:{},p400:{},
+    s930:[],regs9900:[],regs:{}
+  };
+  let curK=null,curL=null,curM=null,curP=null;
+
   for(const raw of lines){
     if(!raw.startsWith('|'))continue;
     const f=sp(raw);const reg=f[0];if(!reg)continue;
     d.regs[reg]=(d.regs[reg]||0)+1;
+
     switch(reg){
-      case '0000': d.empresa={cnpj:f[3],nome:f[4],indSitIni:f[5],sitEsp:f[6],dtIni:f[9],dtFin:f[10]}; break;
-      case '0010': d.params0010={optRefis:f[2],formaTrib:f[3],formaApur:f[4],codQualif:f[5],formaTribPer:f[6]}; break;
-      case '0020': d.params0020={indAliqCsll:f[1]}; break;
-      case '0930': d.s930.push({nome:f[1],cpfCnpj:f[2],qualif:f[3],crc:f[4],email:f[5],tel:f[6]}); break;
-      case 'J050': d.j050.push({dtAlt:f[1],codNat:f[2],indCta:f[3],nivel:parseInt(f[4])||1,codCta:f[5],codSup:f[6],nome:f[7],refs:[]}); break;
-      case 'J051': if(d.j050.length)d.j050[d.j050.length-1].refs.push(f[1]); break;
-      case 'K030': curK={dtIni:f[1],dtFin:f[2],per:f[3]};if(!d.periodos.find(p=>p.per===f[3]))d.periodos.push(curK);if(!d.k155[f[3]])d.k155[f[3]]=[]; break;
-      case 'K155': if(curK)d.k155[curK.per].push({codCta:f[1],codCcus:f[2],vlIni:pn(f[3]),indIni:f[4],vlDeb:pn(f[5]),vlCred:pn(f[6]),vlFin:pn(f[7]),indFin:f[8]}); break;
-      case 'L030': curL={dtIni:f[1],dtFin:f[2],per:f[3]};['l100','l300','l210'].forEach(k=>{if(!d[k][f[3]])d[k][f[3]]=[]}); break;
-      case 'L100': if(curL)d.l100[curL.per].push({codigo:f[1],descricao:f[2],tipo:f[3],nivel:parseInt(f[4])||1,codNat:f[5],codSup:f[6],vlIni:pn(f[7]),indIni:f[8],vlDeb:pn(f[9]),vlCred:pn(f[10]),vlFin:pn(f[11]),indFin:f[12]}); break;
-      case 'L300': if(curL)d.l300[curL.per].push({codigo:f[1],descricao:f[2],tipo:f[3],nivel:parseInt(f[4])||1,codNat:f[5],codSup:f[6],valor:pn(f[7]),indValor:f[8]}); break;
-      case 'L210': if(curL)d.l210[curL.per].push({codigo:f[1],descricao:f[2],valor:pn(f[3])}); break;
-      case 'M030': curM={dtIni:f[1],dtFin:f[2],per:f[3]};['m300','m350','m500','m510'].forEach(k=>{if(!d[k][f[3]])d[k][f[3]]=[]}); break;
-      // M300: |M300|CODIGO|DESCRICAO|IND_TIPO|NUM_ORDEM|VALOR|HIST|
-      case 'M300': if(curM)d.m300[curM.per].push({codigo:f[1],descricao:f[2],indTipo:f[3],numOrdem:parseInt(f[4])||0,valor:pn(f[5]),hist:f[6]||''}); break;
-      case 'M350': if(curM)d.m350[curM.per].push({codigo:f[1],descricao:f[2],indTipo:f[3],numOrdem:parseInt(f[4])||0,valor:pn(f[5]),hist:f[6]||''}); break;
-      case 'M500': if(curM)d.m500[curM.per].push({codCta:f[1],indTipo:f[2],vlIni:pn(f[3]),indIni:f[4],vlLan:pn(f[5]),indLan:f[6],vlOd:pn(f[7]),indOd:f[8],vlFin:pn(f[9]),indFin:f[10]}); break;
-      case 'M510': if(curM)d.m510[curM.per].push({codCta:f[1],descricao:f[2],indTipo:f[3],vlIni:pn(f[4]),indIni:f[5],vlLan:pn(f[6]),indLan:f[7],vlOd:pn(f[8]),indOd:f[9],vlFin:pn(f[10]),indFin:f[11]}); break;
-      case '9900': d.regs9900.push({reg:f[1],qtd:parseInt(f[2])||0}); break;
+      // ── BLOCO 0 ──
+      case '0000':
+        d.empresa={cnpj:f[3],nome:f[4],indSitIni:f[5],sitEsp:f[6],dtIni:f[9],dtFin:f[10]};
+        break;
+      case '0010':
+        // |0010|HASH|IND_REFIS|IND_DFC|FORMA_APUR|COD_QUALIF|FORMA_TRIB_PER|COD_TRIB_CORP|IND_CEL|...
+        d.params0010={
+          hash:f[1],optRefis:f[2],indDfc:f[3],
+          formaApur:f[4],    // T=Trimestral, A=Anual
+          codQualif:f[5],
+          formaTribPer:f[6], // PPPP/RRRR/PPPR etc
+          codTribCorp:f[7],
+          indCel:f[8],
+          // formaTrib legacy: detectado via formaTribPer
+          formaTrib: /[P789]/.test((f[6]||'').toUpperCase())?'7':/[R]/.test((f[6]||'').toUpperCase())?'1':''
+        };
+        break;
+      case '0020':
+        // |0020|IND_ALQ_CSLL|...(muitos campos)
+        d.params0020={indAliqCsll:f[1]};
+        break;
+      case '0930':
+        d.s930.push({nome:f[1],cpfCnpj:f[2],qualif:f[3],crc:f[4],email:f[5],tel:f[6]});
+        break;
+
+      // ── BLOCO J ──
+      case 'J050':
+        // |J050|DT_ALT|COD_NAT|IND_CTA|NIVEL|COD_CTA|COD_SUP|NOME|
+        d.j050.push({dtAlt:f[1],codNat:f[2],indCta:f[3],nivel:parseInt(f[4])||1,codCta:f[5],codSup:f[6],nome:f[7],refs:[]});
+        break;
+      case 'J051':
+        if(d.j050.length)d.j050[d.j050.length-1].refs.push(f[1]);
+        break;
+
+      // ── BLOCO K ──
+      case 'K030':
+        curK={dtIni:f[1],dtFin:f[2],per:f[3]};
+        if(!d.periodos.find(p=>p.per===f[3]))d.periodos.push({...curK,bloco:'K'});
+        if(!d.k155[f[3]])d.k155[f[3]]=[];
+        break;
+      case 'K155':
+        if(curK)d.k155[curK.per].push({codCta:f[1],codCcus:f[2],vlIni:pn(f[3]),indIni:f[4],vlDeb:pn(f[5]),vlCred:pn(f[6]),vlFin:pn(f[7]),indFin:f[8]});
+        break;
+
+      // ── BLOCO L (Lucro Real) ──
+      case 'L030':
+        curL={dtIni:f[1],dtFin:f[2],per:f[3]};
+        ['l100','l300','l210'].forEach(k=>{if(!d[k][f[3]])d[k][f[3]]=[];});
+        break;
+      case 'L100':
+        // |L100|COD_AGL|DESC|IND_CTI_CNPJ|IND_TP_REG|COD_NAT|COD_SUP|VL_INI|IND_INI|VL_DEB|VL_CRED|VL_FIN|IND_FIN|
+        if(curL)d.l100[curL.per].push({
+          codigo:f[1],descricao:f[2],
+          indCtiCnpj:f[3],   // indicador CTI/CNPJ
+          indTpReg:f[4],     // S=saldo, M=movimento
+          codNat:f[5],codSup:f[6],
+          vlIni:pn(f[7]),indIni:f[8],vlDeb:pn(f[9]),vlCred:pn(f[10]),vlFin:pn(f[11]),indFin:f[12]
+        });
+        break;
+      case 'L300':
+        // |L300|COD_AGL|DESC|IND_CTI_CNPJ|IND_TP_REG|COD_NAT|COD_SUP|VL_FIN|IND_FIN|
+        if(curL)d.l300[curL.per].push({
+          codigo:f[1],descricao:f[2],
+          indCtiCnpj:f[3],indTpReg:f[4],
+          codNat:f[5],codSup:f[6],
+          valor:pn(f[7]),indValor:f[8]
+        });
+        break;
+      case 'L210':
+        if(curL)d.l210[curL.per].push({codigo:f[1],descricao:f[2],valor:pn(f[3])});
+        break;
+
+      // ── BLOCO M (Lucro Real – e-LALUR/e-LACS) ──
+      case 'M030':
+        curM={dtIni:f[1],dtFin:f[2],per:f[3]};
+        ['m300','m350','m500','m510'].forEach(k=>{if(!d[k][f[3]])d[k][f[3]]=[];});
+        break;
+      case 'M300':
+        if(curM)d.m300[curM.per].push({codigo:f[1],descricao:f[2],indTipo:f[3],numOrdem:parseInt(f[4])||0,valor:pn(f[5]),hist:f[6]||''});
+        break;
+      case 'M350':
+        if(curM)d.m350[curM.per].push({codigo:f[1],descricao:f[2],indTipo:f[3],numOrdem:parseInt(f[4])||0,valor:pn(f[5]),hist:f[6]||''});
+        break;
+      case 'M500':
+        if(curM)d.m500[curM.per].push({codCta:f[1],indTipo:f[2],vlIni:pn(f[3]),indIni:f[4],vlLan:pn(f[5]),indLan:f[6],vlOd:pn(f[7]),indOd:f[8],vlFin:pn(f[9]),indFin:f[10]});
+        break;
+      case 'M510':
+        if(curM)d.m510[curM.per].push({codCta:f[1],descricao:f[2],indTipo:f[3],vlIni:pn(f[4]),indIni:f[5],vlLan:pn(f[6]),indLan:f[7],vlOd:pn(f[8]),indOd:f[9],vlFin:pn(f[10]),indFin:f[11]});
+        break;
+
+      // ── BLOCO P (Lucro Presumido) ──
+      case 'P001':
+        break;
+      case 'P030':
+        // |P030|DT_INI|DT_FIN|NUM_ORD|
+        curP={dtIni:f[1],dtFin:f[2],per:f[3]};
+        if(!d.periodos.find(p=>p.per===f[3]))d.periodos.push({...curP,bloco:'P'});
+        ['p100','p150','p200','p230','p300','p400'].forEach(k=>{if(!d[k][f[3]])d[k][f[3]]=[];});
+        break;
+      case 'P100':
+        // |P100|COD_AGL|DESC|IND_CTI_CNPJ|IND_TP_REG|COD_NAT|COD_SUP|VL_INI|IND_INI|VL_DEB|VL_CRED|VL_FIN|IND_FIN|
+        if(curP)d.p100[curP.per].push({
+          codigo:f[1],descricao:f[2],
+          indCtiCnpj:f[3],indTpReg:f[4],
+          codNat:f[5],codSup:f[6],
+          nivel: f[1]?f[1].split('.').length:1,
+          vlIni:pn(f[7]),indIni:f[8],vlDeb:pn(f[9]),vlCred:pn(f[10]),vlFin:pn(f[11]),indFin:f[12]
+        });
+        break;
+      case 'P150':
+        // |P150|COD_AGL|DESC|IND_CTI_CNPJ|IND_TP_REG|COD_NAT|COD_SUP|VL_FIN|IND_FIN|
+        if(curP)d.p150[curP.per].push({
+          codigo:f[1],descricao:f[2],
+          indCtiCnpj:f[3],indTpReg:f[4],
+          codNat:f[5],codSup:f[6],
+          nivel: f[1]?f[1].split('.').length:1,
+          valor:pn(f[7]),indValor:f[8]
+        });
+        break;
+      case 'P200':
+        // |P200|NUM_LINHA|DESC|VALOR|
+        if(curP)d.p200[curP.per].push({linha:f[1],descricao:f[2],valor:f[3]!==undefined?pn(f[3]):null});
+        break;
+      case 'P230':
+        // |P230|NUM_LINHA|DESC|VALOR|
+        if(curP)d.p230[curP.per]=(d.p230[curP.per]||[]);
+        if(curP)d.p230[curP.per].push({linha:f[1],descricao:f[2],valor:f[3]!==undefined?pn(f[3]):null});
+        break;
+      case 'P300':
+        if(curP)d.p300[curP.per].push({linha:f[1],descricao:f[2],valor:f[3]!==undefined?pn(f[3]):null});
+        break;
+      case 'P400':
+        if(curP)d.p400[curP.per].push({linha:f[1],descricao:f[2],valor:f[3]!==undefined?pn(f[3]):null});
+        break;
+
+      case '9900':
+        d.regs9900.push({reg:f[1],qtd:parseInt(f[2])||0});
+        break;
     }
   }
   d.periodos.sort((a,b)=>a.dtIni.localeCompare(b.dtIni));
+  d.regime=detectRegime(d.params0010);
   return d;
 }
 
-// PERIOD TABS
-function tabs(containerId,renderFn){
+// ─── PERIOD TABS ───
+function tabs(containerId, renderFnName){
   if(!D?.periodos?.length)return;
   const el=document.getElementById(containerId);if(!el)return;
-  el.innerHTML=D.periodos.map((p,i)=>`<div class="period-tab${i===PER?' active':''}" onclick="PER=${i};tabs('${containerId}',${renderFn.name});${renderFn.name}();">${p.per} · ${fmtDt(p.dtIni)}</div>`).join('');
+  el.innerHTML=D.periodos.map((p,i)=>`<div class="period-tab${i===PER?' active':''}" onclick="PER=${i};tabs('${containerId}','${renderFnName}');window['${renderFnName}']();">${p.per} · ${fmtDt(p.dtIni)}</div>`).join('');
 }
 
-// DASHBOARD
+// ─── DASHBOARD ───
 function renderDash(){
   const el=document.getElementById('dash-c');if(!D){el.innerHTML='';return;}
-  const FORMA={'1':'Lucro Real Anual','2':'Lucro Real Trimestral','3':'Real+Presumido','4':'Real+Pres.+Arb.','5':'Imune/Isenta','7':'Lucro Presumido','8':'Imune','9':'Isenta'};
+  const FORMA_TRIB={'1':'Lucro Real Anual','2':'Lucro Real Trimestral','7':'Lucro Presumido','8':'Imune/Isenta'};
+  const FORMA_APUR={'T':'Trimestral','A':'Anual por Estimativa'};
+  const isLP=D.regime==='LP';
   const lastP=D.periodos[D.periodos.length-1]?.per;
-  // Totais BP
+
+  // ── KPIs BP (P100 para LP, L100 para LR) ──
   let totAtivo=0,totPassivo=0,totPL=0;
-  if(lastP&&D.l100[lastP])D.l100[lastP].filter(r=>r.tipo==='S'&&r.nivel===1).forEach(r=>{if(r.codNat==='01')totAtivo=r.vlFin;else if(r.codNat==='02')totPassivo=r.vlFin;else if(r.codNat==='03')totPL=r.vlFin;});
-  // Receita bruta DRE
-  let recBruta=0;
-  if(lastP&&D.l300[lastP]){const rb=D.l300[lastP].find(r=>r.descricao&&/RECEITA BRUTA/i.test(r.descricao)&&r.nivel<=4);if(rb)recBruta=rb.valor;}
-  // LALUR / LACS por período
-  const perRows=D.periodos.map(p=>{
-    const m3=D.m300[p.per]||[];
-    const totais=m3.filter(r=>r.indTipo==='L');
-    const lliq=totais[0]?.valor||0;
-    const lreal=totais[totais.length-1]?.valor||0;
-    const adic=m3.filter(r=>r.indTipo==='A'&&r.valor>0).reduce((s,r)=>s+r.valor,0);
-    const excl=m3.filter(r=>r.indTipo==='E'&&r.valor>0).reduce((s,r)=>s+r.valor,0);
-    const m5=D.m350[p.per]||[];
-    const csllTot=m5.filter(r=>r.indTipo==='L');
-    const bcCsll=csllTot[csllTot.length-1]?.valor||0;
-    const m510=D.m510[p.per]||[];
-    const prej=m510.reduce((s,r)=>s+(r.indFin==='D'?r.vlFin:0),0);
-    return{...p,lliq,lreal,adic,excl,bcCsll,prej};
+  const bpData=isLP?(D.p100[lastP]||[]):(D.l100[lastP]||[]);
+  // P100/L100: identificar totais pelo codNat e nivel=1 (código de 1 nível)
+  bpData.filter(r=>r.codigo&&r.codigo.split('.').length===1&&r.codNat).forEach(r=>{
+    if(r.codNat==='01')totAtivo=r.vlFin;
+    else if(r.codNat==='02')totPassivo=r.vlFin;
+    else if(r.codNat==='03')totPL=r.vlFin;
   });
+  // fallback: nivel baseado no nr de pontos no código
+  if(!totAtivo&&bpData.length){
+    bpData.filter(r=>r.nivel===1&&r.codNat==='01').forEach(r=>totAtivo=r.vlFin);
+    bpData.filter(r=>r.nivel===1&&r.codNat==='02').forEach(r=>totPassivo=r.vlFin);
+    bpData.filter(r=>r.nivel===1&&r.codNat==='03').forEach(r=>totPL=r.vlFin);
+  }
+
+  // ── Receita Bruta (P150 ou L300) ──
+  let recBruta=0;
+  if(isLP&&lastP){
+    const p15=D.p150[lastP]||[];
+    const rb=p15.find(r=>r.descricao&&/RECEITA BRUTA/i.test(r.descricao)&&r.nivel<=5);
+    if(rb)recBruta=rb.valor;
+  } else if(lastP){
+    const l3=D.l300[lastP]||[];
+    const rb=l3.find(r=>r.descricao&&/RECEITA BRUTA/i.test(r.descricao));
+    if(rb)recBruta=rb.valor;
+  }
+
+  // ── Resumo por período ──
+  const perRows=D.periodos.map(p=>{
+    let irBC=0,irPago=0,csllBC=0,csllPago=0,recBr=0,lucroLiq=0;
+    if(isLP){
+      // P200: linha 26 = BC IRPJ; P300: linha 3+4=IR; P400: linha 21=BC CSLL
+      const p2=D.p200[p.per]||[];
+      const p3=D.p300[p.per]||[];
+      const p4=D.p400[p.per]||[];
+      irBC=(p2.find(r=>r.linha==='26')?.valor)||0;
+      const ir15=(p3.find(r=>r.linha==='3')?.valor)||0;
+      const irAdd=(p3.find(r=>r.linha==='4')?.valor)||0;
+      irPago=ir15+irAdd;
+      csllBC=(p4.find(r=>r.linha==='21')?.valor)||0;
+      // Receita bruta P150
+      const p15=D.p150[p.per]||[];
+      const rbRow=p15.find(r=>r.codigo==='3.01.01.01.01'||(/RECEITA BRUTA/i.test(r.descricao||'')&&r.nivel<=5));
+      recBr=rbRow?.valor||0;
+      // Lucro líquido P150: linha raiz
+      const ll=p15.find(r=>r.nivel===1);
+      lucroLiq=ll?.valor||0;
+    } else {
+      const m3=D.m300[p.per]||[];
+      const m5=D.m350[p.per]||[];
+      // e-LALUR: pegar Lucro Líquido pelo código (começa com '03.30' ou similar) e Lucro Real pelo último totalizador
+      const totL=m3.filter(r=>r.indTipo==='L');
+      lucroLiq=totL[0]?.valor||0;
+      irBC=totL[totL.length-1]?.valor||0;
+      const l3=D.l300[p.per]||[];
+      const rbRow=l3.find(r=>r.descricao&&/RECEITA BRUTA/i.test(r.descricao));
+      recBr=rbRow?.valor||0;
+      const totM=m5.filter(r=>r.indTipo==='L');
+      csllBC=totM[totM.length-1]?.valor||0;
+    }
+    return{...p,irBC,irPago,csllBC,recBr,lucroLiq};
+  });
+
+  const TRIB=isLP?'Lucro Presumido':'Lucro Real';
+  const tagClass=isLP?'tag-orange':'tag-purple';
+
   el.innerHTML=`
-  <div style="padding:12px 16px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:10px;font-size:13px;display:flex;gap:20px;flex-wrap:wrap;margin-bottom:18px;">
+  <div style="padding:12px 16px;background:${isLP?'#fff7ed':'#f5f3ff'};border:1px solid ${isLP?'#fed7aa':'#ddd6fe'};border-radius:10px;font-size:13px;display:flex;gap:20px;flex-wrap:wrap;margin-bottom:18px;">
     <span><b>Empresa:</b> ${D.empresa.nome}</span>
     <span><b>CNPJ:</b> ${fmtCNPJ(D.empresa.cnpj)}</span>
     <span><b>Período:</b> ${fmtDt(D.empresa.dtIni)} a ${fmtDt(D.empresa.dtFin)}</span>
-    <span><b>Regime:</b> ${D.params0010.formaTrib} – ${FORMA[D.params0010.formaTrib]||'—'}</span>
-    <span><b>CSLL:</b> ${D.params0020.indAliqCsll==='1'?'9%':D.params0020.indAliqCsll==='3'?'20%':'15%'}</span>
+    <span><b>Regime:</b> <span class="tag ${tagClass}" style="font-size:11px;">${TRIB}</span></span>
+    <span><b>Apuração:</b> ${FORMA_APUR[D.params0010.formaApur]||D.params0010.formaApur||'Trimestral'}</span>
+    <span><b>CSLL:</b> ${D.params0020.indAliqCsll==='0'?'9%':D.params0020.indAliqCsll==='1'?'15%':D.params0020.indAliqCsll==='2'?'20%':'9%'}</span>
   </div>
   <div class="g4" style="margin-bottom:18px;">
-    <div class="stat"><div class="stat-label">Ativo Total (último período)</div><div class="stat-val" style="font-size:18px;color:var(--blue);">R$ ${fm(totAtivo)}</div></div>
+    <div class="stat"><div class="stat-label">Ativo Total</div><div class="stat-val" style="font-size:18px;color:var(--blue);">R$ ${fm(totAtivo)}</div><div class="stat-sub">último período</div></div>
     <div class="stat"><div class="stat-label">Patrimônio Líquido</div><div class="stat-val" style="font-size:18px;color:${totPL>=0?'var(--green)':'var(--red)'};">R$ ${fm(totPL)}</div></div>
-    <div class="stat"><div class="stat-label">Receita Bruta (L300)</div><div class="stat-val" style="font-size:18px;">R$ ${fm(recBruta)}</div></div>
+    <div class="stat"><div class="stat-label">Receita Bruta</div><div class="stat-val" style="font-size:18px;">R$ ${fm(recBruta)}</div><div class="stat-sub">${lastP||''}</div></div>
     <div class="stat"><div class="stat-label">Passivo Total</div><div class="stat-val" style="font-size:18px;">R$ ${fm(totPassivo)}</div></div>
   </div>
-  <div class="card" style="margin-bottom:20px;"><div class="card-h"><h3>Apuração por Período – IRPJ (e-LALUR M300) e CSLL (e-LACS M350)</h3></div>
+  <div class="card" style="margin-bottom:20px;"><div class="card-h"><h3>Resumo de Apuração por Período – ${TRIB}</h3></div>
   <div class="card-b" style="padding:0;overflow:auto;">
-  <table class="tbl"><thead><tr><th>Período</th><th>Início</th><th>Fim</th><th class="r">Lucro Líquido</th><th class="r">Adições</th><th class="r">Exclusões</th><th class="r">Lucro Real (IRPJ)</th><th class="r">BC CSLL</th><th class="r">Prejuízo Acum.</th></tr></thead><tbody>
+  <table class="tbl"><thead><tr>
+    <th>Período</th><th>Início</th><th>Fim</th>
+    <th class="r">Receita Bruta</th>
+    <th class="r">${isLP?'Lucro Líquido (DRE)':'Lucro Líquido'}</th>
+    <th class="r">${isLP?'Base IRPJ (P200 L26)':'Lucro Real (IRPJ)'}</th>
+    <th class="r">${isLP?'BC CSLL (P400 L21)':'BC CSLL (M350)'}</th>
+    ${isLP?'<th class="r">IR Apurado</th>':''}
+  </tr></thead><tbody>
   ${perRows.map(p=>`<tr>
     <td class="mono" style="font-weight:700;">${p.per}</td>
     <td class="mono">${fmtDt(p.dtIni)}</td><td class="mono">${fmtDt(p.dtFin)}</td>
-    <td class="mono r">${p.lliq?'R$ '+fm(p.lliq):'—'}</td>
-    <td class="mono r" style="color:var(--red);">${p.adic?'R$ '+fm(p.adic):'—'}</td>
-    <td class="mono r" style="color:var(--green);">${p.excl?'R$ '+fm(p.excl):'—'}</td>
-    <td class="mono r" style="font-weight:800;color:${p.lreal>=0?'var(--green)':'var(--red)'};">${p.lreal!==0?'R$ '+fm(p.lreal):'—'}</td>
-    <td class="mono r" style="font-weight:700;color:${p.bcCsll>=0?'var(--green)':'var(--red)'};">${p.bcCsll!==0?'R$ '+fm(p.bcCsll):'—'}</td>
-    <td class="mono r" style="color:var(--amber);">${p.prej?'R$ '+fm(p.prej):'—'}</td>
+    <td class="mono r">${p.recBr?'R$ '+fm(p.recBr):'—'}</td>
+    <td class="mono r" style="color:${p.lucroLiq>=0?'var(--green)':'var(--red)'};">${p.lucroLiq!==0?'R$ '+fm(p.lucroLiq):'—'}</td>
+    <td class="mono r" style="font-weight:800;color:${p.irBC>=0?'var(--green)':'var(--red)'};">${p.irBC!==0?'R$ '+fm(p.irBC):'—'}</td>
+    <td class="mono r" style="font-weight:700;color:${p.csllBC>=0?'var(--green)':'var(--red)'};">${p.csllBC!==0?'R$ '+fm(p.csllBC):'—'}</td>
+    ${isLP?`<td class="mono r" style="font-weight:700;color:var(--red);">${p.irPago?'R$ '+fm(p.irPago):'—'}</td>`:''}
   </tr>`).join('')}
   </tbody></table></div></div>
-  <div class="g2">
-    <div class="card"><div class="card-h"><h3>Parte B – Saldo de Prejuízos/Bases Negativas (M510)</h3></div><div class="card-b" style="padding:0;overflow:auto;max-height:280px;">
-    <table class="tbl"><thead><tr><th>Período</th><th>Conta</th><th>Descrição</th><th class="r">Saldo Final</th><th>D/C</th></tr></thead><tbody>
-    ${D.periodos.flatMap(p=>(D.m510[p.per]||[]).map(r=>`<tr><td class="mono">${p.per}</td><td class="mono">${r.codCta}</td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.descricao}</td><td class="mono r" style="font-weight:700;">${r.vlFin?'R$ '+fm(r.vlFin):'—'}</td><td><span class="tag ${r.indFin==='D'?'tag-red':'tag-green'}" style="font-size:10px;">${r.indFin}</span></td></tr>`)).join('')||'<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-3);">Sem dados</td></tr>'}
-    </tbody></table></div></div>
-    <div class="card"><div class="card-h"><h3>Registros no Arquivo (9900)</h3></div><div class="card-b" style="padding:0;overflow:auto;max-height:280px;">
-    <table class="tbl"><thead><tr><th>Registro</th><th class="r">Qtd</th></tr></thead><tbody>
-    ${D.regs9900.sort((a,b)=>b.qtd-a.qtd).map(r=>`<tr><td class="mono">${r.reg}</td><td class="mono r">${fi(r.qtd)}</td></tr>`).join('')}
-    </tbody></table></div></div>
-  </div>`;
+  <div class="card"><div class="card-h"><h3>Registros no Arquivo (9900)</h3></div>
+  <div class="card-b" style="padding:0;overflow:auto;max-height:280px;">
+  <table class="tbl"><thead><tr><th>Registro</th><th class="r">Qtd</th></tr></thead><tbody>
+  ${D.regs9900.sort((a,b)=>b.qtd-a.qtd).map(r=>`<tr><td class="mono">${r.reg}</td><td class="mono r">${fi(r.qtd)}</td></tr>`).join('')}
+  </tbody></table></div></div>`;
 }
 
-// IDENTIFICAÇÃO
+// ─── IDENTIFICAÇÃO ───
 function renderIdent(){
   const el=document.getElementById('ident-c');if(!D)return;
-  const FORMA={'1':'Lucro Real Anual','2':'Lucro Real Trimestral','3':'Real+Presumido','4':'Real+Pres+Arb','7':'Lucro Presumido','8':'Imune','9':'Isenta'};
+  const isLP=D.regime==='LP';
   const APUR={'T':'Trimestral','A':'Anual por Estimativa'};
   const QUALIF={'01':'PJ em Geral','02':'Seguradoras','03':'Bancos','04':'Cooperativas','05':'Previdência'};
-  const CSLL={'1':'9%','3':'20%','4':'15%'};
+  const CSLL={'0':'9%','1':'15%','2':'20%','3':'20%'};
   const f=(l,v)=>`<div class="ifield"><div class="ilbl">${l}</div><div class="ival">${v||'—'}</div></div>`;
   el.innerHTML=`<div class="g2" style="gap:14px;">
   <div class="card"><div class="card-h"><h3>0000 – Identificação da Pessoa Jurídica</h3></div><div class="card-b">
@@ -504,38 +882,52 @@ function renderIdent(){
   </div></div>
   <div class="card"><div class="card-h"><h3>0010 / 0020 – Parâmetros de Tributação</h3></div><div class="card-b">
     <div class="info-grid">
-      ${f('Forma de Tributação',`${D.params0010.formaTrib} – ${FORMA[D.params0010.formaTrib]||'—'}`)}
+      ${f('Regime Tributário',`<span class="tag ${isLP?'tag-orange':'tag-purple'}">${isLP?'Lucro Presumido':'Lucro Real'}</span>`)}
       ${f('Forma de Apuração',`${D.params0010.formaApur} – ${APUR[D.params0010.formaApur]||D.params0010.formaApur||'—'}`)}
-      ${f('Qualificação PJ',`${D.params0010.codQualif} – ${QUALIF[D.params0010.codQualif]||'—'}`)}
-      ${f('Forma Trib. no Período',D.params0010.formaTribPer||'—')}
+      ${f('FORMA_TRIB_PER',D.params0010.formaTribPer||'—')}
+      ${f('Qualificação PJ',`${D.params0010.codQualif} – ${QUALIF[D.params0010.codQualif]||D.params0010.codQualif||'—'}`)}
       ${f('Optante REFIS',D.params0010.optRefis==='S'?'Sim':'Não')}
-      ${f('Alíquota CSLL',`${D.params0020.indAliqCsll} – ${CSLL[D.params0020.indAliqCsll]||'—'}`)}
+      ${f('Alíquota CSLL',`${D.params0020.indAliqCsll} – ${CSLL[D.params0020.indAliqCsll]||'9%'}`)}
     </div>
   </div></div></div>`;
 }
 
-// PERÍODOS
+// ─── PERÍODOS ───
 function renderPeriodos(){
   const el=document.getElementById('periodos-c');if(!D)return;
-  el.innerHTML=`<div class="card"><div class="card-h"><h3>Períodos de Apuração (K030 / L030 / M030)</h3></div><div class="card-b" style="padding:0;">
-  <table class="tbl"><thead><tr><th>Período</th><th>Início</th><th>Fim</th><th>Tipo</th><th class="r">K155</th><th class="r">L100 (BP)</th><th class="r">L300 (DRE)</th><th class="r">M300 (LALUR)</th><th class="r">M350 (LACS)</th></tr></thead><tbody>
+  const isLP=D.regime==='LP';
+  document.getElementById('periodos-sub').textContent=
+    isLP?'Registros P030 – períodos do Bloco P (Lucro Presumido).':'Registros K030/L030/M030 – períodos de apuração.';
+  el.innerHTML=`<div class="card"><div class="card-h"><h3>Períodos de Apuração</h3></div><div class="card-b" style="padding:0;">
+  <table class="tbl"><thead><tr>
+    <th>Período</th><th>Início</th><th>Fim</th><th>Tipo</th>
+    <th class="r">K155</th>
+    ${isLP?`<th class="r">P100 (BP)</th><th class="r">P150 (DRE)</th><th class="r">P200 (BC IRPJ)</th><th class="r">P300 (IRPJ)</th><th class="r">P400 (CSLL)</th>`
+           :`<th class="r">L100 (BP)</th><th class="r">L300 (DRE)</th><th class="r">M300 (LALUR)</th><th class="r">M350 (LACS)</th>`}
+  </tr></thead><tbody>
   ${D.periodos.map(p=>`<tr>
     <td class="mono" style="font-weight:700;">${p.per}</td>
     <td class="mono">${fmtDt(p.dtIni)}</td><td class="mono">${fmtDt(p.dtFin)}</td>
-    <td><span class="tag tag-purple" style="font-size:10px;">${p.per.startsWith('T')?'Trimestral':'Anual'}</span></td>
+    <td><span class="tag ${isLP?'tag-orange':'tag-purple'}" style="font-size:10px;">${isLP?'Presumido':'Real'}</span></td>
     <td class="mono r">${(D.k155[p.per]||[]).length}</td>
-    <td class="mono r">${(D.l100[p.per]||[]).length}</td>
-    <td class="mono r">${(D.l300[p.per]||[]).length}</td>
-    <td class="mono r">${(D.m300[p.per]||[]).length}</td>
-    <td class="mono r">${(D.m350[p.per]||[]).length}</td>
+    ${isLP?
+      `<td class="mono r">${(D.p100[p.per]||[]).length}</td>
+       <td class="mono r">${(D.p150[p.per]||[]).length}</td>
+       <td class="mono r">${(D.p200[p.per]||[]).length}</td>
+       <td class="mono r">${(D.p300[p.per]||[]).length}</td>
+       <td class="mono r">${(D.p400[p.per]||[]).length}</td>`:
+      `<td class="mono r">${(D.l100[p.per]||[]).length}</td>
+       <td class="mono r">${(D.l300[p.per]||[]).length}</td>
+       <td class="mono r">${(D.m300[p.per]||[]).length}</td>
+       <td class="mono r">${(D.m350[p.per]||[]).length}</td>`}
   </tr>`).join('')}
   </tbody></table></div></div>`;
 }
 
-// SIGNATÁRIOS
+// ─── SIGNATÁRIOS ───
 function renderSignatarios(){
   const el=document.getElementById('signatarios-c');if(!D)return;
-  const Q={'999':'Responsável (PJ)','900':'Contador','1':'Diretor','2':'Sócio','3':'Administrador'};
+  const Q={'999':'Responsável (PJ)','900':'Contador','309':'Contador','1':'Diretor','2':'Sócio','3':'Administrador'};
   el.innerHTML=`<div class="card"><div class="card-b" style="padding:0;">
   <table class="tbl"><thead><tr><th>Nome</th><th>CPF / CNPJ</th><th>Qualificação</th><th>CRC</th><th>E-mail</th><th>Telefone</th></tr></thead><tbody>
   ${D.s930.map(s=>`<tr>
@@ -549,23 +941,23 @@ function renderSignatarios(){
   </tbody></table></div></div>`;
 }
 
-// PLANO DE CONTAS
+// ─── PLANO DE CONTAS ───
 function renderPlano(){
   const el=document.getElementById('plano-c');if(!D)return;
   const NAT={'01':'Ativo','02':'Passivo','03':'PL','04':'Resultado','05':'Compensação'};
   const NC={'01':'tag-blue','02':'tag-red','03':'tag-purple','04':'tag-amber','05':'tag-green'};
   el.innerHTML=`<div class="card"><div class="card-b" style="padding:0;overflow:auto;max-height:70vh;">
   <table class="tbl" id="plano-tbl"><thead><tr><th>Código</th><th>Nome</th><th>Natureza</th><th>Tipo</th><th>Nível</th><th>Superior</th><th>Ref. J051</th></tr></thead><tbody>
-  ${D.j050.map(c=>{const i=Math.max(0,c.nivel-1)*14;const b=c.nivel<=2?'font-weight:700;':'';return`<tr style="${b}"><td class="mono" style="padding-left:${i+12}px;">${c.codCta}</td><td>${c.nome}</td><td><span class="tag ${NC[c.codNat]||'tag-green'}" style="font-size:10px;">${NAT[c.codNat]||c.codNat}</span></td><td><span class="tag ${c.indCta==='A'?'tag-green':'tag-amber'}" style="font-size:10px;">${c.indCta==='A'?'Analítica':'Sintética'}</span></td><td class="mono">${c.nivel}</td><td class="mono" style="font-size:11px;">${c.codSup||'—'}</td><td class="mono" style="font-size:11px;">${c.refs.join(', ')||'—'}</td></tr>`;}).join('')}
+  ${D.j050.map(c=>{const i=Math.max(0,c.nivel-1)*14;const b=c.nivel<=2?'font-weight:700;':'';
+  return`<tr style="${b}"><td class="mono" style="padding-left:${i+12}px;">${c.codCta}</td><td>${c.nome}</td><td><span class="tag ${NC[c.codNat]||'tag-green'}" style="font-size:10px;">${NAT[c.codNat]||c.codNat}</span></td><td><span class="tag ${c.indCta==='A'?'tag-green':'tag-amber'}" style="font-size:10px;">${c.indCta==='A'?'Analítica':'Sintética'}</span></td><td class="mono">${c.nivel}</td><td class="mono" style="font-size:11px;">${c.codSup||'—'}</td><td class="mono" style="font-size:11px;">${c.refs.join(', ')||'—'}</td></tr>`;
+  }).join('')}
   </tbody></table></div></div>`;
 }
 
-// SALDOS K155
+// ─── SALDOS K155 ───
 function renderSaldos(){
-  tabs('saldos-tabs',renderSaldos);
-  const per=D.periodos[PER]?.per;
-  const rows=D.k155[per]||[];
-  const el=document.getElementById('saldos-c');
+  tabs('saldos-tabs','renderSaldos');
+  const per=D.periodos[PER]?.per;const rows=D.k155[per]||[];const el=document.getElementById('saldos-c');
   if(!rows.length){el.innerHTML='<div class="empty"><h3>Sem saldos para este período</h3></div>';return;}
   const ctaMap={};D.j050.forEach(c=>{ctaMap[c.codCta]=c.nome;});
   el.innerHTML=`<div class="card"><div class="card-b" style="padding:0;overflow:auto;max-height:65vh;">
@@ -583,64 +975,72 @@ function renderSaldos(){
   </tbody></table></div></div>`;
 }
 
-// BALANÇO PATRIMONIAL L100
-function renderBP(){
-  tabs('bp-tabs',renderBP);
-  const per=D.periodos[PER]?.per;const rows=D.l100[per]||[];const el=document.getElementById('bp-c');
-  if(!rows.length){el.innerHTML='<div class="empty"><h3>Sem Balanço para este período</h3></div>';return;}
+// ─── HELPER: render BP genérico (P100 ou L100) ───
+function renderBPGeneric(containerEl, tabsId, data, tblId){
+  const per=D.periodos[PER]?.per;const rows=data[per]||[];
+  if(!rows.length){containerEl.innerHTML='<div class="empty"><h3>Sem Balanço para este período</h3></div>';return;}
   const NAT={'01':'Ativo','02':'Passivo','03':'PL','04':'Result.'};
-  const ativo=rows.find(r=>r.nivel===1&&r.codNat==='01');
-  const passivo=rows.find(r=>r.nivel===1&&r.codNat==='02');
-  const pl=rows.find(r=>r.nivel===1&&r.codNat==='03');
+  // Totais pelo código de nível 1
+  const ativo=rows.find(r=>r.nivel===1&&r.codNat==='01')||rows.find(r=>r.codigo&&r.codigo.split('.').length===1&&r.codNat==='01');
+  const passivo=rows.find(r=>r.nivel===1&&r.codNat==='02')||rows.find(r=>r.codigo&&r.codigo.split('.').length===1&&r.codNat==='02');
+  const pl=rows.find(r=>r.nivel===1&&r.codNat==='03')||rows.find(r=>r.codigo&&r.codigo.split('.').length===1&&r.codNat==='03');
   const kpis=`<div class="g3" style="margin-bottom:18px;">
     ${ativo?`<div class="stat"><div class="stat-label">Ativo Total</div><div class="stat-val" style="font-size:18px;color:var(--blue);">R$ ${fm(ativo.vlFin)}</div></div>`:''}
     ${passivo?`<div class="stat"><div class="stat-label">Passivo Total</div><div class="stat-val" style="font-size:18px;">R$ ${fm(passivo.vlFin)}</div></div>`:''}
     ${pl?`<div class="stat"><div class="stat-label">Patrimônio Líquido</div><div class="stat-val" style="font-size:18px;color:${pl.vlFin>=0?'var(--green)':'var(--red)'};">R$ ${fm(pl.vlFin)}</div></div>`:''}
   </div>`;
-  el.innerHTML=kpis+`<div class="card"><div class="card-b" style="padding:0;overflow:auto;max-height:62vh;">
-  <table class="tbl" id="bp-tbl"><thead><tr><th>Código</th><th>Descrição</th><th>Nat.</th><th>T</th><th>D/C Ini</th><th class="r">Saldo Inicial</th><th class="r">Débitos</th><th class="r">Créditos</th><th>D/C Fin</th><th class="r">Saldo Final</th></tr></thead><tbody>
-  ${rows.map(r=>{const i=Math.max(0,r.nivel-1)*12;const b=r.nivel<=2?'font-weight:700;':'';
-  return`<tr style="${b}"><td class="mono" style="padding-left:${i+12}px;font-size:11px;">${r.codigo}</td><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.descricao}</td><td><span class="tag ${r.codNat==='01'?'tag-blue':r.codNat==='02'?'tag-red':'tag-purple'}" style="font-size:9px;">${NAT[r.codNat]||r.codNat}</span></td><td><span class="tag ${r.tipo==='A'?'tag-green':'tag-amber'}" style="font-size:9px;">${r.tipo}</span></td><td><span class="tag ${r.indIni==='D'?'tag-blue':'tag-red'}" style="font-size:9px;">${r.indIni}</span></td><td class="mono r">R$ ${fm(r.vlIni)}</td><td class="mono r">R$ ${fm(r.vlDeb)}</td><td class="mono r">R$ ${fm(r.vlCred)}</td><td><span class="tag ${r.indFin==='D'?'tag-blue':'tag-red'}" style="font-size:9px;">${r.indFin}</span></td><td class="mono r" style="${b}">R$ ${fm(r.vlFin)}</td></tr>`;}).join('')}
+  containerEl.innerHTML=kpis+`<div class="card"><div class="card-b" style="padding:0;overflow:auto;max-height:62vh;">
+  <table class="tbl" id="${tblId}"><thead><tr><th>Código</th><th>Descrição</th><th>Nat.</th><th>Nível</th><th>D/C Ini</th><th class="r">Saldo Inicial</th><th class="r">Débitos</th><th class="r">Créditos</th><th>D/C Fin</th><th class="r">Saldo Final</th></tr></thead><tbody>
+  ${rows.map(r=>{const i=Math.max(0,(r.nivel||1)-1)*10;const b=(r.nivel||1)<=2?'font-weight:700;':'';
+  return`<tr style="${b}"><td class="mono" style="padding-left:${i+12}px;font-size:11px;">${r.codigo}</td><td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.descricao}</td><td><span class="tag ${r.codNat==='01'?'tag-blue':r.codNat==='02'?'tag-red':'tag-purple'}" style="font-size:9px;">${NAT[r.codNat]||r.codNat}</span></td><td class="mono">${r.nivel||''}</td><td><span class="tag ${r.indIni==='D'?'tag-blue':'tag-red'}" style="font-size:9px;">${r.indIni}</span></td><td class="mono r">R$ ${fm(r.vlIni)}</td><td class="mono r">R$ ${fm(r.vlDeb)}</td><td class="mono r">R$ ${fm(r.vlCred)}</td><td><span class="tag ${r.indFin==='D'?'tag-blue':'tag-red'}" style="font-size:9px;">${r.indFin}</span></td><td class="mono r" style="${b}">R$ ${fm(r.vlFin)}</td></tr>`;
+  }).join('')}
   </tbody></table></div></div>`;
 }
 
-// DRE L300
-function renderDRE(){
-  tabs('dre-tabs',renderDRE);
-  const per=D.periodos[PER]?.per;const rows=D.l300[per]||[];const el=document.getElementById('dre-c');
-  if(!rows.length){el.innerHTML='<div class="empty"><h3>Sem DRE para este período</h3></div>';return;}
-  const res=rows.find(r=>r.nivel<=2&&r.valor!==0);
-  const kpis=res?`<div class="g4" style="margin-bottom:18px;"><div class="stat"><div class="stat-label">Resultado Líquido</div><div class="stat-val" style="font-size:18px;color:${res.indValor==='C'?'var(--green)':'var(--red)'};">R$ ${fm(res.valor)}</div><div class="stat-sub">${res.descricao}</div></div></div>`:'';
-  el.innerHTML=kpis+`<div class="card"><div class="card-b" style="padding:0;overflow:auto;max-height:65vh;">
-  <table class="tbl" id="dre-tbl"><thead><tr><th>Código</th><th>Descrição</th><th>T</th><th>D/C</th><th class="r">Valor (R$)</th></tr></thead><tbody>
-  ${rows.map(r=>{const i=Math.max(0,r.nivel-1)*12;const b=r.nivel<=2?'font-weight:700;':'';
-  return`<tr style="${b}"><td class="mono" style="padding-left:${i+12}px;font-size:11px;">${r.codigo}</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.descricao}</td><td><span class="tag ${r.tipo==='A'?'tag-green':'tag-amber'}" style="font-size:9px;">${r.tipo}</span></td><td><span class="tag ${r.indValor==='C'?'tag-green':'tag-red'}" style="font-size:9px;">${r.indValor}</span></td><td class="mono r" style="${b}color:${r.nivel<=2?(r.indValor==='C'?'var(--green)':'var(--red)'):'inherit'};">R$ ${fm(r.valor)}</td></tr>`;}).join('')}
+// ─── HELPER: render DRE genérico (P150 ou L300) ───
+function renderDREGeneric(containerEl, data, tblId){
+  const per=D.periodos[PER]?.per;const rows=data[per]||[];
+  if(!rows.length){containerEl.innerHTML='<div class="empty"><h3>Sem DRE para este período</h3></div>';return;}
+  const res=rows.find(r=>(r.nivel||1)<=2&&(r.valor||0)!==0);
+  const kpis=res?`<div class="g4" style="margin-bottom:18px;"><div class="stat"><div class="stat-label">Resultado do Período</div><div class="stat-val" style="font-size:18px;color:${res.indValor==='C'?'var(--green)':'var(--red)'};">R$ ${fm(res.valor)}</div><div class="stat-sub">${res.descricao||''}</div></div></div>`:''
+  containerEl.innerHTML=kpis+`<div class="card"><div class="card-b" style="padding:0;overflow:auto;max-height:65vh;">
+  <table class="tbl" id="${tblId}"><thead><tr><th>Código</th><th>Descrição</th><th>Nível</th><th>D/C</th><th class="r">Valor (R$)</th></tr></thead><tbody>
+  ${rows.map(r=>{const i=Math.max(0,(r.nivel||1)-1)*10;const b=(r.nivel||1)<=2?'font-weight:700;':'';
+  return`<tr style="${b}"><td class="mono" style="padding-left:${i+12}px;font-size:11px;">${r.codigo}</td><td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.descricao}</td><td class="mono">${r.nivel||''}</td><td><span class="tag ${r.indValor==='C'?'tag-green':'tag-red'}" style="font-size:9px;">${r.indValor||'—'}</span></td><td class="mono r" style="${b}color:${(r.nivel||1)<=2?(r.indValor==='C'?'var(--green)':'var(--red)'):'inherit'};">R$ ${fm(r.valor)}</td></tr>`;
+  }).join('')}
   </tbody></table></div></div>`;
 }
 
-// CUSTOS L210
+// ─── BP e DRE LR ───
+function renderBP(){tabs('bp-tabs','renderBP');renderBPGeneric(document.getElementById('bp-c'),'bp-tabs',D.l100,'bp-tbl');}
+function renderDRE(){tabs('dre-tabs','renderDRE');renderDREGeneric(document.getElementById('dre-c'),D.l300,'dre-tbl');}
+
+// ─── BP e DRE LP ───
+function renderPBP(){tabs('pbp-tabs','renderPBP');renderBPGeneric(document.getElementById('pbp-c'),'pbp-tabs',D.p100,'pbp-tbl');}
+function renderPDRE(){tabs('pdre-tabs','renderPDRE');renderDREGeneric(document.getElementById('pdre-c'),D.p150,'pdre-tbl');}
+
+// ─── CUSTOS L210 (LR) ───
 function renderCustos(){
-  tabs('custos-tabs',renderCustos);
+  tabs('custos-tabs','renderCustos');
   const per=D.periodos[PER]?.per;const rows=D.l210[per]||[];const el=document.getElementById('custos-c');
   if(!rows.length){el.innerHTML='<div class="empty"><h3>Sem dados L210 para este período</h3></div>';return;}
   el.innerHTML=`<div class="card"><div class="card-b" style="padding:0;overflow:auto;max-height:65vh;">
   <table class="tbl"><thead><tr><th>Linha</th><th>Descrição</th><th class="r">Valor (R$)</th></tr></thead><tbody>
-  ${rows.map(r=>`<tr><td class="mono">${r.codigo}</td><td>${r.descricao}</td><td class="mono r" style="${r.valor?'font-weight:700;':''}">${r.valor?'R$ '+fm(r.valor):'—'}</td></tr>`).join('')}
+  ${rows.map(r=>`<tr><td class="mono">${r.codigo}</td><td>${r.descricao}</td><td class="mono r" style="${r.valor?'font-weight:700;':''};">${r.valor?'R$ '+fm(r.valor):'—'}</td></tr>`).join('')}
   </tbody></table></div></div>`;
 }
 
-// e-LALUR M300
+// ─── e-LALUR M300 (LR) ───
 function renderLalur(){
-  tabs('lalur-tabs',renderLalur);
+  tabs('lalur-tabs','renderLalur');
   const per=D.periodos[PER]?.per;
   const only=document.getElementById('lalur-filter')?.checked;
   let rows=D.m300[per]||[];
   if(only)rows=rows.filter(r=>r.valor!==0||r.indTipo==='R'||r.indTipo==='L');
   renderLalurTable('lalur-c',rows);
 }
-// e-LACS M350
 function renderLacs(){
-  tabs('lacs-tabs',renderLacs);
+  tabs('lacs-tabs','renderLacs');
   const per=D.periodos[PER]?.per;
   const only=document.getElementById('lacs-filter')?.checked;
   let rows=D.m350[per]||[];
@@ -657,7 +1057,7 @@ function renderLalurTable(cid,rows){
   const adic=rows.filter(r=>r.indTipo==='A'&&r.valor>0).reduce((s,r)=>s+r.valor,0);
   const excl=rows.filter(r=>r.indTipo==='E'&&r.valor>0).reduce((s,r)=>s+r.valor,0);
   el.innerHTML=`<div class="g4" style="margin-bottom:18px;">
-    <div class="stat"><div class="stat-label">Lucro Líquido (ponto de partida)</div><div class="stat-val" style="font-size:18px;color:${lliq>=0?'var(--green)':'var(--red)'};">R$ ${fm(lliq)}</div></div>
+    <div class="stat"><div class="stat-label">Lucro Líquido</div><div class="stat-val" style="font-size:18px;color:${lliq>=0?'var(--green)':'var(--red)'};">R$ ${fm(lliq)}</div></div>
     <div class="stat"><div class="stat-label">Total de Adições</div><div class="stat-val" style="color:var(--red);">R$ ${fm(adic)}</div></div>
     <div class="stat"><div class="stat-label">Total de Exclusões</div><div class="stat-val" style="color:var(--green);">R$ ${fm(excl)}</div></div>
     <div class="stat"><div class="stat-label">Resultado Apurado</div><div class="stat-val" style="font-size:18px;color:${lreal>=0?'var(--green)':'var(--red)'};">R$ ${fm(lreal)}</div></div>
@@ -682,37 +1082,68 @@ function renderLalurTable(cid,rows){
   </table></div></div>`;
 }
 
-// PARTE B M500/M510
+// ─── PARTE B M500/M510 (LR) ───
 function renderParteB(){
-  tabs('parteb-tabs',renderParteB);
+  tabs('parteb-tabs','renderParteB');
   const per=D.periodos[PER]?.per;const el=document.getElementById('parteb-c');
   const m510=D.m510[per]||[];const m500=D.m500[per]||[];
   const TM={'C':'Base Neg. CSLL','I':'Prejuízo Fiscal','P':'Prejuízo Rural'};
   let html='';
-  if(m510.length){
-    html+=`<div class="card" style="margin-bottom:20px;"><div class="card-h"><h3>M510 – Controle de Saldos Padrão da Parte B (${m510.length} registros)</h3></div><div class="card-b" style="padding:0;overflow:auto;max-height:300px;">
-    <table class="tbl"><thead><tr><th>Conta</th><th>Descrição</th><th>Tipo</th><th>D/C Ini</th><th class="r">Saldo Inicial</th><th class="r">Lançamentos</th><th class="r">Outros Déb.</th><th>D/C Fin</th><th class="r">Saldo Final</th></tr></thead><tbody>
-    ${m510.map(r=>`<tr><td class="mono" style="font-weight:700;">${r.codCta}</td><td>${r.descricao}</td><td><span class="tag ${r.indTipo==='I'?'tag-red':r.indTipo==='C'?'tag-amber':'tag-purple'}" style="font-size:10px;">${TM[r.indTipo]||r.indTipo}</span></td><td><span class="tag ${r.indIni==='D'?'tag-red':'tag-green'}" style="font-size:10px;">${r.indIni}</span></td><td class="mono r">R$ ${fm(r.vlIni)}</td><td class="mono r" style="color:var(--green);">R$ ${fm(r.vlLan)}</td><td class="mono r" style="color:var(--red);">R$ ${fm(r.vlOd)}</td><td><span class="tag ${r.indFin==='D'?'tag-red':'tag-green'}" style="font-size:10px;">${r.indFin}</span></td><td class="mono r" style="font-weight:700;">R$ ${fm(r.vlFin)}</td></tr>`).join('')}
-    </tbody></table></div></div>`;
-  }
-  if(m500.length){
-    html+=`<div class="card"><div class="card-h"><h3>M500 – Saldos da Parte B do e-LALUR e e-LACS (${m500.length} registros)</h3></div><div class="card-b" style="padding:0;overflow:auto;max-height:300px;">
-    <table class="tbl"><thead><tr><th>Conta</th><th>Tipo</th><th>D/C Ini</th><th class="r">Saldo Inicial</th><th class="r">Lançamentos</th><th class="r">Outros Déb.</th><th>D/C Fin</th><th class="r">Saldo Final</th></tr></thead><tbody>
-    ${m500.map(r=>`<tr><td class="mono" style="font-weight:700;">${r.codCta}</td><td><span class="tag ${r.indTipo==='I'?'tag-red':r.indTipo==='C'?'tag-amber':'tag-purple'}" style="font-size:10px;">${TM[r.indTipo]||r.indTipo}</span></td><td><span class="tag ${r.indIni==='D'?'tag-red':'tag-green'}" style="font-size:10px;">${r.indIni}</span></td><td class="mono r">R$ ${fm(r.vlIni)}</td><td class="mono r" style="color:var(--green);">R$ ${fm(r.vlLan)}</td><td class="mono r" style="color:var(--red);">R$ ${fm(r.vlOd)}</td><td><span class="tag ${r.indFin==='D'?'tag-red':'tag-green'}" style="font-size:10px;">${r.indFin}</span></td><td class="mono r" style="font-weight:700;">R$ ${fm(r.vlFin)}</td></tr>`).join('')}
-    </tbody></table></div></div>`;
-  }
+  if(m510.length)html+=renderParteBTable('M510',m510,TM,true);
+  if(m500.length)html+=renderParteBTable('M500',m500,TM,false);
   if(!html)html='<div class="empty"><h3>Sem dados de Parte B para este período</h3></div>';
   el.innerHTML=html;
 }
+function renderParteBTable(label,rows,TM,hasDesc){
+  return`<div class="card" style="margin-bottom:20px;"><div class="card-h"><h3>${label} – Controle de Saldos (${rows.length} registros)</h3></div>
+  <div class="card-b" style="padding:0;overflow:auto;max-height:300px;">
+  <table class="tbl"><thead><tr><th>Conta</th>${hasDesc?'<th>Descrição</th>':''}<th>Tipo</th><th>D/C Ini</th><th class="r">Saldo Inicial</th><th class="r">Lançamentos</th><th class="r">Outros</th><th>D/C Fin</th><th class="r">Saldo Final</th></tr></thead><tbody>
+  ${rows.map(r=>`<tr><td class="mono" style="font-weight:700;">${r.codCta}</td>${hasDesc?`<td>${r.descricao||''}</td>`:''}<td><span class="tag ${r.indTipo==='I'?'tag-red':r.indTipo==='C'?'tag-amber':'tag-purple'}" style="font-size:10px;">${TM[r.indTipo]||r.indTipo}</span></td><td><span class="tag ${r.indIni==='D'?'tag-red':'tag-green'}" style="font-size:10px;">${r.indIni}</span></td><td class="mono r">R$ ${fm(r.vlIni)}</td><td class="mono r" style="color:var(--green);">R$ ${fm(r.vlLan)}</td><td class="mono r" style="color:var(--red);">R$ ${fm(r.vlOd)}</td><td><span class="tag ${r.indFin==='D'?'tag-red':'tag-green'}" style="font-size:10px;">${r.indFin}</span></td><td class="mono r" style="font-weight:700;">R$ ${fm(r.vlFin)}</td></tr>`).join('')}
+  </tbody></table></div></div>`;
+}
 
-// REGISTROS 9900
+// ─── HELPER: render tabela de apuração LP (P200/P300/P400) ───
+function renderApuracaoLP(cid, tabsId, data, renderFnName, labelTotal, colorTotal){
+  tabs(tabsId, renderFnName);
+  const per=D.periodos[PER]?.per;
+  const rows=data[per]||[];
+  const el=document.getElementById(cid);
+  if(!rows.length){el.innerHTML='<div class="empty"><h3>Sem dados para este período</h3></div>';return;}
+  // Linha de totais (linhas cujo valor não é null e descrição em maiúsculas)
+  const isSection=r=>!r.valor&&r.valor!==0||r.descricao===r.descricao.toUpperCase();
+  // Linhas de destaque: sem valor (cabeçalho) ou linhas em CAPS
+  const isCaps=s=>s&&s===s.toUpperCase()&&s.trim().length>3;
+  const isTotal=r=>r.descricao&&isCaps(r.descricao)&&r.valor!==null&&r.valor!==0;
+  el.innerHTML=`<div class="card"><div class="card-b" style="padding:0;overflow:auto;max-height:70vh;">
+  <table class="ptbl"><thead><tr>
+    <th style="padding:9px 12px;font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;border-bottom:2px solid var(--border);width:70px;">Linha</th>
+    <th style="padding:9px 12px;font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;border-bottom:2px solid var(--border);">Discriminação</th>
+    <th style="padding:9px 12px;font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;border-bottom:2px solid var(--border);text-align:right;min-width:140px;">Valor (R$)</th>
+  </tr></thead><tbody>
+  ${rows.map(r=>{
+    const head=r.valor===null||r.valor===undefined;
+    const tot=isTotal(r);
+    const cls=head?'class="ph"':tot?'class="ptotal"':'';
+    const valCell=head?'':r.valor!==null?`R$ ${fm(r.valor)}`:'—';
+    const valColor=tot?(colorTotal||'var(--blue)'):'inherit';
+    return`<tr ${cls}><td class="pnum">${r.linha}</td><td class="pdesc">${r.descricao||''}</td><td class="pval" style="color:${valColor};">${valCell}</td></tr>`;
+  }).join('')}
+  </tbody></table></div></div>`;
+}
+
+function renderP200(){renderApuracaoLP('p200-c','p200-tabs',D.p200,'renderP200','BC IRPJ','var(--blue)');}
+function renderP300(){renderApuracaoLP('p300-c','p300-tabs',D.p300,'renderP300','IR a Pagar','var(--red)');}
+function renderP400(){renderApuracaoLP('p400-c','p400-tabs',D.p400,'renderP400','BC CSLL','var(--amber)');}
+
+// ─── REGISTROS 9900 ───
 function renderRegistros(){
   const el=document.getElementById('registros-c');if(!D)return;
   const tot=D.regs9900.reduce((s,r)=>s+r.qtd,0);
   el.innerHTML=`<div class="g4" style="margin-bottom:18px;">
-    <div class="stat"><div class="stat-label">Total Linhas no Arquivo</div><div class="stat-val">${fi(D.totalLinhas)}</div></div>
+    <div class="stat"><div class="stat-label">Total Linhas</div><div class="stat-val">${fi(D.totalLinhas)}</div></div>
     <div class="stat"><div class="stat-label">Total Registros (9900)</div><div class="stat-val">${fi(tot)}</div></div>
     <div class="stat"><div class="stat-label">Tipos de Registros</div><div class="stat-val">${fi(D.regs9900.length)}</div></div>
+    <div class="stat"><div class="stat-label">Regime Detectado</div><div class="stat-val" style="font-size:16px;">${D.regime==='LP'?'Lucro Presumido':'Lucro Real'}</div></div>
   </div>
   <div class="card"><div class="card-b" style="padding:0;overflow:auto;max-height:65vh;">
   <table class="tbl"><thead><tr><th>Registro</th><th class="r">Quantidade</th></tr></thead><tbody>
@@ -720,15 +1151,26 @@ function renderRegistros(){
   </tbody></table></div></div>`;
 }
 
-// EXPORT EXCEL
+// ─── EXPORT EXCEL ───
 function exportExcel(tipo){
   if(!D)return;const per=D.periodos[PER]?.per;let rows=[],name='';
+  const isLP=D.regime==='LP';
   if(tipo==='plano'){rows=D.j050.map(c=>({'Código':c.codCta,'Nome':c.nome,'Natureza':c.codNat,'Tipo':c.indCta,'Nível':c.nivel,'Superior':c.codSup,'Referencial':c.refs.join(', ')}));name='plano_j050';}
   else if(tipo==='saldos'){const ctaMap={};D.j050.forEach(c=>{ctaMap[c.codCta]=c.nome;});rows=(D.k155[per]||[]).map(k=>({'Período':per,'Código':k.codCta,'Nome':ctaMap[k.codCta]||'','D/C Ini':k.indIni,'Saldo Inicial':k.vlIni,'Débitos':k.vlDeb,'Créditos':k.vlCred,'D/C Fin':k.indFin,'Saldo Final':k.vlFin}));name=`saldos_k155_${per}`;}
-  else if(tipo==='bp'){rows=(D.l100[per]||[]).map(r=>({'Período':per,'Código':r.codigo,'Descrição':r.descricao,'Tipo':r.tipo,'Nível':r.nivel,'Natureza':r.codNat,'D/C Ini':r.indIni,'Saldo Inicial':r.vlIni,'Débitos':r.vlDeb,'Créditos':r.vlCred,'D/C Fin':r.indFin,'Saldo Final':r.vlFin}));name=`bp_l100_${per}`;}
-  else if(tipo==='dre'){rows=(D.l300[per]||[]).map(r=>({'Período':per,'Código':r.codigo,'Descrição':r.descricao,'Tipo':r.tipo,'Nível':r.nivel,'D/C':r.indValor,'Valor':r.valor}));name=`dre_l300_${per}`;}
-  else if(tipo==='lalur'){rows=(D.m300[per]||[]).map(r=>({'Período':per,'Código':r.codigo,'Descrição':r.descricao,'Tipo':r.indTipo,'Ordem':r.numOrdem,'Valor':r.valor,'Histórico':r.hist}));name=`lalur_m300_${per}`;}
-  else if(tipo==='lacs'){rows=(D.m350[per]||[]).map(r=>({'Período':per,'Código':r.codigo,'Descrição':r.descricao,'Tipo':r.indTipo,'Ordem':r.numOrdem,'Valor':r.valor,'Histórico':r.hist}));name=`lacs_m350_${per}`;}
+  else if(tipo==='bp'){
+    const data=isLP?D.p100:D.l100;
+    rows=(data[per]||[]).map(r=>({'Período':per,'Código':r.codigo,'Descrição':r.descricao,'Natureza':r.codNat,'D/C Ini':r.indIni,'Saldo Inicial':r.vlIni,'Débitos':r.vlDeb,'Créditos':r.vlCred,'D/C Fin':r.indFin,'Saldo Final':r.vlFin}));
+    name=`bp_${isLP?'p100':'l100'}_${per}`;
+  }
+  else if(tipo==='dre'){
+    const data=isLP?D.p150:D.l300;
+    rows=(data[per]||[]).map(r=>({'Período':per,'Código':r.codigo,'Descrição':r.descricao,'D/C':r.indValor,'Valor':r.valor}));
+    name=`dre_${isLP?'p150':'l300'}_${per}`;
+  }
+  else if(tipo==='pbp'){rows=(D.p100[per]||[]).map(r=>({'Período':per,'Código':r.codigo,'Descrição':r.descricao,'Natureza':r.codNat,'D/C Ini':r.indIni,'Saldo Inicial':r.vlIni,'Débitos':r.vlDeb,'Créditos':r.vlCred,'D/C Fin':r.indFin,'Saldo Final':r.vlFin}));name=`bp_p100_${per}`;}
+  else if(tipo==='pdre'){rows=(D.p150[per]||[]).map(r=>({'Período':per,'Código':r.codigo,'Descrição':r.descricao,'D/C':r.indValor,'Valor':r.valor}));name=`dre_p150_${per}`;}
+  else if(tipo==='lalur'){rows=(D.m300[per]||[]).map(r=>({'Período':per,'Código':r.codigo,'Descrição':r.descricao,'Tipo':r.indTipo,'Valor':r.valor,'Histórico':r.hist}));name=`lalur_m300_${per}`;}
+  else if(tipo==='lacs'){rows=(D.m350[per]||[]).map(r=>({'Período':per,'Código':r.codigo,'Descrição':r.descricao,'Tipo':r.indTipo,'Valor':r.valor,'Histórico':r.hist}));name=`lacs_m350_${per}`;}
   if(!rows.length)return;
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),name.substring(0,31));
   XLSX.writeFile(wb,`ecf_${name}.xlsx`);
