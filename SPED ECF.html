@@ -205,6 +205,10 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
       <div class="sb-item lp-item" data-p="p400" onclick="nav('p400')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Apuração CSLL (P400)</div>
     </div>
     <div class="sb-section">
+      <div class="sb-section-title">Informações Diversas</div>
+      <div class="sb-item" data-p="y570" onclick="nav('y570')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>IRRF – Inst. Financeiras (Y570)<span class="sb-badge" id="badge-y570" style="display:none">0</span></div>
+    </div>
+    <div class="sb-section">
       <div class="sb-section-title">Arquivo</div>
       <div class="sb-item" data-p="registros" onclick="nav('registros')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>Registros (9900)</div>
     </div>
@@ -412,6 +416,13 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
   <div id="p400-c"></div>
 </div>
 
+<!-- Y570 -->
+<div class="page" id="p-y570">
+  <div class="section-title">IRRF Retido por Instituições Financeiras – Y570</div>
+  <div class="section-sub">Imposto de Renda Retido na Fonte sobre aplicações financeiras, por instituição pagadora.</div>
+  <div id="y570-c"></div>
+</div>
+
 <!-- REGISTROS 9900 -->
 <div class="page" id="p-registros">
   <div class="section-title">Registros do Arquivo – 9900</div>
@@ -468,6 +479,7 @@ function nav(id){
     // LP
     'p-bp':'Balanço Patrimonial – P100','p-dre':'Demonstração de Resultado – P150',
     p200:'Base de Cálculo IRPJ – P200',p300:'Apuração IRPJ – P300',p400:'Apuração CSLL – P400',
+    y570:'IRRF – Instituições Financeiras (Y570)',
     registros:'Registros – 9900'
   };
   document.getElementById('tt').textContent=T[id]||id;
@@ -481,6 +493,7 @@ function render(id){
     bp:renderBP,dre:renderDRE,custos:renderCustos,lalur:renderLalur,lacs:renderLacs,parteb:renderParteB,
     'p-bp':renderPBP,'p-dre':renderPDRE,
     p200:renderP200,p300:renderP300,p400:renderP400,
+    y570:renderY570,
     registros:renderRegistros
   };
   if(m[id]) m[id]();
@@ -557,7 +570,8 @@ async function processFile(){
       lalur:Object.values(D.m300).reduce((s,a)=>s+a.length,0),
       lacs:Object.values(D.m350).reduce((s,a)=>s+a.length,0),
       pbp:Object.values(D.p100).reduce((s,a)=>s+a.length,0),
-      pdre:Object.values(D.p150).reduce((s,a)=>s+a.length,0)
+      pdre:Object.values(D.p150).reduce((s,a)=>s+a.length,0),
+      y570:D.y570.length
     };
     Object.entries(BS).forEach(([k,v])=>{const b=document.getElementById('badge-'+k);if(b){b.textContent=v;b.style.display=v?'':'none';}});
     const e=document.getElementById('tt-empresa');e.textContent=D.empresa.nome;e.style.display='';
@@ -582,7 +596,7 @@ function parseECF(text,fname){
     m300:{},m350:{},m500:{},m510:{},
     // LP
     p100:{},p150:{},p200:{},p230:{},p300:{},p400:{},
-    s930:[],regs9900:[],regs:{}
+    s930:[],regs9900:[],regs:{},y570:[]
   };
   let curK=null,curL=null,curM=null,curP=null;
 
@@ -725,6 +739,11 @@ function parseECF(text,fname){
         break;
       case 'P400':
         if(curP)d.p400[curP.per].push({linha:f[1],descricao:f[2],valor:f[3]!==undefined?pn(f[3]):null});
+        break;
+
+      case 'Y570':
+        // |Y570|CNPJ_INST|NOME_INST|IND_CRED_DEB|COD_REC|VL_RETIDO|VL_DEDU|VL_COMP|
+        d.y570.push({cnpj:f[1],nome:f[2]?.trim(),indCredDeb:f[3],codRec:f[4],vlRetido:pn(f[5]),vlDedu:pn(f[6]),vlComp:pn(f[7])});
         break;
 
       case '9900':
@@ -1135,6 +1154,53 @@ function renderP200(){renderApuracaoLP('p200-c','p200-tabs',D.p200,'renderP200',
 function renderP300(){renderApuracaoLP('p300-c','p300-tabs',D.p300,'renderP300','IR a Pagar','var(--red)');}
 function renderP400(){renderApuracaoLP('p400-c','p400-tabs',D.p400,'renderP400','BC CSLL','var(--amber)');}
 
+// ─── Y570 – IRRF INST. FINANCEIRAS ───
+function renderY570(){
+  const el=document.getElementById('y570-c');if(!D)return;
+  const rows=D.y570;
+  if(!rows.length){
+    el.innerHTML='<div class="empty"><h3>Sem registros Y570 no arquivo</h3></div>';
+    return;
+  }
+  const COD_REC={'3426':'IRRF – Rendimentos de Aplicações Financeiras','0561':'IRRF – Renda Fixa','0562':'IRRF – Renda Variável'};
+  const totRetido=rows.reduce((s,r)=>s+r.vlRetido,0);
+  const totDedu=rows.reduce((s,r)=>s+r.vlDedu,0);
+  const totComp=rows.reduce((s,r)=>s+r.vlComp,0);
+  el.innerHTML=`
+  <div class="g3" style="margin-bottom:18px;">
+    <div class="stat"><div class="stat-label">Total IRRF Retido</div><div class="stat-val" style="font-size:18px;color:var(--red);">R$ ${fm(totRetido)}</div><div class="stat-sub">${rows.length} instituição(ões)</div></div>
+    <div class="stat"><div class="stat-label">Total Deduzido</div><div class="stat-val" style="font-size:18px;color:var(--green);">R$ ${fm(totDedu)}</div></div>
+    <div class="stat"><div class="stat-label">Total Compensado</div><div class="stat-val" style="font-size:18px;color:var(--amber);">R$ ${fm(totComp)}</div></div>
+  </div>
+  <div class="card"><div class="card-h"><h3>Y570 – IRRF Retido por Instituição Financeira</h3><button class="btn btn-sm" onclick="exportExcel('y570')">Excel</button></div>
+  <div class="card-b" style="padding:0;overflow:auto;">
+  <table class="tbl"><thead><tr>
+    <th>CNPJ Instituição</th>
+    <th>Nome</th>
+    <th>Cód. Receita</th>
+    <th>Descrição</th>
+    <th class="r">VL Retido</th>
+    <th class="r">VL Deduzido</th>
+    <th class="r">VL Compensado</th>
+  </tr></thead><tbody>
+  ${rows.map(r=>`<tr>
+    <td class="mono" style="font-size:11px;">${fmtCNPJ(r.cnpj)}</td>
+    <td style="font-weight:600;">${r.nome}</td>
+    <td class="mono">${r.codRec}</td>
+    <td style="font-size:12px;color:var(--text-3);">${COD_REC[r.codRec]||'—'}</td>
+    <td class="mono r" style="color:var(--red);font-weight:700;">R$ ${fm(r.vlRetido)}</td>
+    <td class="mono r" style="color:var(--green);">R$ ${fm(r.vlDedu)}</td>
+    <td class="mono r" style="color:var(--amber);">R$ ${fm(r.vlComp)}</td>
+  </tr>`).join('')}
+  <tr style="background:var(--bg);font-weight:800;">
+    <td colspan="4" style="padding:9px 12px;font-size:12px;">TOTAL</td>
+    <td class="mono r" style="color:var(--red);font-size:14px;padding:9px 12px;">R$ ${fm(totRetido)}</td>
+    <td class="mono r" style="color:var(--green);padding:9px 12px;">R$ ${fm(totDedu)}</td>
+    <td class="mono r" style="color:var(--amber);padding:9px 12px;">R$ ${fm(totComp)}</td>
+  </tr>
+  </tbody></table></div></div>`;
+}
+
 // ─── REGISTROS 9900 ───
 function renderRegistros(){
   const el=document.getElementById('registros-c');if(!D)return;
@@ -1171,6 +1237,7 @@ function exportExcel(tipo){
   else if(tipo==='pdre'){rows=(D.p150[per]||[]).map(r=>({'Período':per,'Código':r.codigo,'Descrição':r.descricao,'D/C':r.indValor,'Valor':r.valor}));name=`dre_p150_${per}`;}
   else if(tipo==='lalur'){rows=(D.m300[per]||[]).map(r=>({'Período':per,'Código':r.codigo,'Descrição':r.descricao,'Tipo':r.indTipo,'Valor':r.valor,'Histórico':r.hist}));name=`lalur_m300_${per}`;}
   else if(tipo==='lacs'){rows=(D.m350[per]||[]).map(r=>({'Período':per,'Código':r.codigo,'Descrição':r.descricao,'Tipo':r.indTipo,'Valor':r.valor,'Histórico':r.hist}));name=`lacs_m350_${per}`;}
+  else if(tipo==='y570'){rows=D.y570.map(r=>({'CNPJ':r.cnpj,'Nome':r.nome,'Cód. Receita':r.codRec,'VL Retido':r.vlRetido,'VL Deduzido':r.vlDedu,'VL Compensado':r.vlComp}));name='irrf_y570';}
   if(!rows.length)return;
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),name.substring(0,31));
   XLSX.writeFile(wb,`ecf_${name}.xlsx`);
