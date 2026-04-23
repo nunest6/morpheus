@@ -1565,131 +1565,107 @@ function exportDREExcel() {
 function exportarDeclaracoes() {
   if (!DATASETS.length) return;
 
-  const wb = XLSX.utils.book_new();
+  const abasUsadas = { bal: new Set(), bp: new Set(), dre: new Set() };
 
-  // Abreviação do nome da empresa para prefixo de aba (máx 10 chars)
-  const prefixo = ds => {
-    const nome = ds.D.entity.nome || ds.file.name;
-    return nome.substring(0, 10).trim().replace(/[\\/:*?[\]]/g, '');
-  };
-
-  // Helper: adiciona aba com proteção de nome duplicado
-  const abasUsadas = new Set();
-  const addAba = (wb, ws, nome) => {
+  const addAba = (wb, ws, nome, set) => {
     let n = nome.substring(0, 31);
-    let tentativa = n, i = 1;
-    while (abasUsadas.has(tentativa)) tentativa = `${n.substring(0, 28)}_${i++}`;
-    abasUsadas.add(tentativa);
-    XLSX.utils.book_append_sheet(wb, ws, tentativa);
+    let t = n, i = 1;
+    while (set.has(t)) t = `${n.substring(0, 28)}_${i++}`;
+    set.add(t);
+    XLSX.utils.book_append_sheet(wb, ws, t);
   };
 
-  // Helper: cria linha de cabeçalho de identificação
   const cabecalho = (ds, tipo, periodo) => [
     [`${tipo} – ${ds.D.entity.nome || ''}`],
     [`CNPJ: ${fmtCNPJ(ds.D.entity.cnpj)}   Período: ${periodo}`],
     [],
   ];
 
-  DATASETS.forEach(ds => {
-    const pre  = prefixo(ds);
-    const d    = ds.D;
+  const prefixo = ds => {
+    const nome = ds.D.entity.nome || ds.file.name;
+    return nome.substring(0, 12).trim().replace(/[\\\/:*?[\]]/g, '');
+  };
 
-    // ── BALANCETES (um por período I150/I155) ──
+  const wbBal = XLSX.utils.book_new();
+  const wbBP  = XLSX.utils.book_new();
+  const wbDRE = XLSX.utils.book_new();
+
+  DATASETS.forEach(ds => {
+    const pre = prefixo(ds);
+    const d   = ds.D;
+
+    // BALANCETES
     d.saldosPeriodos.forEach(per => {
       const periodo = `${fmtDt(per.dtIni)} a ${fmtDt(per.dtFin)}`;
-      const rows = per.saldos
-        .slice()
-        .sort((a, b) => a.codCta.localeCompare(b.codCta))
-        .map(s => {
-          const acct = d.accounts[s.codCta];
-          return {
-            'Conta':          s.codCta,
-            'Nome':           acct ? acct.nome : '',
-            'Saldo Inicial':  s.vlSldIni,
-            'D/C Ini':        s.indDcIni,
-            'Débitos':        s.vlDeb,
-            'Créditos':       s.vlCred,
-            'Saldo Final':    s.vlSldFin,
-            'D/C Fin':        s.indDcFin,
-          };
-        });
-
+      const rows = per.saldos.slice().sort((a, b) => a.codCta.localeCompare(b.codCta)).map(s => {
+        const acct = d.accounts[s.codCta];
+        return {
+          'Conta': s.codCta, 'Nome': acct ? acct.nome : '',
+          'Saldo Inicial': s.vlSldIni, 'D/C Ini': s.indDcIni,
+          'Débitos': s.vlDeb, 'Créditos': s.vlCred,
+          'Saldo Final': s.vlSldFin, 'D/C Fin': s.indDcFin,
+        };
+      });
       const ws = XLSX.utils.aoa_to_sheet(cabecalho(ds, 'Balancete', periodo));
       XLSX.utils.sheet_add_json(ws, rows, { origin: 'A4' });
       ws['!cols'] = [{wch:18},{wch:40},{wch:14},{wch:8},{wch:14},{wch:14},{wch:14},{wch:8}];
-
       const dtFim = per.dtFin ? `${per.dtFin.substring(0,2)}.${per.dtFin.substring(2,4)}.${per.dtFin.substring(4)}` : '';
-      addAba(wb, ws, `${pre} BAL ${dtFim}`);
+      addAba(wbBal, ws, `${pre} ${dtFim}`, abasUsadas.bal);
     });
 
-    // ── BALANÇOS PATRIMONIAIS (um por período J005/J100) ──
+    // BALANÇOS PATRIMONIAIS
     const bpPeriodos = {};
     d.bp.forEach(r => {
       const key = (r.dtIni || '') + '_' + (r.dtFin || '');
       if (!bpPeriodos[key]) bpPeriodos[key] = { dtIni: r.dtIni, dtFin: r.dtFin, linhas: [] };
       bpPeriodos[key].linhas.push(r);
     });
-
     Object.values(bpPeriodos).forEach(per => {
       const periodo = per.dtFin ? `${fmtDt(per.dtIni)} a ${fmtDt(per.dtFin)}` : 'Período único';
       const rows = per.linhas.map(r => ({
-        'Código':         r.codAgl,
-        'Tipo':           r.indCodAgl === 'T' ? 'Totalizador' : 'Detalhe',
-        'Nível':          r.nivel,
-        'Cód. Superior':  r.codAglSup || '',
-        'Grupo':          r.indGrpBal === 'A' ? 'Ativo' : r.indGrpBal === 'P' ? 'Passivo/PL' : '',
-        'Descrição':      r.descr,
-        'Saldo Anterior': r.vlCtaIni || 0,
-        'D/C Anterior':   r.indDcIni || '',
-        'Saldo Final':    r.vlCtaFin || 0,
-        'D/C Final':      r.indDcFin || '',
+        'Código': r.codAgl, 'Tipo': r.indCodAgl === 'T' ? 'Totalizador' : 'Detalhe',
+        'Nível': r.nivel, 'Cód. Superior': r.codAglSup || '',
+        'Grupo': r.indGrpBal === 'A' ? 'Ativo' : r.indGrpBal === 'P' ? 'Passivo/PL' : '',
+        'Descrição': r.descr,
+        'Saldo Anterior': r.vlCtaIni || 0, 'D/C Anterior': r.indDcIni || '',
+        'Saldo Final': r.vlCtaFin || 0, 'D/C Final': r.indDcFin || '',
       }));
-
       const ws = XLSX.utils.aoa_to_sheet(cabecalho(ds, 'Balanço Patrimonial', periodo));
       XLSX.utils.sheet_add_json(ws, rows, { origin: 'A4' });
       ws['!cols'] = [{wch:14},{wch:12},{wch:7},{wch:14},{wch:12},{wch:46},{wch:14},{wch:10},{wch:14},{wch:10}];
-
       const dtFim = per.dtFin ? `${per.dtFin.substring(0,2)}.${per.dtFin.substring(2,4)}.${per.dtFin.substring(4)}` : 'Unico';
-      addAba(wb, ws, `${pre} BP ${dtFim}`);
+      addAba(wbBP, ws, `${pre} ${dtFim}`, abasUsadas.bp);
     });
 
-    // ── DREs (todos os períodos incluindo anual) ──
+    // DREs
     (d.drePeriodos || []).forEach(per => {
-      const periodo = per.label || '';
-      const linhas  = [...per.linhas].sort((a, b) => a.nuOrdem - b.nuOrdem);
-      const rows = linhas.map(r => ({
-        'Código':          r.codAgl,
-        'Tipo':            r.indCodAgl === 'T' ? 'Totalizador' : 'Detalhe',
-        'Nível':           r.nivel,
-        'Cód. Superior':   r.codAglSup || '',
-        'Descrição':       r.descr,
-        'Valor Anterior':  r.vlCtaIni || 0,
-        'D/C Anterior':    r.indDcIni || '',
-        'Valor Período':   r.vlCtaFin || 0,
-        'D/C Período':     r.indDcFin || '',
-        'Grupo DRE':       r.indGrpDre === 'D' ? 'Despesa' : r.indGrpDre === 'R' ? 'Receita' : '',
+      const rows = [...per.linhas].sort((a, b) => a.nuOrdem - b.nuOrdem).map(r => ({
+        'Código': r.codAgl, 'Tipo': r.indCodAgl === 'T' ? 'Totalizador' : 'Detalhe',
+        'Nível': r.nivel, 'Cód. Superior': r.codAglSup || '',
+        'Descrição': r.descr,
+        'Valor Anterior': r.vlCtaIni || 0, 'D/C Anterior': r.indDcIni || '',
+        'Valor Período': r.vlCtaFin || 0, 'D/C Período': r.indDcFin || '',
+        'Grupo DRE': r.indGrpDre === 'D' ? 'Despesa' : r.indGrpDre === 'R' ? 'Receita' : '',
       }));
-
-      const ws = XLSX.utils.aoa_to_sheet(cabecalho(ds, per.anual ? 'DRE Anual' : 'DRE', periodo));
+      const ws = XLSX.utils.aoa_to_sheet(cabecalho(ds, per.anual ? 'DRE Anual' : 'DRE', per.label || ''));
       XLSX.utils.sheet_add_json(ws, rows, { origin: 'A4' });
       ws['!cols'] = [{wch:14},{wch:12},{wch:7},{wch:14},{wch:46},{wch:14},{wch:10},{wch:14},{wch:10},{wch:12}];
-
       const sufixo = per.anual ? 'Anual'
         : per.dtFin ? `${per.dtFin.substring(0,2)}.${per.dtFin.substring(2,4)}.${per.dtFin.substring(4)}`
         : 'Per';
-      addAba(wb, ws, `${pre} DRE ${sufixo}`);
+      addAba(wbDRE, ws, `${pre} ${sufixo}`, abasUsadas.dre);
     });
   });
 
-  if (abasUsadas.size === 0) { alert('Nenhum dado para exportar.'); return; }
+  const cnpjs = [...new Set(DATASETS.map(ds => ds.D.entity.cnpj).filter(Boolean))];
+  const id    = cnpjs.length === 1 ? cnpjs[0] : `${DATASETS.length}emp`;
+  const hoje  = new Date().toISOString().substring(0, 10);
 
-  const cnpjs   = [...new Set(DATASETS.map(ds => ds.D.entity.cnpj).filter(Boolean))];
-  const nomeArq = cnpjs.length === 1
-    ? `Declaracoes_${cnpjs[0]}_${new Date().toISOString().substring(0,10)}.xlsx`
-    : `Declaracoes_${DATASETS.length}empresas_${new Date().toISOString().substring(0,10)}.xlsx`;
-
-  XLSX.writeFile(wb, nomeArq);
+  if (abasUsadas.bal.size > 0) XLSX.writeFile(wbBal, `Balancete_${id}_${hoje}.xlsx`);
+  if (abasUsadas.bp.size  > 0) XLSX.writeFile(wbBP,  `BP_${id}_${hoje}.xlsx`);
+  if (abasUsadas.dre.size > 0) XLSX.writeFile(wbDRE, `DRE_${id}_${hoje}.xlsx`);
 }
+
 
 // ─── TABLE FILTER ───
 function filterTbl(id, val) {
