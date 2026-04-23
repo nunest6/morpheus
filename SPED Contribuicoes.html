@@ -570,6 +570,8 @@ select:focus{border-color:var(--purple)}
           </table>
         </div>
       </div>
+    </div><!-- fecha page-regs -->
+
     <!-- LC 224 / CST 06 -->
     <div class="page" id="page-lc224">
       <div style="padding:0">
@@ -759,7 +761,7 @@ function nav(id){
   const item = document.querySelector(`.sb-item[onclick="nav('${id}')"]`);
   if(item) item.classList.add('active');
   document.getElementById('page-title').textContent = TITLES[id]||id;
-  document.getElementById('btn-xls').style.display = (D.rC175 && ['c170','c175','produtos','lc224'].includes(id)) ? '' : 'none';
+  document.getElementById('btn-xls').style.display = (D.rC175 && D.rC175.length > 0 && ['c170','c175','produtos'].includes(id)) ? '' : 'none';
   window._currentPage = id;
   if(id==='lc224' && D.rC175) renderLC224();
 }
@@ -803,8 +805,8 @@ function parseSPED(text){
     r0000:{},r0100:{},r0110:{},r0140:[],r0150:[],r0190:[],r0200:[],r0205:[],r0400:[],r0450:[],
     rA100:[],rA170:[],
     rC100:[],rC170:[],rC175:[],
-    rM100:{},rM105:[],rM200:{raw:[]},rM210:{raw:[]},
-    rM500:{},rM505:[],rM600:{raw:[]},rM610:{raw:[]},
+    rM100:{},rM105:[],rM200:{raw:[]},rM210:[],
+    rM500:{},rM505:[],rM600:{raw:[]},rM610:[],
     r1100:{raw:[]},r1500:{raw:[]},r9900:[]
   };
   let curC100=null, curA100=null;
@@ -830,23 +832,27 @@ function parseSPED(text){
         const itA={numItem:fields[2],codSer:fields[3],descSer:fields[4],vlItem:fields[5],vlDesc:fields[6],natRec:fields[7],obsFisc:fields[8],cstPis:fields[9],vlBcPis:fields[10],aliqPis:fields[11],vlPis:fields[12],cstCofins:fields[13],vlBcCofins:fields[14],aliqCofins:fields[15],vlCofins:fields[16],codCta:fields[17]};
         d.rA170.push(itA); if(curA100) curA100.itens.push(itA); break;
       case 'C100':
-        curC100={indOper:fields[2],indEmit:fields[3],codPart:fields[4],codMod:fields[5],codSit:fields[6],ser:fields[7],numDoc:fields[8],chaveNfe:fields[9],dtDoc:fields[10],dtEfet:fields[11],vlDoc:fields[12],indPgto:fields[13],vlDesc:fields[14],vlAbatNt:fields[15],vlMerc:fields[16],indFrt:fields[17],vlFrt:fields[18],vlSeg:fields[19],vlOutDa:fields[20],vlNf:fields[21],vlPis:fields[25]||'0',vlCofins:fields[26]||'0',itens:[]};
+        // VL_PIS=campo22(idx22), VL_COFINS=campo23(idx23) — layout EFD-Contribuições v1.35
+        curC100={indOper:fields[2],indEmit:fields[3],codPart:fields[4],codMod:fields[5],codSit:fields[6],ser:fields[7],numDoc:fields[8],chaveNfe:fields[9],dtDoc:fields[10],dtEfet:fields[11],vlDoc:fields[12],indPgto:fields[13],vlDesc:fields[14],vlAbatNt:fields[15],vlMerc:fields[16],indFrt:fields[17],vlFrt:fields[18],vlSeg:fields[19],vlOutDa:fields[20],vlNf:fields[21],vlPis:fields[22]||'0',vlCofins:fields[23]||'0',itens:[]};
         d.rC100.push(curC100); break;
       case 'C170':
-        const itC={numItem:fields[2],codItem:fields[3],descItem:fields[4],qtd:fields[5],unid:fields[6],vlItem:fields[7],vlDesc:fields[8],indMov:fields[9],cstIpi:fields[10],cfop:fields[11],codNat:fields[12],vlBcIcms:fields[13],aliqIcms:fields[14],vlIcms:fields[15],vlBcIcmsSt:fields[16],vlIcmsSt:fields[17],vlRed:fields[18],cstPis:fields[24],vlBcPis:fields[25],aliqPis:fields[26],vlPis:fields[29],cstCofins:fields[30],vlBcCofins:fields[31],aliqCofins:fields[32],vlCofins:fields[35],codCta:fields[36]};
+        // Layout EFD-Contribuições v1.35:
+        // CST_PIS=21, VL_BC_PIS=22, ALIQ_PIS=23, QUANT_BC_PIS=24, ALIQ_PIS_QUANT=25, VL_PIS=26
+        // CST_COFINS=27, VL_BC_COFINS=28, ALIQ_COFINS=29, QUANT_BC_COFINS=30, ALIQ_COFINS_QUANT=31, VL_COFINS=32, COD_CTA=33
+        const itC={numItem:fields[2],codItem:fields[3],descItem:fields[4],qtd:fields[5],unid:fields[6],vlItem:fields[7],vlDesc:fields[8],indMov:fields[9],cstIpi:fields[10],cfop:fields[11],codNat:fields[12],vlBcIcms:fields[13],aliqIcms:fields[14],vlIcms:fields[15],vlBcIcmsSt:fields[16],vlIcmsSt:fields[17],vlRed:fields[18],cstPis:fields[21],vlBcPis:fields[22],aliqPis:fields[23],vlPis:fields[26],cstCofins:fields[27],vlBcCofins:fields[28],aliqCofins:fields[29],vlCofins:fields[32],codCta:fields[33]};
         d.rC170.push(itC); if(curC100) curC100.itens.push(itC); break;
       case 'C175':
         d.rC175.push({cfop:fields[2],vlItem:fields[3],vlDesc:fields[4],cstPis:fields[5],vlBcPis:fields[6],aliqPis:fields[7],vlPis:fields[10],cstCofins:fields[11],vlBcCofins:fields[12],aliqCofins:fields[13],vlCofins:fields[16],codCta:fields[17]}); break;
       case 'M100': d.rM100={raw:fields}; break;
       case 'M105': d.rM105.push({natBcCred:fields[2],cstPis:fields[3],vlBcNorm:fields[4],vlBcEsp:fields[5],vlBcTot:fields[6],vlBcNcRed:fields[7],percRed:fields[8],vlBcRed:fields[9]}); break;
       case 'M200': d.rM200={raw:fields}; break;
-      case 'M210': d.rM210={raw:fields}; break;
+      case 'M210': d.rM210.push(fields); break;
       case 'M500': d.rM500={raw:fields}; break;
       case 'M505': d.rM505.push({natBcCred:fields[2],cstCofins:fields[3],vlBcNorm:fields[4],vlBcEsp:fields[5],vlBcTot:fields[6]}); break;
       case 'M600': d.rM600={raw:fields}; break;
-      case 'M610': d.rM610={raw:fields}; break;
-      case '1100': d.r1100={raw:fields,perRef:fields[2],natRec:fields[3],cstPis:fields[5],vlContrib:fields[6],vlPrePost:fields[7],vlContribEnt:fields[8],vlCredDesc:fields[9],vlCredExt:fields[10],vlRetFonte:fields[11],vlContribPagar:fields[13],vlDev:fields[14]}; break;
-      case '1500': d.r1500={raw:fields,perRef:fields[2],natRec:fields[3],cstCofins:fields[5],vlContrib:fields[6],vlPrePost:fields[7],vlContribEnt:fields[8],vlCredDesc:fields[9],vlCredExt:fields[10],vlRetFonte:fields[11],vlContribPagar:fields[13],vlDev:fields[14]}; break;
+      case 'M610': d.rM610.push(fields); break;
+      case '1100': { const prev1100=d.r1100.raw||[]; d.r1100={raw:[...prev1100,fields],perRef:fields[2],natRec:fields[3],cstPis:fields[5],vlContrib:fields[6],vlPrePost:fields[7],vlContribEnt:fields[8],vlCredDesc:fields[9],vlCredExt:fields[10],vlRetFonte:fields[11],vlContribPagar:fields[13],vlDev:fields[14]}; break; }
+      case '1500': { const prev1500=d.r1500.raw||[]; d.r1500={raw:[...prev1500,fields],perRef:fields[2],natRec:fields[3],cstCofins:fields[5],vlContrib:fields[6],vlPrePost:fields[7],vlContribEnt:fields[8],vlCredDesc:fields[9],vlCredExt:fields[10],vlRetFonte:fields[11],vlContribPagar:fields[13],vlDev:fields[14]}; break; }
       case '9900': d.r9900.push({reg:fields[2],qtd:fields[3]}); break;
     }
   }
@@ -924,7 +930,8 @@ function renderDash(){
   // Charts
   killChart('ch-apuracao'); killChart('ch-modelos'); killChart('ch-cfop'); killChart('ch-cst');
 
-  const m210r=D.rM210.raw||[], m610r=D.rM610.raw||[];
+  const m210arr=D.rM210||[], m610arr=D.rM610||[];
+  const m210r=m210arr[0]||[], m610r=m610arr[0]||[];
   const caCtx=document.getElementById('ch-apuracao').getContext('2d');
   charts['ch-apuracao']=new Chart(caCtx,{type:'bar',data:{
     labels:['Base de Cálculo','PIS/COFINS Apurado','Deduções','Devido'],
@@ -1218,26 +1225,36 @@ function filterC175(){
 
 // ─── APURAÇÃO PIS ───
 function renderPIS(){
-  const m2r=D.rM200.raw||[], m210r=D.rM210.raw||[];
+  const m2r=D.rM200.raw||[];
+  const m210arr=D.rM210||[];
+  const m210r=m210arr[0]||[]; // primeiro CST para KPIs
   const pisDev=br(m2r[1]);
-  const bcPis=br(m210r[4]);
+  const bcPis=m210arr.reduce((a,r)=>a+br(r[4]),0);
   document.getElementById('pis-kpis').innerHTML=
     statCard('PIS Total Apurado','R$ '+fm(pisDev),'M200','var(--purple)')+
     statCard('BC PIS Total','R$ '+fm(bcPis),'M210','var(--text)')+
-    statCard('Alíquota PIS',(m210r[8]||'0')+'%','M210','var(--amber)')+
-    statCard('PIS Devido','R$ '+fm(br(m210r[16])),'M210','var(--green)');
+    statCard('CSTs Apurados',fi(m210arr.length),'M210','var(--amber)')+
+    statCard('PIS Devido','R$ '+fm(m210arr.reduce((a,r)=>a+br(r[16]),0)),'M210','var(--green)');
 
   const m200Labels=['Cumulativo Alíq. Normal','Não-Cumulativo Alíq. Normal','Cumulativo Mono Alíq.','NC Mono Alíq.','Cumulativo Substituição','NC Substituição','Cumulativo Alíq. Zero','NC Alíq. Zero','NC Imune/Isento','PIS Total Período','PIS Dev. Período Anterior','Outras Deduções'];
   let html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
-  m200Labels.forEach((lbl,i)=>{const v=br(m2r[i+2]);html+=`<div style="padding:8px;background:${v>0?'var(--purple-bg)':'var(--bg)'};border-radius:8px"><div style="font-size:10px;color:var(--text-3);font-weight:600">${lbl}</div><div style="font-size:13px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:${v>0?'var(--purple)':'var(--text-3)'};margin-top:2px">R$ ${fm(v)}</div></div>`});
+  m200Labels.forEach((lbl,i)=>{const v=br(m2r[i+2]);html+=`<div style="padding:8px;background:${v>0?'var(--purple-bg)':'var(--bg)'};border-radius:8px"><div style="font-size:10px;color:var(--text-3);font-weight:600">${lbl}</div><div style="font-size:13px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:${v>0?'var(--purple)':'var(--text-3)'};margin-top:2px">R$ ${fm(v)}</div></div>`;});
   html+='</div>';
   document.getElementById('m200-detail').innerHTML=html;
 
-  document.getElementById('m210-detail').innerHTML=`<table class="tbl"><thead><tr><th>CST</th><th class="r">Total Receita</th><th class="r">BC PIS</th><th class="r">Alíq %</th><th class="r">PIS Apurado</th><th class="r">Deduções</th><th class="r">PIS Devido</th></tr></thead>
-  <tbody><tr><td>${cstTag(m210r[2])}</td><td class="mono r">R$ ${fm(m210r[3])}</td><td class="mono r">R$ ${fm(m210r[4])}</td><td class="mono r">${m210r[8]||'0'}%</td><td class="mono r" style="color:var(--purple)">R$ ${fm(m210r[11])}</td><td class="mono r">R$ ${fm(m210r[12])}</td><td class="mono r" style="font-weight:700">R$ ${fm(m210r[16])}</td></tr></tbody></table>`;
+  let m210html=`<table class="tbl"><thead><tr><th>CST</th><th class="r">Total Receita</th><th class="r">BC PIS</th><th class="r">Alíq %</th><th class="r">PIS Apurado</th><th class="r">Deduções</th><th class="r">PIS Devido</th></tr></thead><tbody>`;
+  if(m210arr.length===0){
+    m210html+='<tr><td colspan="7" style="text-align:center;color:var(--text-3)">–</td></tr>';
+  } else {
+    m210arr.forEach(r=>{
+      m210html+=`<tr><td>${cstTag(r[2])}</td><td class="mono r">R$ ${fm(r[3])}</td><td class="mono r">R$ ${fm(r[4])}</td><td class="mono r">${r[8]||'0'}%</td><td class="mono r" style="color:var(--purple)">R$ ${fm(r[11])}</td><td class="mono r">R$ ${fm(r[12])}</td><td class="mono r" style="font-weight:700">R$ ${fm(r[16])}</td></tr>`;
+    });
+  }
+  m210html+='</tbody></table>';
+  document.getElementById('m210-detail').innerHTML=m210html;
 
   let m105html=`<table class="tbl"><thead><tr><th>Nat. BC Créd.</th><th>CST PIS</th><th class="r">BC Alíq Normal</th><th class="r">BC Alíq Esp.</th><th class="r">BC Total</th><th class="r">BC NC Red Alíq</th><th class="r">% Redução</th><th class="r">BC Alíq Red.</th></tr></thead><tbody>`;
-  D.rM105.forEach(m=>{m105html+=`<tr><td>${m.natBcCred}</td><td>${cstTag(m.cstPis)}</td><td class="mono r">R$ ${fm(m.vlBcNorm)}</td><td class="mono r">R$ ${fm(m.vlBcEsp)}</td><td class="mono r" style="font-weight:700">R$ ${fm(m.vlBcTot)}</td><td class="mono r">R$ ${fm(m.vlBcNcRed)}</td><td class="mono r">${m.percRed}%</td><td class="mono r">R$ ${fm(m.vlBcRed)}</td></tr>`});
+  D.rM105.forEach(m=>{m105html+=`<tr><td>${m.natBcCred}</td><td>${cstTag(m.cstPis)}</td><td class="mono r">R$ ${fm(m.vlBcNorm)}</td><td class="mono r">R$ ${fm(m.vlBcEsp)}</td><td class="mono r" style="font-weight:700">R$ ${fm(m.vlBcTot)}</td><td class="mono r">R$ ${fm(m.vlBcNcRed)}</td><td class="mono r">${m.percRed}%</td><td class="mono r">R$ ${fm(m.vlBcRed)}</td></tr>`;});
   m105html+='</tbody></table>';
   document.getElementById('m105-detail').innerHTML=m105html;
 
@@ -1255,25 +1272,35 @@ function renderPIS(){
 
 // ─── APURAÇÃO COFINS ───
 function renderCOFINS(){
-  const m6r=D.rM600.raw||[], m610r=D.rM610.raw||[];
+  const m6r=D.rM600.raw||[];
+  const m610arr=D.rM610||[];
   const cofinsDev=br(m6r[1]);
+  const bcCof=m610arr.reduce((a,r)=>a+br(r[4]),0);
   document.getElementById('cofins-kpis').innerHTML=
     statCard('COFINS Total Apurado','R$ '+fm(cofinsDev),'M600','var(--blue)')+
-    statCard('BC COFINS Total','R$ '+fm(br(m610r[4])),'M610','var(--text)')+
-    statCard('Alíquota COFINS',(m610r[8]||'0')+'%','M610','var(--amber)')+
-    statCard('COFINS Devido','R$ '+fm(br(m610r[16])),'M610','var(--green)');
+    statCard('BC COFINS Total','R$ '+fm(bcCof),'M610','var(--text)')+
+    statCard('CSTs Apurados',fi(m610arr.length),'M610','var(--amber)')+
+    statCard('COFINS Devido','R$ '+fm(m610arr.reduce((a,r)=>a+br(r[16]),0)),'M610','var(--green)');
 
   const m600Labels=['Cumulativo Alíq. Normal','Não-Cumulativo Alíq. Normal','Cumulativo Mono Alíq.','NC Mono Alíq.','Cumulativo Substituição','NC Substituição','Cumulativo Alíq. Zero','NC Alíq. Zero','NC Imune/Isento','COFINS Total Período','COFINS Dev. Período Ant.','Outras Deduções'];
   let html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
-  m600Labels.forEach((lbl,i)=>{const v=br(m6r[i+2]);html+=`<div style="padding:8px;background:${v>0?'var(--blue-l)':'var(--bg)'};border-radius:8px"><div style="font-size:10px;color:var(--text-3);font-weight:600">${lbl}</div><div style="font-size:13px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:${v>0?'var(--blue)':'var(--text-3)'};margin-top:2px">R$ ${fm(v)}</div></div>`});
+  m600Labels.forEach((lbl,i)=>{const v=br(m6r[i+2]);html+=`<div style="padding:8px;background:${v>0?'var(--blue-l)':'var(--bg)'};border-radius:8px"><div style="font-size:10px;color:var(--text-3);font-weight:600">${lbl}</div><div style="font-size:13px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:${v>0?'var(--blue)':'var(--text-3)'};margin-top:2px">R$ ${fm(v)}</div></div>`;});
   html+='</div>';
   document.getElementById('m600-detail').innerHTML=html;
 
-  document.getElementById('m610-detail').innerHTML=`<table class="tbl"><thead><tr><th>CST</th><th class="r">Total Receita</th><th class="r">BC COFINS</th><th class="r">Alíq %</th><th class="r">COFINS Apurado</th><th class="r">Deduções</th><th class="r">COFINS Devido</th></tr></thead>
-  <tbody><tr><td>${cstTag(m610r[2])}</td><td class="mono r">R$ ${fm(m610r[3])}</td><td class="mono r">R$ ${fm(m610r[4])}</td><td class="mono r">${m610r[8]||'0'}%</td><td class="mono r" style="color:var(--blue)">R$ ${fm(m610r[11])}</td><td class="mono r">R$ ${fm(m610r[12])}</td><td class="mono r" style="font-weight:700">R$ ${fm(m610r[16])}</td></tr></tbody></table>`;
+  let m610html=`<table class="tbl"><thead><tr><th>CST</th><th class="r">Total Receita</th><th class="r">BC COFINS</th><th class="r">Alíq %</th><th class="r">COFINS Apurado</th><th class="r">Deduções</th><th class="r">COFINS Devido</th></tr></thead><tbody>`;
+  if(m610arr.length===0){
+    m610html+='<tr><td colspan="7" style="text-align:center;color:var(--text-3)">–</td></tr>';
+  } else {
+    m610arr.forEach(r=>{
+      m610html+=`<tr><td>${cstTag(r[2])}</td><td class="mono r">R$ ${fm(r[3])}</td><td class="mono r">R$ ${fm(r[4])}</td><td class="mono r">${r[8]||'0'}%</td><td class="mono r" style="color:var(--blue)">R$ ${fm(r[11])}</td><td class="mono r">R$ ${fm(r[12])}</td><td class="mono r" style="font-weight:700">R$ ${fm(r[16])}</td></tr>`;
+    });
+  }
+  m610html+='</tbody></table>';
+  document.getElementById('m610-detail').innerHTML=m610html;
 
   let m505html=`<table class="tbl"><thead><tr><th>Nat. BC Créd.</th><th>CST COFINS</th><th class="r">BC Alíq Normal</th><th class="r">BC Alíq Esp.</th><th class="r">BC Total</th></tr></thead><tbody>`;
-  D.rM505.forEach(m=>{m505html+=`<tr><td>${m.natBcCred}</td><td>${cstTag(m.cstCofins)}</td><td class="mono r">R$ ${fm(m.vlBcNorm)}</td><td class="mono r">R$ ${fm(m.vlBcEsp)}</td><td class="mono r" style="font-weight:700">R$ ${fm(m.vlBcTot)}</td></tr>`});
+  D.rM505.forEach(m=>{m505html+=`<tr><td>${m.natBcCred}</td><td>${cstTag(m.cstCofins)}</td><td class="mono r">R$ ${fm(m.vlBcNorm)}</td><td class="mono r">R$ ${fm(m.vlBcEsp)}</td><td class="mono r" style="font-weight:700">R$ ${fm(m.vlBcTot)}</td></tr>`;});
   m505html+='</tbody></table>';
   document.getElementById('m505-detail').innerHTML=m505html;
 
@@ -1325,8 +1352,8 @@ function renderRegs(){
 
 // ─── LC 224/2025 – AJUSTE CST 06 ALÍQUOTA ZERO ───
 const LC224_ALIQ = {
-  LP: { pis: 0.00065, cofins: 0.003  },  // 0,65%×10% | 3%×10%
-  LR: { pis: 0.00165, cofins: 0.0076 },  // 1,65%×10% | 7,6%×10%
+  LP: { pis: 0.00065, cofins: 0.003  },
+  LR: { pis: 0.00165, cofins: 0.0076 },
 };
 function cfopTipo(cfop){ return String(cfop||'')[0] <= '3' ? 'E' : 'S'; }
 function detectRegime(d110){
@@ -1336,12 +1363,14 @@ function detectRegime(d110){
   return 'SN';
 }
 
-function renderLC224(){ /* agora autônomo dentro da própria página page-lc224 */ }
-function _renderLC224_OLD(){
+function renderLC224(){
+  // Usar dados já parseados em D se disponível
+  if(!D || !D.r0110) return;
+
   const regime = detectRegime(D.r0110);
   const aliq   = LC224_ALIQ[regime];
-  const root   = document.getElementById('lc224-root');
-  const regBox = document.getElementById('lc224-regime-box');
+  const root   = document.getElementById('lc224-result');
+  const statusEl = document.getElementById('lc224-status');
 
   const regInfo = {
     LR:{label:'Lucro Real',      cls:'regime-lr', pisPct:'0,1650%', cofPct:'0,7600%'},
@@ -1350,25 +1379,15 @@ function _renderLC224_OLD(){
   };
   const ri = regInfo[regime] || regInfo.SN;
 
-  regBox.innerHTML = `<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;
-    background:var(--bg-card);border:1px solid var(--border);border-radius:var(--rl);padding:12px 18px;margin-bottom:16px">
-    <div>
-      <div style="font-size:9px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Regime — Reg. 0110</div>
-      <span class="regime-badge ${ri.cls}">${ri.label}</span>
-    </div>
-    ${aliq?`<div style="background:var(--amber-bg);border:1px solid var(--amber);border-radius:8px;padding:8px 14px;font-size:12px">
-      PIS <strong>${ri.pisPct}</strong> &nbsp;|&nbsp; COFINS <strong>${ri.cofPct}</strong>
-      <div style="font-size:10px;color:var(--amber);margin-top:2px">Vigência: 1º/04/2026 — LC 224/2025 Art.4 §4 I</div>
-    </div>`:''}
-  </div>`;
-
   if(regime === 'SN'){
-    root.innerHTML = '<div class="card"><div class="card-b" style="padding:24px;color:var(--text-3)">Simples Nacional — não enquadrado na LC 224/2025.</div></div>';
+    root.innerHTML = '<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:30px;text-align:center;color:#6b7280">Simples Nacional — não enquadrado na LC 224/2025.</div>';
     return;
   }
 
-  // Totais CST 06 (débito/saída) e CST 73 (crédito/entrada) do C175
   let bcDeb06=0, bcCred73=0, cnt06=0, cnt73=0;
+  const fmBR = v => v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fiBR = v => v.toLocaleString('pt-BR');
+
   D.rC175.forEach(r=>{
     const vi=br(r.vlItem), vd=br(r.vlDesc), bc=Math.max(vi-vd,0);
     if(r.cstPis==='06'){ bcDeb06+=bc; cnt06++; }
@@ -1380,113 +1399,84 @@ function _renderLC224_OLD(){
     if(r.cstPis==='73'){ bcCred73+=bc; cnt73++; }
   });
 
+  const totalC175 = D.rC175.length + D.rC170.length;
+  if(statusEl){
+    statusEl.style.color='#059669';
+    statusEl.textContent='✓ Arquivo carregado — '+fiBR(totalC175)+' registros C175/C170, '+fiBR(cnt06)+' com CST 06';
+  }
+
+  if(cnt06===0 && cnt73===0){
+    root.innerHTML='<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:30px;text-align:center;color:#6b7280">Nenhuma linha C175/C170 com CST 06 ou 73 encontrada.</div>';
+    return;
+  }
+
   const ajDebPis  = bcDeb06  * aliq.pis;
   const ajDebCof  = bcDeb06  * aliq.cofins;
   const ajCredPis = bcCred73 * aliq.pis;
   const ajCredCof = bcCred73 * aliq.cofins;
 
-  const vigencia = `<div style="background:var(--amber-bg);border:1px solid var(--amber);border-radius:8px;
-    padding:7px 14px;font-size:11px;color:#92400e;font-weight:600;margin-bottom:18px;display:inline-block">
-    Vigência: 1º de abril de 2026 — LC 224/2025, Art. 14, I, a
-  </div>`;
+  // Amostra das primeiras 15 linhas CST 06
+  const amostras06 = [...D.rC175,...D.rC170].filter(r=>r.cstPis==='06').slice(0,15);
+  let amostraHtml = '';
+  amostras06.forEach(a=>{
+    const vi=br(a.vlItem||a.vlOpr||0), vd=br(a.vlDesc||0), bc=Math.max(vi-vd,0);
+    amostraHtml+='<tr>'+
+      '<td style="padding:6px 8px;border-bottom:1px solid #f3f4f6">'+(a.cfop||'–')+'</td>'+
+      '<td style="padding:6px 8px;text-align:right;border-bottom:1px solid #f3f4f6">'+fmBR(vi)+'</td>'+
+      '<td style="padding:6px 8px;text-align:right;border-bottom:1px solid #f3f4f6">'+fmBR(vd)+'</td>'+
+      '<td style="padding:6px 8px;text-align:right;border-bottom:1px solid #f3f4f6;font-weight:700">'+fmBR(bc)+'</td>'+
+      '<td style="padding:6px 8px;border-bottom:1px solid #f3f4f6;color:#6b7280">'+(a.codCta||'–')+'</td>'+
+    '</tr>';
+  });
 
-  const bloco = (titulo, cst, bc, ajPis, ajCof, cnt, cor, bordaCor) => `
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-left:4px solid ${bordaCor};
-      border-radius:var(--rl);padding:20px 24px;margin-bottom:16px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
-        <span class="tag" style="background:${bordaCor}22;color:${bordaCor};font-size:12px;padding:3px 10px">CST ${cst}</span>
-        <span style="font-size:14px;font-weight:700;color:var(--text)">${titulo}</span>
-        <span style="font-size:11px;color:var(--text-3);margin-left:auto">${fi(cnt)} linhas (C175 + C170)</span>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
-        <div style="background:var(--bg);border-radius:var(--r);padding:14px 16px">
-          <div style="font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Base de Cálculo</div>
-          <div style="font-size:22px;font-weight:800;font-family:'IBM Plex Mono',monospace;color:var(--text)">R$ ${fm(bc)}</div>
-          <div style="font-size:11px;color:var(--text-3);margin-top:2px">vlItem − vlDesc</div>
-        </div>
-        <div style="background:var(--bg);border-radius:var(--r);padding:14px 16px">
-          <div style="font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Ajuste PIS (${ri.pisPct})</div>
-          <div style="font-size:22px;font-weight:800;font-family:'IBM Plex Mono',monospace;color:var(--purple)">R$ ${fm(ajPis)}</div>
-          <div style="font-size:11px;color:var(--text-3);margin-top:2px">${(aliq.pis*100).toFixed(4)}% × BC</div>
-        </div>
-        <div style="background:var(--bg);border-radius:var(--r);padding:14px 16px">
-          <div style="font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Ajuste COFINS (${ri.cofPct})</div>
-          <div style="font-size:22px;font-weight:800;font-family:'IBM Plex Mono',monospace;color:var(--blue)">R$ ${fm(ajCof)}</div>
-          <div style="font-size:11px;color:var(--text-3);margin-top:2px">${(aliq.cofins*100).toFixed(4)}% × BC</div>
-        </div>
-        <div style="background:${cor};border-radius:var(--r);padding:14px 16px">
-          <div style="font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">Total Ajuste</div>
-          <div style="font-size:22px;font-weight:800;font-family:'IBM Plex Mono',monospace;color:${bordaCor}">R$ ${fm(ajPis+ajCof)}</div>
-          <div style="font-size:11px;color:var(--text-3);margin-top:2px">PIS + COFINS</div>
-        </div>
-      </div>
-    </div>`;
+  root.innerHTML =
+    '<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">'+
+      '<div><div style="font-size:9px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Regime (Reg. 0110)</div>'+
+      '<span style="background:#dbeafe;color:#1e40af;padding:5px 12px;border-radius:6px;font-size:13px;font-weight:700">'+ri.label+'</span></div>'+
+      '<div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:8px 14px;font-size:12px">PIS <strong>'+ri.pisPct+'</strong> &nbsp;|&nbsp; COFINS <strong>'+ri.cofPct+'</strong></div>'+
+      '<div style="margin-left:auto;font-size:11px;color:#6b7280;text-align:right">C175+C170: <strong>'+fiBR(totalC175)+'</strong><br>CST 06: <strong style="color:#dc2626">'+fiBR(cnt06)+'</strong>'+(cnt73>0?' | CST 73: <strong style="color:#16a34a">'+fiBR(cnt73)+'</strong>':'')+'</div>'+
+    '</div>'+
 
-  const resumo = `
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--rl);padding:20px 24px;margin-bottom:16px">
-      <div style="font-size:13px;font-weight:700;margin-bottom:14px">Resumo — Ajuste Total LC 224</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
-        <div style="padding:12px 16px;background:var(--red-bg);border-radius:var(--r);border-left:4px solid var(--red)">
-          <div style="font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;margin-bottom:5px">Débito PIS (CST 06)</div>
-          <div style="font-size:20px;font-weight:800;font-family:'IBM Plex Mono',monospace;color:var(--red)">R$ ${fm(ajDebPis)}</div>
-        </div>
-        <div style="padding:12px 16px;background:var(--red-bg);border-radius:var(--r);border-left:4px solid var(--red)">
-          <div style="font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;margin-bottom:5px">Débito COFINS (CST 06)</div>
-          <div style="font-size:20px;font-weight:800;font-family:'IBM Plex Mono',monospace;color:var(--red)">R$ ${fm(ajDebCof)}</div>
-        </div>
-        <div style="padding:12px 16px;background:var(--green-bg);border-radius:var(--r);border-left:4px solid var(--green)">
-          <div style="font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;margin-bottom:5px">Crédito PIS (CST 73)</div>
-          <div style="font-size:20px;font-weight:800;font-family:'IBM Plex Mono',monospace;color:var(--green)">R$ ${fm(ajCredPis)}</div>
-        </div>
-        <div style="padding:12px 16px;background:var(--green-bg);border-radius:var(--r);border-left:4px solid var(--green)">
-          <div style="font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;margin-bottom:5px">Crédito COFINS (CST 73)</div>
-          <div style="font-size:20px;font-weight:800;font-family:'IBM Plex Mono',monospace;color:var(--green)">R$ ${fm(ajCredCof)}</div>
-        </div>
-        <div style="padding:12px 16px;background:var(--amber-bg);border-radius:var(--r);border-left:4px solid var(--amber);grid-column:span 2">
-          <div style="font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;margin-bottom:5px">Saldo Líquido (Débito − Crédito)</div>
-          <div style="font-size:20px;font-weight:800;font-family:'IBM Plex Mono',monospace;color:var(--amber)">R$ ${fm((ajDebPis+ajDebCof)-(ajCredPis+ajCredCof))}</div>
-        </div>
-      </div>
-    </div>`;
+    '<div style="background:#fff;border:2px solid #dc2626;border-radius:14px;padding:24px;margin-bottom:16px">'+
+      '<div style="font-size:11px;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Demonstrativo de Cálculo — LC 224/2025</div>'+
+      '<div style="font-size:18px;font-weight:800;color:#111;margin-bottom:22px">CST 06 — Saídas com Alíquota Zero (C175/C170)</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">'+
+        '<div style="background:#f9fafb;border-radius:10px;padding:14px 18px"><div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:4px">Base de Cálculo CST 06</div><div style="font-size:22px;font-weight:700;font-family:monospace;color:#111">R$ '+fmBR(bcDeb06)+'</div><div style="font-size:11px;color:#6b7280;margin-top:2px">'+fiBR(cnt06)+' linhas · vlItem − vlDesc</div></div>'+
+        (cnt73>0?'<div style="background:#f0fdf4;border-radius:10px;padding:14px 18px"><div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:4px">Base de Cálculo CST 73</div><div style="font-size:22px;font-weight:700;font-family:monospace;color:#16a34a">R$ '+fmBR(bcCred73)+'</div><div style="font-size:11px;color:#6b7280;margin-top:2px">'+fiBR(cnt73)+' linhas · vlItem − vlDesc</div></div>':'<div></div>')+
+      '</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">'+
+        '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:18px 22px"><div style="font-size:10px;font-weight:700;color:#991b1b;text-transform:uppercase;margin-bottom:6px">Débito PIS ('+ri.pisPct+')</div><div style="font-size:24px;font-weight:800;font-family:monospace;color:#dc2626">R$ '+fmBR(ajDebPis)+'</div></div>'+
+        '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:18px 22px"><div style="font-size:10px;font-weight:700;color:#991b1b;text-transform:uppercase;margin-bottom:6px">Débito COFINS ('+ri.cofPct+')</div><div style="font-size:24px;font-weight:800;font-family:monospace;color:#dc2626">R$ '+fmBR(ajDebCof)+'</div></div>'+
+        (cnt73>0?
+          '<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:18px 22px"><div style="font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;margin-bottom:6px">Crédito PIS CST 73</div><div style="font-size:24px;font-weight:800;font-family:monospace;color:#16a34a">R$ '+fmBR(ajCredPis)+'</div></div>'+
+          '<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:10px;padding:18px 22px"><div style="font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;margin-bottom:6px">Crédito COFINS CST 73</div><div style="font-size:24px;font-weight:800;font-family:monospace;color:#16a34a">R$ '+fmBR(ajCredCof)+'</div></div>'
+          :'')+
+      '</div>'+
+      '<div style="background:linear-gradient(135deg,#dc2626,#991b1b);border-radius:12px;padding:24px 28px;color:#fff">'+
+        '<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:.85;margin-bottom:8px">AJUSTE DE DÉBITO TOTAL (CST 06)</div>'+
+        '<div style="font-size:42px;font-weight:900;font-family:monospace;line-height:1">R$ '+fmBR(ajDebPis+ajDebCof)+'</div>'+
+        (cnt73>0?'<div style="font-size:14px;margin-top:12px;opacity:.9">Saldo líquido (débito − crédito): <strong>R$ '+fmBR((ajDebPis+ajDebCof)-(ajCredPis+ajCredCof))+'</strong></div>':'')+
+      '</div>'+
+    '</div>'+
 
-  const sped = `
-    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--rl);padding:18px 24px">
-      <div style="font-size:13px;font-weight:700;margin-bottom:10px">Registros M110 / M510 — Lançamento no SPED</div>
-      <p style="font-size:11px;color:var(--text-3);margin-bottom:12px">Inserir após M100 (PIS) e M500 (COFINS). Código <strong>RN10</strong> provisório.</p>
-      ${spedLine('M110','06',(bcDeb06).toFixed(2).replace('.',','),(aliq.pis*100).toFixed(4).replace('.',','),ajDebPis.toFixed(2).replace('.',','),'1','Débito PIS CST 06 — '+ri.label)}
-      ${spedLine('M510','06',(bcDeb06).toFixed(2).replace('.',','),(aliq.cofins*100).toFixed(4).replace('.',','),ajDebCof.toFixed(2).replace('.',','),'1','Débito COFINS CST 06 — '+ri.label)}
-      ${bcCred73>0 ? spedLine('M110','73',(bcCred73).toFixed(2).replace('.',','),(aliq.pis*100).toFixed(4).replace('.',','),ajCredPis.toFixed(2).replace('.',','),'0','Crédito PIS CST 73 — '+ri.label) : ''}
-      ${bcCred73>0 ? spedLine('M510','73',(bcCred73).toFixed(2).replace('.',','),(aliq.cofins*100).toFixed(4).replace('.',','),ajCredCof.toFixed(2).replace('.',','),'0','Crédito COFINS CST 73 — '+ri.label) : ''}
-    </div>`;
+    (amostras06.length>0?
+    '<div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:18px 22px">'+
+      '<div style="font-size:12px;font-weight:700;color:#111;margin-bottom:12px">Amostra (primeiras '+amostras06.length+' linhas CST 06)</div>'+
+      '<table style="width:100%;font-size:11px;font-family:monospace;border-collapse:collapse">'+
+        '<thead><tr style="background:#f9fafb;color:#6b7280;text-transform:uppercase;font-size:10px">'+
+          '<th style="padding:8px;text-align:left;border-bottom:1px solid #e5e7eb">CFOP</th>'+
+          '<th style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb">VL_ITEM</th>'+
+          '<th style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb">VL_DESC</th>'+
+          '<th style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb">BC</th>'+
+          '<th style="padding:8px;text-align:left;border-bottom:1px solid #e5e7eb">Cód. Conta</th>'+
+        '</tr></thead>'+
+        '<tbody>'+amostraHtml+'</tbody>'+
+      '</table>'+
+    '</div>'
+    :'');
 
-  root.innerHTML = vigencia
-    + bloco('Débito — Saídas Alíquota Zero','06',bcDeb06,ajDebPis,ajDebCof,cnt06,'var(--red-bg)','var(--red)')
-    + (cnt73>0 ? bloco('Crédito — Entradas Alíquota Zero','73',bcCred73,ajCredPis,ajCredCof,cnt73,'var(--green-bg)','var(--green)') : '')
-    + resumo + sped;
-
-  D._lc224 = {rows:[...D.rC175,...D.rC170].filter(r=>r.cstPis==='06'||r.cstPis==='73'), bcDeb06, bcCred73, ajDebPis, ajDebCof, ajCredPis, ajCredCof, regime:ri.label};
-}  // end _renderLC224
-
-function spedLine(reg,cst,bc,aliqR,ajR,indAj,desc){
-  return `<div style="font-size:10px;color:var(--text-3);margin:10px 0 4px;font-weight:600">${reg} — ${desc}</div>
-    <div class="sped-code">|<span class="field">${reg}</span>|<span class="field">${cst}</span>|<span class="field">RN10</span>|<span class="field">${bc}</span>|<span class="field">${aliqR}</span>|<span class="field">${ajR}</span>|<span class="field">${indAj}</span>|<span class="comment"> 1=débito 0=crédito</span>|</div>`;
+  D._lc224 = {bcDeb06, bcCred73, ajDebPis, ajDebCof, ajCredPis, ajCredCof, regime:ri.label};
 }
-
-function exportLC224XLS(){ alert('Export LC224 desabilitado nesta versão.'); }
-function exportLC224XLS_OLD(){
-  const {rows, regime} = D._lc224;
-  const headers = ['Tipo','Orig.','CFOP','Cód. Item','Descrição','Vl. Item','Vl. Desc.','BC Ajuste',
-    'CST PIS','Alíq PIS Orig %','Alíq PIS Nova %','Vl. PIS Orig','Ajuste PIS',
-    'CST COFINS','Alíq COF Orig %','Alíq COF Nova %','Vl. COF Orig','Ajuste COFINS','Cod. Conta'];
-  const data = rows.map(r=>[r.tipo==='S'?'Saída':'Entrada',r.orig,r.cfop,r.codItem,r.descr,
-    r.vi,r.vd,r.bc,r.cstPis,r.aliqPisOrig,r.aliqPisNova,r.vlPisOrig,r.ajPis,
-    r.cstCof,r.aliqCofOrig,r.aliqCofNova,r.vlCofOrig,r.ajCof,r.codCta]);
-  const ws = XLSX.utils.aoa_to_sheet([headers,...data]);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'CST06_LC224');
-  XLSX.writeFile(wb,`Ajuste_LC224_CST06_${Date.now()}.xlsx`);
-}
-
 // ─── EXPORT XLS ───
 function exportXLS(){
   const page = window._currentPage;
