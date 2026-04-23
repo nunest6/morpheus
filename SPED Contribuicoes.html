@@ -272,7 +272,10 @@ select:focus{border-color:var(--purple)}
   </div>
 
   <div class="sb-periods" id="sb-periods" style="display:none">
-    <div class="sb-st" style="padding:0 6px 6px">Períodos Carregados</div>
+    <div class="sb-st" style="padding:0 6px 6px;display:flex;align-items:center;justify-content:space-between">
+      <span>Períodos Carregados</span>
+      <span onclick="document.getElementById('file-inp').click()" title="Carregar outro período" style="cursor:pointer;color:#7c3aed;font-size:14px;font-weight:700;line-height:1;padding:0 4px;border-radius:4px;transition:background .1s" onmouseover="this.style.background='rgba(124,58,237,.2)'" onmouseout="this.style.background='none'">+</span>
+    </div>
     <div id="sb-period-list"></div>
   </div>
 
@@ -295,11 +298,7 @@ select:focus{border-color:var(--purple)}
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Exportar XLS
       </button>
-      <label class="btn btn-purple" style="cursor:pointer">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Carregar arquivo
-        <input type="file" accept=".txt,.sped" id="file-inp">
-      </label>
+      <input type="file" accept=".txt,.sped" id="file-inp" style="display:none">
     </div>
   </div>
 
