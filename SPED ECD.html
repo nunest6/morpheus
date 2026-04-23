@@ -230,6 +230,7 @@ body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--bg); color:v
       <span class="topbar-title" id="tt">Importar Arquivo ECD</span>
       <div class="topbar-right">
         <span class="topbar-badge" style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;font-size:10px;">Leiaute 9</span>
+        <select id="empresa-sel" onchange="trocarEmpresa()" style="display:none;padding:4px 10px;border:1px solid var(--border);border-radius:7px;font-size:12px;max-width:280px;font-weight:600;"></select>
         <span class="topbar-badge badge-blue" id="tt-period" style="display:none"></span>
       </div>
     </div>
@@ -237,18 +238,18 @@ body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--bg); color:v
 
       <!-- IMPORT -->
       <div class="page active" id="p-import">
-        <div class="section-title">Importar Arquivo SPED ECD</div>
-        <div class="section-sub">Importe o arquivo .txt da Escrituração Contábil Digital para leitura completa.</div>
+        <div class="section-title">Importar Arquivos SPED ECD</div>
+        <div class="section-sub">Importe um ou mais arquivos .txt da Escrituração Contábil Digital. Cada arquivo corresponde a uma empresa ou período.</div>
         <div class="upload-zone" id="uzone">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <h3>Arraste o arquivo ECD (.txt) aqui</h3>
-          <p>ou clique para selecionar</p>
-          <input type="file" id="finput" accept=".txt,.TXT">
+          <h3>Arraste os arquivos ECD (.txt) aqui</h3>
+          <p>ou clique para selecionar — múltiplos arquivos permitidos</p>
+          <input type="file" id="finput" accept=".txt,.TXT" multiple>
         </div>
         <div id="flist"></div>
         <div id="import-bar" style="display:none;margin-top:16px;display:flex;gap:10px;align-items:center;">
-          <button class="btn btn-blue" onclick="processFile()">Processar</button>
-          <button class="btn" onclick="clearFile()">Limpar</button>
+          <button class="btn btn-blue" onclick="processFiles()">Processar</button>
+          <button class="btn" onclick="clearFiles()">Limpar</button>
           <span id="pstatus" style="font-size:13px;color:var(--text-3);"></span>
         </div>
       </div>
@@ -295,6 +296,7 @@ body { font-family:'Plus Jakarta Sans',sans-serif; background:var(--bg); color:v
 let FILE = null;   // raw File object
 let D = null;      // parsed data
 let charts = {};
+let _razaoAtual = null; // dados do último razão aberto para export
 
 // ─── REGISTER FIELD DEFINITIONS ───
 const FIELDS = {
@@ -632,32 +634,114 @@ function render(id) {
   }
 }
 
-// ─── FILE UPLOAD ───
-const uzone = document.getElementById('uzone');
+// ─── FILE UPLOAD – MÚLTIPLOS ARQUIVOS ───
+let FILES_PENDING = []; // File[] aguardando processamento
+let DATASETS      = []; // { file, D }[] já processados
+let D_IDX         = 0;  // índice ativo em DATASETS
+
+const uzone  = document.getElementById('uzone');
 const finput = document.getElementById('finput');
+
 uzone.addEventListener('click', () => finput.click());
 uzone.addEventListener('dragover', e => { e.preventDefault(); uzone.classList.add('over'); });
 uzone.addEventListener('dragleave', () => uzone.classList.remove('over'));
-uzone.addEventListener('drop', e => { e.preventDefault(); uzone.classList.remove('over'); if (e.dataTransfer.files[0]) { FILE = e.dataTransfer.files[0]; showFile(); } });
-finput.addEventListener('change', e => { if (e.target.files[0]) { FILE = e.target.files[0]; showFile(); } });
+uzone.addEventListener('drop', e => {
+  e.preventDefault(); uzone.classList.remove('over');
+  addFiles([...e.dataTransfer.files]);
+});
+finput.addEventListener('change', e => {
+  addFiles([...e.target.files]);
+  finput.value = ''; // reset para permitir re-seleção do mesmo arquivo
+});
 
-function showFile() {
-  document.getElementById('flist').innerHTML = `<div class="file-item anim"><span class="fname">${FILE.name}</span><span class="fsize">${(FILE.size/1024).toFixed(1)} KB</span><span class="file-remove" onclick="clearFile()">✕</span></div>`;
+function addFiles(newFiles) {
+  newFiles.forEach(f => {
+    if (!FILES_PENDING.find(p => p.name === f.name && p.size === f.size))
+      FILES_PENDING.push(f);
+  });
+  renderFileList();
+}
+
+function renderFileList() {
+  const el = document.getElementById('flist');
+  if (!FILES_PENDING.length) { el.innerHTML = ''; document.getElementById('import-bar').style.display = 'none'; return; }
+  el.innerHTML = FILES_PENDING.map((f, i) =>
+    `<div class="file-item anim">
+      <span class="fname">${f.name}</span>
+      <span class="fsize">${(f.size/1024).toFixed(1)} KB</span>
+      <span class="file-remove" onclick="removeFilePending(${i})">✕</span>
+    </div>`
+  ).join('');
   document.getElementById('import-bar').style.display = 'flex';
 }
-function clearFile() { FILE = null; D = null; document.getElementById('flist').innerHTML = ''; document.getElementById('import-bar').style.display = 'none'; document.getElementById('pstatus').textContent = ''; document.getElementById('tt-period').style.display = 'none'; }
 
-async function processFile() {
-  if (!FILE) return;
+function removeFilePending(i) {
+  FILES_PENDING.splice(i, 1);
+  renderFileList();
+}
+
+function clearFiles() {
+  FILES_PENDING = []; DATASETS = []; D = null; D_IDX = 0; _razaoAtual = null;
+  document.getElementById('flist').innerHTML = '';
+  document.getElementById('import-bar').style.display = 'none';
+  document.getElementById('pstatus').textContent = '';
+  document.getElementById('tt-period').style.display = 'none';
+  document.getElementById('empresa-sel').style.display = 'none';
+}
+
+async function processFiles() {
+  if (!FILES_PENDING.length) return;
   const st = document.getElementById('pstatus');
   st.textContent = 'Processando...'; st.style.color = 'var(--text-3)';
-  const text = await new Promise((res, rej) => { const r = new FileReader(); r.onload = e => res(e.target.result); r.onerror = rej; r.readAsText(FILE, 'ISO-8859-1'); });
-  D = parseECD(text, FILE.name);
-  st.textContent = `✓ ${fi(D.rawLines)} linhas · ${fi(D.accountsList.length)} contas · ${fi(D.lancamentos.length)} lançamentos`;
+
+  DATASETS = [];
+  for (const file of FILES_PENDING) {
+    const text = await new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = e => res(e.target.result);
+      r.onerror = rej;
+      r.readAsText(file, 'ISO-8859-1');
+    });
+    DATASETS.push({ file, D: parseECD(text, file.name) });
+  }
+
+  D_IDX = 0;
+  D = DATASETS[0].D;
+  atualizarSeletorEmpresas();
+
+  const total = DATASETS.reduce((s, ds) => s + ds.D.rawLines, 0);
+  st.textContent = `✓ ${DATASETS.length} arquivo(s) · ${fi(total)} linhas processadas`;
   st.style.color = 'var(--green)';
-  document.getElementById('tt-period').textContent = D.period.label;
-  document.getElementById('tt-period').style.display = '';
+
+  atualizarTopbar();
   nav('dash');
+}
+
+function atualizarSeletorEmpresas() {
+  const sel = document.getElementById('empresa-sel');
+  if (DATASETS.length <= 1) { sel.style.display = 'none'; return; }
+
+  sel.innerHTML = DATASETS.map((ds, i) => {
+    const e = ds.D.entity;
+    const label = (e.nome || ds.file.name).substring(0, 35);
+    return `<option value="${i}">${label}</option>`;
+  }).join('');
+  sel.value = D_IDX;
+  sel.style.display = '';
+}
+
+function trocarEmpresa() {
+  D_IDX = parseInt(document.getElementById('empresa-sel').value) || 0;
+  D = DATASETS[D_IDX].D;
+  _razaoAtual = null;
+  atualizarTopbar();
+  nav('dash');
+}
+
+function atualizarTopbar() {
+  const period = document.getElementById('tt-period');
+  period.textContent = D.period.label;
+  period.style.display = D.period.label ? '' : 'none';
 }
 
 // ─── DASHBOARD ───
@@ -694,10 +778,16 @@ function renderDash() {
             ${tag(e.indSitEspLabel || '', 'red')}
           </div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:4px;text-align:right;">
+        <div style="display:flex;flex-direction:column;gap:8px;text-align:right;">
           <div style="font-size:11px;color:var(--text-3);font-weight:600;">PERÍODO DA ESCRITURAÇÃO</div>
           <div style="font-size:20px;font-weight:800;color:var(--blue);">${D.period.dtIni} a ${D.period.dtFin}</div>
           <div style="font-size:12px;color:var(--text-3);">Versão Leiaute ${e.verLC || '—'} · ${e.tipEcdLabel || '—'}</div>
+          <div style="margin-top:4px;">
+            <button class="btn btn-blue" onclick="exportarDeclaracoes()" style="font-size:12px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Exportar Declarações
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -991,6 +1081,9 @@ function openRazao(codCta) {
   // Unique months for filter
   const months = [...new Set(movs.map(m => m.dtLcto ? m.dtLcto.substring(2,6) : ''))].sort();
 
+  // Salvar estado para export
+  _razaoAtual = { codCta, acct, movWithBal, saldoInicial, indDcIni, saldoFinal, indDcFin, totDeb, totCred };
+
   const detail = document.getElementById('razao-detail');
 
   let html = `
@@ -1018,7 +1111,11 @@ function openRazao(codCta) {
         ${months.map(m => `<option value="${m}">${m.substring(0,2)}/${m.substring(2)}</option>`).join('')}
       </select>
       <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="razao-search" placeholder="Buscar histórico..." oninput="filterTbl('razao-tbl',this.value)"></div>
-      <span style="font-size:12px;color:var(--text-3);margin-left:auto;" id="razao-count-label">${fi(movs.length)} lançamentos</span>
+      <button class="btn" onclick="exportRazaoExcel()" style="margin-left:auto;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar Excel
+      </button>
+      <span style="font-size:12px;color:var(--text-3);" id="razao-count-label">${fi(movs.length)} lançamentos</span>
     </div>
 
     <div class="card">
@@ -1083,6 +1180,78 @@ function filterRazaoMonth() {
     if (show) count++;
   });
   document.getElementById('razao-count-label').textContent = fi(count) + ' lançamentos';
+}
+
+// ─── RAZÃO EXPORT EXCEL ───
+function exportRazaoExcel() {
+  if (!_razaoAtual) return;
+  const { codCta, acct, movWithBal, saldoInicial, indDcIni, saldoFinal, indDcFin, totDeb, totCred } = _razaoAtual;
+
+  const rows = [];
+
+  // Linha de saldo inicial
+  rows.push({
+    'Data':          '',
+    'Nº Lançamento': '',
+    'Tipo':          'SALDO INICIAL',
+    'Contrapartida': '',
+    'Histórico':     '',
+    'Débito':        '',
+    'Crédito':       '',
+    'Saldo':         saldoInicial,
+    'D/C Saldo':     indDcIni,
+  });
+
+  movWithBal.forEach(m => {
+    const lcto   = D.lancamentos.find(l => l.numLcto === m.numLcto && l.dtLcto === m.dtLcto);
+    const contras = lcto ? lcto.partidas.filter(p => p.codCta !== codCta).map(p => p.codCta).join(', ') : '';
+    const hist    = m.hist || (m.codHistPad ? D.historicosPad[m.codHistPad] || '' : '');
+    const tipoLabel = {'N':'Normal','E':'Encerramento','X':'Extemporâneo','F':'Fechamento'}[m.indLcto] || m.indLcto || '';
+
+    rows.push({
+      'Data':          fmtDt(m.dtLcto),
+      'Nº Lançamento': m.numLcto,
+      'Tipo':          tipoLabel,
+      'Contrapartida': contras,
+      'Histórico':     hist,
+      'Débito':        m.indDc === 'D' ? m.vlDc : '',
+      'Crédito':       m.indDc === 'C' ? m.vlDc : '',
+      'Saldo':         Math.abs(m.runBal),
+      'D/C Saldo':     m.runDc,
+    });
+  });
+
+  // Linha de totais / saldo final
+  rows.push({
+    'Data':          '',
+    'Nº Lançamento': '',
+    'Tipo':          'SALDO FINAL',
+    'Contrapartida': '',
+    'Histórico':     '',
+    'Débito':        totDeb,
+    'Crédito':       totCred,
+    'Saldo':         saldoFinal,
+    'D/C Saldo':     indDcFin,
+  });
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  ws['!cols'] = [{wch:12},{wch:14},{wch:14},{wch:22},{wch:40},{wch:16},{wch:16},{wch:16},{wch:8}];
+
+  // Cabeçalho da aba com código e nome da conta
+  const wb = XLSX.utils.book_new();
+  const nomeAba = `${codCta}`.substring(0, 31);
+  XLSX.utils.book_append_sheet(wb, ws, nomeAba);
+
+  // Metadados no topo (inserir 2 linhas antes dos dados)
+  XLSX.utils.sheet_add_aoa(ws, [
+    [`Razão Contábil – ${acct.codCta} – ${acct.nome}`],
+    [`${D.entity.nome || ''}  |  CNPJ: ${fmtCNPJ(D.entity.cnpj)}  |  Período: ${D.period.dtIni} a ${D.period.dtFin}`],
+    [],
+  ], { origin: 'A1' });
+  // Reescrever dados logo abaixo dos metadados
+  XLSX.utils.sheet_add_json(ws, rows, { origin: 'A4', skipHeader: false });
+
+  XLSX.writeFile(wb, `Razao_${codCta}_${D.entity.cnpj || 'ecd'}.xlsx`);
 }
 
 // ─── BALANÇO PATRIMONIAL ───
@@ -1390,6 +1559,136 @@ function exportDREExcel() {
   });
 
   XLSX.writeFile(wb, `DRE_${D.entity.cnpj || 'ecd'}_${new Date().toISOString().substring(0,10)}.xlsx`);
+}
+
+// ─── EXPORT GLOBAL DE DECLARAÇÕES ───
+function exportarDeclaracoes() {
+  if (!DATASETS.length) return;
+
+  const wb = XLSX.utils.book_new();
+
+  // Abreviação do nome da empresa para prefixo de aba (máx 10 chars)
+  const prefixo = ds => {
+    const nome = ds.D.entity.nome || ds.file.name;
+    return nome.substring(0, 10).trim().replace(/[\\/:*?[\]]/g, '');
+  };
+
+  // Helper: adiciona aba com proteção de nome duplicado
+  const abasUsadas = new Set();
+  const addAba = (wb, ws, nome) => {
+    let n = nome.substring(0, 31);
+    let tentativa = n, i = 1;
+    while (abasUsadas.has(tentativa)) tentativa = `${n.substring(0, 28)}_${i++}`;
+    abasUsadas.add(tentativa);
+    XLSX.utils.book_append_sheet(wb, ws, tentativa);
+  };
+
+  // Helper: cria linha de cabeçalho de identificação
+  const cabecalho = (ds, tipo, periodo) => [
+    [`${tipo} – ${ds.D.entity.nome || ''}`],
+    [`CNPJ: ${fmtCNPJ(ds.D.entity.cnpj)}   Período: ${periodo}`],
+    [],
+  ];
+
+  DATASETS.forEach(ds => {
+    const pre  = prefixo(ds);
+    const d    = ds.D;
+
+    // ── BALANCETES (um por período I150/I155) ──
+    d.saldosPeriodos.forEach(per => {
+      const periodo = `${fmtDt(per.dtIni)} a ${fmtDt(per.dtFin)}`;
+      const rows = per.saldos
+        .slice()
+        .sort((a, b) => a.codCta.localeCompare(b.codCta))
+        .map(s => {
+          const acct = d.accounts[s.codCta];
+          return {
+            'Conta':          s.codCta,
+            'Nome':           acct ? acct.nome : '',
+            'Saldo Inicial':  s.vlSldIni,
+            'D/C Ini':        s.indDcIni,
+            'Débitos':        s.vlDeb,
+            'Créditos':       s.vlCred,
+            'Saldo Final':    s.vlSldFin,
+            'D/C Fin':        s.indDcFin,
+          };
+        });
+
+      const ws = XLSX.utils.aoa_to_sheet(cabecalho(ds, 'Balancete', periodo));
+      XLSX.utils.sheet_add_json(ws, rows, { origin: 'A4' });
+      ws['!cols'] = [{wch:18},{wch:40},{wch:14},{wch:8},{wch:14},{wch:14},{wch:14},{wch:8}];
+
+      const dtFim = per.dtFin ? `${per.dtFin.substring(0,2)}.${per.dtFin.substring(2,4)}.${per.dtFin.substring(4)}` : '';
+      addAba(wb, ws, `${pre} BAL ${dtFim}`);
+    });
+
+    // ── BALANÇOS PATRIMONIAIS (um por período J005/J100) ──
+    const bpPeriodos = {};
+    d.bp.forEach(r => {
+      const key = (r.dtIni || '') + '_' + (r.dtFin || '');
+      if (!bpPeriodos[key]) bpPeriodos[key] = { dtIni: r.dtIni, dtFin: r.dtFin, linhas: [] };
+      bpPeriodos[key].linhas.push(r);
+    });
+
+    Object.values(bpPeriodos).forEach(per => {
+      const periodo = per.dtFin ? `${fmtDt(per.dtIni)} a ${fmtDt(per.dtFin)}` : 'Período único';
+      const rows = per.linhas.map(r => ({
+        'Código':         r.codAgl,
+        'Tipo':           r.indCodAgl === 'T' ? 'Totalizador' : 'Detalhe',
+        'Nível':          r.nivel,
+        'Cód. Superior':  r.codAglSup || '',
+        'Grupo':          r.indGrpBal === 'A' ? 'Ativo' : r.indGrpBal === 'P' ? 'Passivo/PL' : '',
+        'Descrição':      r.descr,
+        'Saldo Anterior': r.vlCtaIni || 0,
+        'D/C Anterior':   r.indDcIni || '',
+        'Saldo Final':    r.vlCtaFin || 0,
+        'D/C Final':      r.indDcFin || '',
+      }));
+
+      const ws = XLSX.utils.aoa_to_sheet(cabecalho(ds, 'Balanço Patrimonial', periodo));
+      XLSX.utils.sheet_add_json(ws, rows, { origin: 'A4' });
+      ws['!cols'] = [{wch:14},{wch:12},{wch:7},{wch:14},{wch:12},{wch:46},{wch:14},{wch:10},{wch:14},{wch:10}];
+
+      const dtFim = per.dtFin ? `${per.dtFin.substring(0,2)}.${per.dtFin.substring(2,4)}.${per.dtFin.substring(4)}` : 'Unico';
+      addAba(wb, ws, `${pre} BP ${dtFim}`);
+    });
+
+    // ── DREs (todos os períodos incluindo anual) ──
+    (d.drePeriodos || []).forEach(per => {
+      const periodo = per.label || '';
+      const linhas  = [...per.linhas].sort((a, b) => a.nuOrdem - b.nuOrdem);
+      const rows = linhas.map(r => ({
+        'Código':          r.codAgl,
+        'Tipo':            r.indCodAgl === 'T' ? 'Totalizador' : 'Detalhe',
+        'Nível':           r.nivel,
+        'Cód. Superior':   r.codAglSup || '',
+        'Descrição':       r.descr,
+        'Valor Anterior':  r.vlCtaIni || 0,
+        'D/C Anterior':    r.indDcIni || '',
+        'Valor Período':   r.vlCtaFin || 0,
+        'D/C Período':     r.indDcFin || '',
+        'Grupo DRE':       r.indGrpDre === 'D' ? 'Despesa' : r.indGrpDre === 'R' ? 'Receita' : '',
+      }));
+
+      const ws = XLSX.utils.aoa_to_sheet(cabecalho(ds, per.anual ? 'DRE Anual' : 'DRE', periodo));
+      XLSX.utils.sheet_add_json(ws, rows, { origin: 'A4' });
+      ws['!cols'] = [{wch:14},{wch:12},{wch:7},{wch:14},{wch:46},{wch:14},{wch:10},{wch:14},{wch:10},{wch:12}];
+
+      const sufixo = per.anual ? 'Anual'
+        : per.dtFin ? `${per.dtFin.substring(0,2)}.${per.dtFin.substring(2,4)}.${per.dtFin.substring(4)}`
+        : 'Per';
+      addAba(wb, ws, `${pre} DRE ${sufixo}`);
+    });
+  });
+
+  if (abasUsadas.size === 0) { alert('Nenhum dado para exportar.'); return; }
+
+  const cnpjs   = [...new Set(DATASETS.map(ds => ds.D.entity.cnpj).filter(Boolean))];
+  const nomeArq = cnpjs.length === 1
+    ? `Declaracoes_${cnpjs[0]}_${new Date().toISOString().substring(0,10)}.xlsx`
+    : `Declaracoes_${DATASETS.length}empresas_${new Date().toISOString().substring(0,10)}.xlsx`;
+
+  XLSX.writeFile(wb, nomeArq);
 }
 
 // ─── TABLE FILTER ───
