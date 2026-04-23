@@ -55,6 +55,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .topbar{height:54px;background:var(--bg-card);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:16px;position:sticky;top:0;z-index:50;box-shadow:var(--shadow-sm);}
 .topbar-title{font-size:15px;font-weight:700;color:var(--text);}
 .topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.topbar-right select{font-size:12px;font-weight:600;padding:5px 10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-card);color:var(--text);cursor:pointer;max-width:260px;outline:none;}
+.topbar-right select:hover{border-color:var(--blue);}
 .topbar-badge{font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;}
 .badge-blue{background:var(--blue-light);color:var(--blue);}
 .badge-purple{background:var(--purple-bg);color:var(--purple);}
@@ -218,7 +220,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
   <main class="main">
     <div class="topbar">
       <span class="topbar-title" id="tt">Importar Arquivo ECF</span>
-      <div class="topbar-right">
+      <div class="topbar-right" id="topbar-right-slot">
         <span class="topbar-badge" id="tt-regime" style="display:none"></span>
         <span class="topbar-badge badge-purple" id="tt-empresa" style="display:none"></span>
         <span class="topbar-badge badge-blue" id="tt-periodo" style="display:none"></span>
@@ -228,17 +230,17 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 
 <!-- IMPORT -->
 <div class="page active" id="p-import">
-  <div class="section-title">Importar Arquivo ECF</div>
-  <div class="section-sub">Arquivo .txt da ECF (Lucro Real ou Lucro Presumido). O regime é detectado automaticamente pelo campo FORMA_TRIB_PER do registro 0010.</div>
+  <div class="section-title">Importar Arquivos ECF</div>
+  <div class="section-sub">Arraste um ou mais arquivos .txt da ECF (Lucro Real ou Lucro Presumido). Regime detectado automaticamente. Arquivos já processados são mantidos ao adicionar novos.</div>
   <div class="upload-zone" id="uzone">
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-    <h3>Arraste o arquivo ECF (.txt) aqui</h3><p>ou clique para selecionar</p>
-    <input type="file" id="finput" accept=".txt,.TXT">
+    <h3>Arraste os arquivos ECF (.txt) aqui</h3><p>ou clique para selecionar — múltiplos arquivos aceitos</p>
+    <input type="file" id="finput" accept=".txt,.TXT" multiple>
   </div>
   <div id="flist"></div>
   <div id="import-bar" style="display:none;margin-top:16px;display:flex;gap:10px;align-items:center;">
     <button class="btn btn-blue" onclick="processFile()">Processar</button>
-    <button class="btn" onclick="clearFile()">Limpar</button>
+    <button class="btn" onclick="clearFile()">Limpar tudo</button>
     <span id="pstatus" style="font-size:13px;color:var(--text-3);"></span>
   </div>
 </div>
@@ -435,7 +437,7 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 </div><!-- /shell -->
 
 <script>
-let FILE=null, D=null, PER=0;
+let FILES=[], DECLARACOES=[], DIDX=0, D=null, PER=0;
 
 const pn=v=>{if(!v&&v!==0)return 0;const s=(v+'').replace(/\./g,'').replace(',','.');return parseFloat(s)||0;};
 const fm=v=>(+v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -469,7 +471,7 @@ function nav(id){
   document.getElementById('p-'+id)?.classList.add('active');
   document.querySelector(`.sb-item[data-p="${id}"]`)?.classList.add('active');
   const T={
-    import:'Importar Arquivo ECF',dash:'Dashboard',ident:'Empresa e Parâmetros',
+    import:'Importar Arquivos ECF',dash:'Dashboard',ident:'Empresa e Parâmetros',
     periodos:'Períodos de Apuração',signatarios:'Signatários – 0930',
     plano:'Plano de Contas – J050',saldos:'Saldos Contábeis – K155',
     // LR
@@ -483,7 +485,14 @@ function nav(id){
     registros:'Registros – 9900'
   };
   document.getElementById('tt').textContent=T[id]||id;
-  if(D) render(id);
+  if(D){ applyDeclaracao(); renderDeclSelector(); render(id); }
+}
+
+function switchDeclaracao(idx){
+  DIDX=idx; D=DECLARACOES[idx]; PER=0;
+  applyDeclaracao();
+  renderDeclSelector();
+  applyRegimeMode(D.regime);
 }
 
 function render(id){
@@ -530,56 +539,141 @@ const uzone=document.getElementById('uzone'),finput=document.getElementById('fin
 uzone.addEventListener('click',()=>finput.click());
 uzone.addEventListener('dragover',e=>{e.preventDefault();uzone.classList.add('over');});
 uzone.addEventListener('dragleave',()=>uzone.classList.remove('over'));
-uzone.addEventListener('drop',e=>{e.preventDefault();uzone.classList.remove('over');if(e.dataTransfer.files[0]){FILE=e.dataTransfer.files[0];showFile();}});
-finput.addEventListener('change',e=>{if(e.target.files[0]){FILE=e.target.files[0];showFile();}});
+uzone.addEventListener('drop',e=>{
+  e.preventDefault();uzone.classList.remove('over');
+  const dropped=[...e.dataTransfer.files].filter(f=>f.name.toLowerCase().endsWith('.txt'));
+  if(dropped.length){addFiles(dropped);}
+});
+finput.addEventListener('change',e=>{
+  if(e.target.files.length){addFiles([...e.target.files]);finput.value='';}
+});
 
-function showFile(){
-  document.getElementById('flist').innerHTML=`<div class="file-item anim"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--purple,#7c3aed)" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span class="fname">${FILE.name}</span><span class="fsize">${(FILE.size/1024/1024).toFixed(2)} MB</span><span class="file-remove" onclick="clearFile()">✕</span></div>`;
+function addFiles(newFiles){
+  newFiles.forEach(f=>{
+    if(!FILES.find(x=>x.name===f.name&&x.size===f.size)) FILES.push(f);
+  });
+  renderFileList();
   document.getElementById('import-bar').style.display='flex';
 }
 
+function renderFileList(){
+  const el=document.getElementById('flist');
+  el.innerHTML=FILES.map((f,i)=>`
+    <div class="file-item anim">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--purple,#7c3aed)" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      <span class="fname">${f.name}</span>
+      <span class="fsize">${(f.size/1024/1024).toFixed(2)} MB</span>
+      ${DECLARACOES[i]?`<span class="tag tag-green" style="font-size:10px;">OK</span>`:`<span class="tag tag-amber" style="font-size:10px;">Pendente</span>`}
+      <span class="file-remove" onclick="removeFile(${i})">✕</span>
+    </div>`).join('');
+}
+
+function removeFile(i){
+  FILES.splice(i,1);
+  DECLARACOES.splice(i,1);
+  if(DIDX>=FILES.length) DIDX=Math.max(0,FILES.length-1);
+  D=DECLARACOES[DIDX]||null;
+  renderFileList();
+  if(FILES.length===0){
+    document.getElementById('import-bar').style.display='none';
+    document.getElementById('pstatus').textContent='';
+    resetTopbar();
+  } else if(D){
+    switchDeclaracao(DIDX);
+  }
+}
+
 function clearFile(){
-  FILE=null;D=null;
+  FILES=[];DECLARACOES=[];DIDX=0;D=null;PER=0;
   document.getElementById('flist').innerHTML='';
   document.getElementById('import-bar').style.display='none';
   document.getElementById('pstatus').textContent='';
-  ['plano','saldos','bp','dre','lalur','lacs','pbp','pdre'].forEach(k=>{const b=document.getElementById('badge-'+k);if(b)b.style.display='none';});
-  ['tt-empresa','tt-periodo','tt-regime'].forEach(id=>{document.getElementById(id).style.display='none';});
+  resetTopbar();
+}
+
+function resetTopbar(){
+  ['plano','saldos','bp','dre','lalur','lacs','pbp','pdre','y570'].forEach(k=>{
+    const b=document.getElementById('badge-'+k);if(b)b.style.display='none';
+  });
+  ['tt-empresa','tt-periodo','tt-regime','tt-decl-selector'].forEach(id=>{
+    const el=document.getElementById(id);if(el)el.style.display='none';
+  });
   document.getElementById('sidebar').classList.remove('lp-mode','lr-mode');
 }
 
 async function processFile(){
-  if(!FILE)return;
+  if(!FILES.length)return;
   const st=document.getElementById('pstatus');
-  st.textContent='Lendo...';st.style.color='var(--text-3)';
-  try{
-    let text;
-    try{text=await FILE.text();}catch(e){text='';}
-    if(!text||!text.includes('|0000|')){
-      const buf=await FILE.arrayBuffer();
-      text=new TextDecoder('latin-1').decode(buf);
+  const pending=FILES.filter((_,i)=>!DECLARACOES[i]);
+  if(!pending.length){st.textContent='Todos os arquivos já foram processados.';return;}
+  st.textContent=`Processando ${pending.length} arquivo(s)...`;st.style.color='var(--text-3)';
+  let erros=0;
+  for(let i=0;i<FILES.length;i++){
+    if(DECLARACOES[i]) continue;
+    try{
+      let text;
+      try{text=await FILES[i].text();}catch(e){text='';}
+      if(!text||!text.includes('|0000|')){
+        const buf=await FILES[i].arrayBuffer();
+        text=new TextDecoder('latin-1').decode(buf);
+      }
+      DECLARACOES[i]=parseECF(text,FILES[i].name);
+    }catch(e){
+      console.error(e);
+      DECLARACOES[i]=null;
+      erros++;
     }
-    st.textContent='Processando registros...';
-    D=parseECF(text,FILE.name);
-    applyRegimeMode(D.regime);
-    const BS={
-      plano:D.j050.length,
-      saldos:Object.values(D.k155).reduce((s,a)=>s+a.length,0),
-      bp:Object.values(D.l100).reduce((s,a)=>s+a.length,0),
-      dre:Object.values(D.l300).reduce((s,a)=>s+a.length,0),
-      lalur:Object.values(D.m300).reduce((s,a)=>s+a.length,0),
-      lacs:Object.values(D.m350).reduce((s,a)=>s+a.length,0),
-      pbp:Object.values(D.p100).reduce((s,a)=>s+a.length,0),
-      pdre:Object.values(D.p150).reduce((s,a)=>s+a.length,0),
-      y570:D.y570.length
-    };
-    Object.entries(BS).forEach(([k,v])=>{const b=document.getElementById('badge-'+k);if(b){b.textContent=v;b.style.display=v?'':'none';}});
-    const e=document.getElementById('tt-empresa');e.textContent=D.empresa.nome;e.style.display='';
-    const p=document.getElementById('tt-periodo');p.textContent=`${fmtDt(D.empresa.dtIni)} a ${fmtDt(D.empresa.dtFin)}`;p.style.display='';
-    st.textContent=`Concluído: ${D.totalLinhas.toLocaleString('pt-BR')} linhas · ${D.periodos.length} período(s) · ${D.j050.length} contas · Regime: ${D.regime==='LP'?'Lucro Presumido':'Lucro Real'}`;
-    st.style.color='var(--green)';
-    nav('dash');
-  }catch(e){console.error(e);st.textContent='Erro: '+e.message;st.style.color='var(--red)';}
+  }
+  renderFileList();
+  const ok=DECLARACOES.filter(Boolean);
+  if(!ok.length){st.textContent='Nenhum arquivo válido processado.';st.style.color='var(--red)';return;}
+  DIDX=DECLARACOES.findIndex(Boolean);
+  D=DECLARACOES[DIDX];
+  renderDeclSelector();
+  applyDeclaracao();
+  st.textContent=`${ok.length} declaração(ões) carregada(s)${erros?` · ${erros} erro(s)`:''}`;
+  st.style.color=erros?'var(--amber)':'var(--green)';
+  nav('dash');
+}
+
+function renderDeclSelector(){
+  // Remove seletor antigo se existir
+  let sel=document.getElementById('tt-decl-selector');
+  if(!sel){
+    sel=document.createElement('select');
+    sel.id='tt-decl-selector';
+    sel.style.cssText='font-size:12px;font-weight:600;padding:4px 8px;border:1px solid var(--border);border-radius:8px;background:var(--bg-card);color:var(--text);cursor:pointer;max-width:280px;';
+    sel.addEventListener('change',e=>{
+      DIDX=parseInt(e.target.value);
+      D=DECLARACOES[DIDX];
+      PER=0;
+      applyDeclaracao();
+      render(document.querySelector('.sb-item.active')?.dataset?.p||'dash');
+    });
+    document.getElementById('topbar-right-slot').prepend(sel);
+  }
+  const valid=DECLARACOES.map((d,i)=>({d,i})).filter(x=>x.d);
+  sel.innerHTML=valid.map(({d,i})=>`<option value="${i}"${i===DIDX?' selected':''}>${d.empresa.nome||d.fname} · ${d.empresa.dtIni?.substr(4)||''}</option>`).join('');
+  sel.style.display=valid.length>1?'':'none';
+}
+
+function applyDeclaracao(){
+  if(!D) return;
+  applyRegimeMode(D.regime);
+  const BS={
+    plano:D.j050.length,
+    saldos:Object.values(D.k155).reduce((s,a)=>s+a.length,0),
+    bp:Object.values(D.l100).reduce((s,a)=>s+a.length,0),
+    dre:Object.values(D.l300).reduce((s,a)=>s+a.length,0),
+    lalur:Object.values(D.m300).reduce((s,a)=>s+a.length,0),
+    lacs:Object.values(D.m350).reduce((s,a)=>s+a.length,0),
+    pbp:Object.values(D.p100).reduce((s,a)=>s+a.length,0),
+    pdre:Object.values(D.p150).reduce((s,a)=>s+a.length,0),
+    y570:D.y570.length
+  };
+  Object.entries(BS).forEach(([k,v])=>{const b=document.getElementById('badge-'+k);if(b){b.textContent=v;b.style.display=v?'':'none';}});
+  const e=document.getElementById('tt-empresa');e.textContent=D.empresa.nome;e.style.display='';
+  const p=document.getElementById('tt-periodo');p.textContent=`${fmtDt(D.empresa.dtIni)} a ${fmtDt(D.empresa.dtFin)}`;p.style.display='';
 }
 
 // ─── PARSER ───
