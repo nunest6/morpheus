@@ -158,10 +158,23 @@ select:focus{border-color:var(--purple)}
 .lc-sum-label{font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px}
 .lc-sum-val{font-size:18px;font-weight:800;font-family:'IBM Plex Mono',monospace}
 .lc-sum-sub{font-size:10px;color:var(--text-3);margin-top:2px}
+.period-badge{display:inline-flex;align-items:center;gap:6px;background:var(--purple-bg);border:1px solid #c4b5fd;border-radius:8px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--purple);font-family:'IBM Plex Mono',monospace;white-space:nowrap}
+.period-badge .sep{color:#c4b5fd;font-weight:400;margin:0 2px}
+.period-cnpj{font-size:10px;font-weight:400;color:var(--text-3);font-family:'IBM Plex Mono',monospace;margin-left:6px}
+.period-name{font-size:11px;font-weight:600;color:var(--text-2);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.reject-banner{position:fixed;top:0;left:0;right:0;z-index:999;background:#dc2626;color:#fff;font-size:12px;font-weight:700;padding:10px 20px;text-align:center;display:none;animation:slideDown .2s ease}
+@keyframes slideDown{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+.sb-periods{padding:8px 8px 4px}
+.sb-period-item{display:flex;align-items:center;justify-content:space-between;padding:5px 10px;border-radius:7px;font-size:10px;font-family:'IBM Plex Mono',monospace;cursor:pointer;margin-bottom:2px;color:#9ca3af;border:1px solid transparent;transition:all .12s}
+.sb-period-item:hover{background:rgba(255,255,255,.06);color:#e5e7eb}
+.sb-period-item.active{background:rgba(124,58,237,.3);color:#c4b5fd;border-color:rgba(124,58,237,.4)}
+.sb-period-item .per-del{opacity:0;font-size:11px;color:#6b7280;padding:0 2px;line-height:1;border-radius:3px}
+.sb-period-item:hover .per-del{opacity:1}
 .alert-vigencia{background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:8px 14px;font-size:11px;color:#92400e;display:inline-flex;align-items:center;gap:6px;font-weight:600;margin-bottom:16px}
 </style>
 </head>
 <body>
+<div class="reject-banner" id="reject-banner"></div>
 <div class="shell">
 
 <nav class="sidebar">
@@ -258,12 +271,25 @@ select:focus{border-color:var(--purple)}
     </div>
   </div>
 
+  <div class="sb-periods" id="sb-periods" style="display:none">
+    <div class="sb-st" style="padding:0 6px 6px">Períodos Carregados</div>
+    <div id="sb-period-list"></div>
+  </div>
+
   <div class="sb-footer" id="sb-footer">Nenhum arquivo carregado</div>
 </nav>
 
 <div class="main">
   <div class="topbar">
     <span class="topbar-title" id="page-title">Dashboard</span>
+    <div id="topbar-period" style="display:none;align-items:center;gap:8px;margin-left:16px">
+      <div class="period-badge">
+        <span id="tp-dtini"></span><span class="sep">→</span><span id="tp-dtfin"></span>
+      </div>
+      <span class="period-name" id="tp-nome"></span>
+      <span class="period-cnpj" id="tp-cnpj"></span>
+    </div>
+    </div>
     <div class="topbar-right">
       <button class="btn btn-green" id="btn-xls" style="display:none" onclick="exportXLS()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -534,9 +560,10 @@ select:focus{border-color:var(--purple)}
       <div class="kpi-grid" id="pis-kpis" style="margin-bottom:18px"></div>
       <div class="g2">
         <div class="card"><div class="card-h"><h3>M200 – Totais PIS por Modalidade</h3></div><div class="card-b" id="m200-detail"></div></div>
-        <div class="card"><div class="card-h"><h3>M100 / M210 – Apuração PIS por CST</h3></div><div class="card-b tbl-wrap" id="m210-detail"></div></div>
+        <div class="card"><div class="card-h"><h3>M210 – Contribuição PIS por CST</h3></div><div class="card-b tbl-wrap" id="m210-detail"></div></div>
       </div>
-      <div class="card"><div class="card-h"><h3>M105 – Base de Cálculo PIS por Natureza</h3></div><div class="card-b tbl-wrap" id="m105-detail"></div></div>
+      <div class="card"><div class="card-h"><h3>M100 – Créditos PIS Apurados no Período</h3></div><div class="card-b tbl-wrap" id="m100-detail"></div></div>
+      <div class="card"><div class="card-h"><h3>M105 – Base de Cálculo dos Créditos PIS</h3></div><div class="card-b tbl-wrap" id="m105-detail"></div></div>
       <div class="card"><div class="card-h"><h3>1100 – Detalhamento PIS Devido</h3></div><div class="card-b" id="r1100-detail"></div></div>
     </div>
 
@@ -545,9 +572,10 @@ select:focus{border-color:var(--purple)}
       <div class="kpi-grid" id="cofins-kpis" style="margin-bottom:18px"></div>
       <div class="g2">
         <div class="card"><div class="card-h"><h3>M600 – Totais COFINS por Modalidade</h3></div><div class="card-b" id="m600-detail"></div></div>
-        <div class="card"><div class="card-h"><h3>M500 / M610 – Apuração COFINS por CST</h3></div><div class="card-b tbl-wrap" id="m610-detail"></div></div>
+        <div class="card"><div class="card-h"><h3>M610 – Contribuição COFINS por CST</h3></div><div class="card-b tbl-wrap" id="m610-detail"></div></div>
       </div>
-      <div class="card"><div class="card-h"><h3>M505 – Base de Cálculo COFINS por Natureza</h3></div><div class="card-b tbl-wrap" id="m505-detail"></div></div>
+      <div class="card"><div class="card-h"><h3>M500 – Créditos COFINS Apurados no Período</h3></div><div class="card-b tbl-wrap" id="m500-detail"></div></div>
+      <div class="card"><div class="card-h"><h3>M505 – Base de Cálculo dos Créditos COFINS</h3></div><div class="card-b tbl-wrap" id="m505-detail"></div></div>
       <div class="card"><div class="card-h"><h3>1500 – Detalhamento COFINS Devido</h3></div><div class="card-b" id="r1500-detail"></div></div>
     </div>
 
@@ -739,9 +767,15 @@ select:focus{border-color:var(--purple)}
 </div>
 
 <script>
-// ─── ESTADO ───
-let D = {};
+// ─── ESTADO MULTI-PERÍODO ───
+let datasets = [];      // array de {data, label, cnpj, fileName}
+let activeIdx = -1;     // índice do período ativo
+let D = {};             // atalho para datasets[activeIdx].data
 let charts = {};
+
+// CNPJ do cliente fixado ao carregar o primeiro arquivo
+let _lockedCNPJ = null;
+let _lockedNome = null;
 
 // ─── NAV ───
 const TITLES = {
@@ -805,11 +839,11 @@ function parseSPED(text){
     r0000:{},r0100:{},r0110:{},r0140:[],r0150:[],r0190:[],r0200:[],r0205:[],r0400:[],r0450:[],
     rA100:[],rA170:[],
     rC100:[],rC170:[],rC175:[],
-    rM100:{},rM105:[],rM200:{raw:[]},rM210:[],
-    rM500:{},rM505:[],rM600:{raw:[]},rM610:[],
+    rM100:[],rM105:[],rM200:{raw:[]},rM210:[],
+    rM500:[],rM505:[],rM600:{raw:[]},rM610:[],
     r1100:{raw:[]},r1500:{raw:[]},r9900:[]
   };
-  let curC100=null, curA100=null;
+  let curC100=null, curA100=null, curM100=null, curM500=null;
   const f = l => l.split('|');
 
   for(const line of lines){
@@ -843,12 +877,50 @@ function parseSPED(text){
         d.rC170.push(itC); if(curC100) curC100.itens.push(itC); break;
       case 'C175':
         d.rC175.push({cfop:fields[2],vlItem:fields[3],vlDesc:fields[4],cstPis:fields[5],vlBcPis:fields[6],aliqPis:fields[7],vlPis:fields[10],cstCofins:fields[11],vlBcCofins:fields[12],aliqCofins:fields[13],vlCofins:fields[16],codCta:fields[17]}); break;
-      case 'M100': d.rM100={raw:fields}; break;
-      case 'M105': d.rM105.push({natBcCred:fields[2],cstPis:fields[3],vlBcNorm:fields[4],vlBcEsp:fields[5],vlBcTot:fields[6],vlBcNcRed:fields[7],percRed:fields[8],vlBcRed:fields[9]}); break;
+      case 'M100':
+        curM100={
+          codCred:fields[2],indCredOri:fields[3],
+          vlBcPis:fields[4],aliqPis:fields[5],quantBcPis:fields[6],aliqPisQuant:fields[7],
+          vlCred:fields[8],vlAjusAcres:fields[9],vlAjusReduc:fields[10],
+          vlCredDif:fields[11],vlCredDisp:fields[12],
+          indDescCred:fields[13],vlCredDesc:fields[14],sldCred:fields[15],
+          m105:[]
+        };
+        d.rM100.push(curM100); break;
+      case 'M105': {
+        const m105={
+          natBcCred:fields[2],cstPis:fields[3],
+          vlBcPisTot:fields[4],vlBcPisCum:fields[5],vlBcPisNc:fields[6],
+          vlBcPis:fields[7],quantBcPisTot:fields[8],quantBcPis:fields[9],
+          descCred:fields[10]
+        };
+        d.rM105.push(m105);
+        if(curM100) curM100.m105.push(m105);
+        break;
+      }
       case 'M200': d.rM200={raw:fields}; break;
       case 'M210': d.rM210.push(fields); break;
-      case 'M500': d.rM500={raw:fields}; break;
-      case 'M505': d.rM505.push({natBcCred:fields[2],cstCofins:fields[3],vlBcNorm:fields[4],vlBcEsp:fields[5],vlBcTot:fields[6]}); break;
+      case 'M500':
+        curM500={
+          codCred:fields[2],indCredOri:fields[3],
+          vlBcCofins:fields[4],aliqCofins:fields[5],quantBcCofins:fields[6],aliqCofinsQuant:fields[7],
+          vlCred:fields[8],vlAjusAcres:fields[9],vlAjusReduc:fields[10],
+          vlCredDif:fields[11],vlCredDisp:fields[12],
+          indDescCred:fields[13],vlCredDesc:fields[14],sldCred:fields[15],
+          m505:[]
+        };
+        d.rM500.push(curM500); break;
+      case 'M505': {
+        const m505={
+          natBcCred:fields[2],cstCofins:fields[3],
+          vlBcCofinsTot:fields[4],vlBcCofinsCum:fields[5],vlBcCofinsNc:fields[6],
+          vlBcCofins:fields[7],quantBcCofinsTot:fields[8],quantBcCofins:fields[9],
+          descCred:fields[10]
+        };
+        d.rM505.push(m505);
+        if(curM500) curM500.m505.push(m505);
+        break;
+      }
       case 'M600': d.rM600={raw:fields}; break;
       case 'M610': d.rM610.push(fields); break;
       case '1100': { const prev1100=d.r1100.raw||[]; d.r1100={raw:[...prev1100,fields],perRef:fields[2],natRec:fields[3],cstPis:fields[5],vlContrib:fields[6],vlPrePost:fields[7],vlContribEnt:fields[8],vlCredDesc:fields[9],vlCredExt:fields[10],vlRetFonte:fields[11],vlContribPagar:fields[13],vlDev:fields[14]}; break; }
@@ -894,13 +966,73 @@ function renderAll(){
 
 function updateSidebar(){
   const d=D.r0000;
-  document.getElementById('sb-footer').innerHTML=`<div style="color:#93b4ff;font-weight:700;font-size:11px;margin-bottom:4px">${d.nome||''}</div><div>${fmtDt(d.dtIni)} → ${fmtDt(d.dtFin)}</div><div style="margin-top:2px;font-family:'IBM Plex Mono',monospace;font-size:10px">${fmtCNPJ(d.cnpj||'')}</div>`;
+  // Rodapé sidebar — cliente fixado
+  document.getElementById('sb-footer').innerHTML=
+    `<div style="color:#93b4ff;font-weight:700;font-size:11px;margin-bottom:4px">${d.nome||''}</div>`+
+    `<div style="font-family:'IBM Plex Mono',monospace;font-size:10px">${fmtCNPJ(d.cnpj||'')}</div>`;
+
+  // Banner de período na topbar
+  const tp = document.getElementById('topbar-period');
+  tp.style.display='flex';
+  document.getElementById('tp-dtini').textContent = fmtDt(d.dtIni);
+  document.getElementById('tp-dtfin').textContent = fmtDt(d.dtFin);
+  document.getElementById('tp-nome').textContent  = d.nome||'';
+  document.getElementById('tp-cnpj').textContent  = fmtCNPJ(d.cnpj||'');
+
+  // Lista de períodos na sidebar
+  renderPeriodList();
+}
+
+function renderPeriodList(){
+  const sec  = document.getElementById('sb-periods');
+  const list = document.getElementById('sb-period-list');
+  if(datasets.length===0){ sec.style.display='none'; return; }
+  sec.style.display='';
+  list.innerHTML = datasets.map((ds,i)=>{
+    const d0 = ds.data.r0000||{};
+    const label = fmtDt(d0.dtIni)+' → '+fmtDt(d0.dtFin);
+    return `<div class="sb-period-item${i===activeIdx?' active':''}" onclick="switchPeriod(${i})">
+      <span>${label}</span>
+      <span class="per-del" onclick="removePeriod(event,${i})" title="Remover">✕</span>
+    </div>`;
+  }).join('');
+}
+
+function switchPeriod(idx){
+  if(idx===activeIdx) return;
+  activeIdx = idx;
+  D = datasets[idx].data;
+  renderAll();
+  nav(window._currentPage||'dash');
+}
+
+function removePeriod(e, idx){
+  e.stopPropagation();
+  datasets.splice(idx,1);
+  if(datasets.length===0){
+    // Reset total
+    activeIdx=-1; D={}; _lockedCNPJ=null; _lockedNome=null;
+    document.getElementById('sb-periods').style.display='none';
+    document.getElementById('sb-footer').innerHTML='Nenhum arquivo carregado';
+    document.getElementById('topbar-period').style.display='none';
+    document.getElementById('dash-upload').style.display='';
+    document.getElementById('dash-content').style.display='none';
+    document.getElementById('btn-xls').style.display='none';
+    return;
+  }
+  if(activeIdx>=datasets.length) activeIdx=datasets.length-1;
+  D = datasets[activeIdx].data;
+  renderAll();
+  nav(window._currentPage||'dash');
 }
 
 function populateCFOPFilters(){
   const s170 = document.getElementById('filter-c170-cfop');
-  D._cfopsC170.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;s170.appendChild(o)});
   const s175 = document.getElementById('filter-c175-cfop');
+  // Limpar opções dinâmicas mantendo a opção padrão
+  while(s170.options.length>1) s170.remove(1);
+  while(s175.options.length>1) s175.remove(1);
+  D._cfopsC170.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;s170.appendChild(o)});
   D._cfopsC175.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;s175.appendChild(o)});
 }
 
@@ -911,33 +1043,33 @@ function renderDash(){
 
   const m2r=D.rM200.raw||[], m6r=D.rM600.raw||[];
   const pisDev = br(m2r[1]), cofinsDev = br(m6r[1]);
-  const totPis = D.rC170.reduce((a,r)=>a+br(r.vlPis),0)+D.rA170.reduce((a,r)=>a+br(r.vlPis),0);
-  const totCof = D.rC170.reduce((a,r)=>a+br(r.vlCofins),0)+D.rA170.reduce((a,r)=>a+br(r.vlCofins),0);
+  const totCredPis = (D.rM100||[]).reduce((a,r)=>a+br(r.vlCredDesc),0);
+  const totCredCof = (D.rM500||[]).reduce((a,r)=>a+br(r.vlCredDesc),0);
   const totNF = D.rC100.reduce((a,r)=>a+br(r.vlNf),0);
-  const totMerc = D.rC100.reduce((a,r)=>a+br(r.vlMerc),0);
   const totServ = D.rA100.reduce((a,r)=>a+br(r.vlDoc),0);
 
   document.getElementById('dash-kpis').innerHTML =
     statCard('PIS Devido','R$ '+fm(pisDev),'Bloco M200','var(--purple)')+
     statCard('COFINS Devido','R$ '+fm(cofinsDev),'Bloco M600','var(--blue)')+
     statCard('PIS+COFINS Total','R$ '+fm(pisDev+cofinsDev),'Contribuições devidas','var(--red)')+
+    statCard('Créditos PIS (M100)','R$ '+fm(totCredPis),(D.rM100||[]).length+' tipo(s)','var(--green)')+
+    statCard('Créditos COFINS (M500)','R$ '+fm(totCredCof),(D.rM500||[]).length+' tipo(s)','var(--cyan)')+
     statCard('Total NF-e/NF (C100)','R$ '+fm(totNF),fi(D.rC100.length)+' documentos','var(--text)')+
-    statCard('Mercadorias (C100)','R$ '+fm(totMerc),'Valor das mercadorias','var(--green)')+
     statCard('Serviços NFS-e (A)','R$ '+fm(totServ),fi(D.rA100.length)+' NFS-e','var(--amber)')+
-    statCard('Itens c/ PIS/COF (C170)','R$ '+fm(totPis+totCof),fi(D.rC170.length)+' itens detalh.','var(--text-2)')+
     statCard('Produtos Cadastrados',fi(D.r0200.length),'Registro 0200','var(--text-3)');
 
   // Charts
   killChart('ch-apuracao'); killChart('ch-modelos'); killChart('ch-cfop'); killChart('ch-cst');
 
   const m210arr=D.rM210||[], m610arr=D.rM610||[];
-  const m210r=m210arr[0]||[], m610r=m610arr[0]||[];
+  const sumM210 = (idx) => m210arr.reduce((a,r)=>a+br(r[idx]),0);
+  const sumM610 = (idx) => m610arr.reduce((a,r)=>a+br(r[idx]),0);
   const caCtx=document.getElementById('ch-apuracao').getContext('2d');
   charts['ch-apuracao']=new Chart(caCtx,{type:'bar',data:{
-    labels:['Base de Cálculo','PIS/COFINS Apurado','Deduções','Devido'],
+    labels:['Base de Cálculo','Apurado','Deduções/Créd.','Devido'],
     datasets:[
-      {label:'PIS',data:[br(m210r[4]),br(m210r[11]),br(m210r[12]),br(m210r[16])],backgroundColor:'#8b5cf6'},
-      {label:'COFINS',data:[br(m610r[4]),br(m610r[11]),br(m610r[12]),br(m610r[16])],backgroundColor:'#3b82f6'}
+      {label:'PIS',data:[sumM210(4),sumM210(11),sumM210(12),sumM210(16)],backgroundColor:'#8b5cf6'},
+      {label:'COFINS',data:[sumM610(4),sumM610(11),sumM610(12),sumM610(16)],backgroundColor:'#3b82f6'}
     ]
   },options:{responsive:true,plugins:{legend:{labels:{font:{size:10}}}},scales:{y:{ticks:{callback:v=>'R$'+fi(v)}}}}});
 
@@ -1227,34 +1359,126 @@ function filterC175(){
 function renderPIS(){
   const m2r=D.rM200.raw||[];
   const m210arr=D.rM210||[];
-  const m210r=m210arr[0]||[]; // primeiro CST para KPIs
-  const pisDev=br(m2r[1]);
-  const bcPis=m210arr.reduce((a,r)=>a+br(r[4]),0);
-  document.getElementById('pis-kpis').innerHTML=
-    statCard('PIS Total Apurado','R$ '+fm(pisDev),'M200','var(--purple)')+
-    statCard('BC PIS Total','R$ '+fm(bcPis),'M210','var(--text)')+
-    statCard('CSTs Apurados',fi(m210arr.length),'M210','var(--amber)')+
-    statCard('PIS Devido','R$ '+fm(m210arr.reduce((a,r)=>a+br(r[16]),0)),'M210','var(--green)');
+  const m100arr=D.rM100||[];
 
+  // KPIs — soma todos os M100
+  const totCredApurado = m100arr.reduce((a,r)=>a+br(r.vlCred),0);
+  const totCredDisp    = m100arr.reduce((a,r)=>a+br(r.vlCredDisp),0);
+  const totCredDesc    = m100arr.reduce((a,r)=>a+br(r.vlCredDesc),0);
+  const pisDev         = br(m2r[1]);
+
+  document.getElementById('pis-kpis').innerHTML=
+    statCard('PIS Apurado (M200)','R$ '+fm(pisDev),'Total período','var(--purple)')+
+    statCard('Créditos Apurados (M100)','R$ '+fm(totCredApurado),fi(m100arr.length)+' tipo(s) de crédito','var(--green)')+
+    statCard('Créditos Disponíveis','R$ '+fm(totCredDisp),'Após ajustes e diferimento','var(--blue)')+
+    statCard('Créditos Descontados','R$ '+fm(totCredDesc),'Deduzido da contribuição','var(--amber)');
+
+  // M200 — grid de modalidades
   const m200Labels=['Cumulativo Alíq. Normal','Não-Cumulativo Alíq. Normal','Cumulativo Mono Alíq.','NC Mono Alíq.','Cumulativo Substituição','NC Substituição','Cumulativo Alíq. Zero','NC Alíq. Zero','NC Imune/Isento','PIS Total Período','PIS Dev. Período Anterior','Outras Deduções'];
   let html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
   m200Labels.forEach((lbl,i)=>{const v=br(m2r[i+2]);html+=`<div style="padding:8px;background:${v>0?'var(--purple-bg)':'var(--bg)'};border-radius:8px"><div style="font-size:10px;color:var(--text-3);font-weight:600">${lbl}</div><div style="font-size:13px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:${v>0?'var(--purple)':'var(--text-3)'};margin-top:2px">R$ ${fm(v)}</div></div>`;});
   html+='</div>';
   document.getElementById('m200-detail').innerHTML=html;
 
+  // M210 — tabela por CST
   let m210html=`<table class="tbl"><thead><tr><th>CST</th><th class="r">Total Receita</th><th class="r">BC PIS</th><th class="r">Alíq %</th><th class="r">PIS Apurado</th><th class="r">Deduções</th><th class="r">PIS Devido</th></tr></thead><tbody>`;
   if(m210arr.length===0){
     m210html+='<tr><td colspan="7" style="text-align:center;color:var(--text-3)">–</td></tr>';
   } else {
-    m210arr.forEach(r=>{
-      m210html+=`<tr><td>${cstTag(r[2])}</td><td class="mono r">R$ ${fm(r[3])}</td><td class="mono r">R$ ${fm(r[4])}</td><td class="mono r">${r[8]||'0'}%</td><td class="mono r" style="color:var(--purple)">R$ ${fm(r[11])}</td><td class="mono r">R$ ${fm(r[12])}</td><td class="mono r" style="font-weight:700">R$ ${fm(r[16])}</td></tr>`;
-    });
+    m210arr.forEach(r=>{m210html+=`<tr><td>${cstTag(r[2])}</td><td class="mono r">R$ ${fm(r[3])}</td><td class="mono r">R$ ${fm(r[4])}</td><td class="mono r">${r[8]||'0'}%</td><td class="mono r" style="color:var(--purple)">R$ ${fm(r[11])}</td><td class="mono r">R$ ${fm(r[12])}</td><td class="mono r" style="font-weight:700">R$ ${fm(r[16])}</td></tr>`;});
   }
   m210html+='</tbody></table>';
   document.getElementById('m210-detail').innerHTML=m210html;
 
-  let m105html=`<table class="tbl"><thead><tr><th>Nat. BC Créd.</th><th>CST PIS</th><th class="r">BC Alíq Normal</th><th class="r">BC Alíq Esp.</th><th class="r">BC Total</th><th class="r">BC NC Red Alíq</th><th class="r">% Redução</th><th class="r">BC Alíq Red.</th></tr></thead><tbody>`;
-  D.rM105.forEach(m=>{m105html+=`<tr><td>${m.natBcCred}</td><td>${cstTag(m.cstPis)}</td><td class="mono r">R$ ${fm(m.vlBcNorm)}</td><td class="mono r">R$ ${fm(m.vlBcEsp)}</td><td class="mono r" style="font-weight:700">R$ ${fm(m.vlBcTot)}</td><td class="mono r">R$ ${fm(m.vlBcNcRed)}</td><td class="mono r">${m.percRed}%</td><td class="mono r">R$ ${fm(m.vlBcRed)}</td></tr>`;});
+  // M100 — tabela de créditos com M105 inline expansível
+  const COD_CRED_DESC={
+    '101':'Estoque Abertura (Lei 10.637/02 Art.3 XIV)',
+    '102':'Encargos Deprec./Amort. Bens Imobiliz.',
+    '103':'Encargos Deprec. Máquinas/Equipamentos',
+    '104':'Bens Recebidos em Devolução (CST 50-56)',
+    '105':'Despesas/Custos – Aluguel PJ',
+    '106':'Despesas/Custos – Aluguel PF',
+    '107':'Despesas/Custos – Armazenagem Merc.',
+    '108':'Aquisição de Bens para Revenda',
+    '109':'Atividade Imobiliária – Unidades Imóveis',
+    '110':'Outras Operações',
+    '201':'Estoque Abertura – Alíq Diferenciada',
+    '202':'Encargos Deprec./Amort. – Alíq Diferenciada',
+    '203':'Encargos Deprec. Máquinas – Alíq Diferenciada',
+    '204':'Bens Devolvidos – Alíq Diferenciada',
+    '205':'Aluguel PJ – Alíq Diferenciada',
+    '206':'Aluguel PF – Alíq Diferenciada',
+    '208':'Revenda – Alíq Diferenciada',
+    '301':'Estoque Abertura – Alíq por Unidade',
+    '302':'Deprec./Amort. – Alíq por Unidade',
+    '303':'Deprec. Máquinas – Alíq por Unidade',
+    '308':'Revenda – Alíq por Unidade',
+  };
+  let m100html=`<table class="tbl"><thead><tr>
+    <th>Cód. Crédito</th><th>Descrição</th><th>Orig.</th>
+    <th class="r">BC PIS</th><th class="r">Alíq %</th><th class="r">Vl. Crédito</th>
+    <th class="r">Aj. Acres.</th><th class="r">Aj. Reduc.</th><th class="r">Diferido</th>
+    <th class="r">Disponível</th><th class="r">Descontado</th><th class="r">Saldo</th>
+  </tr></thead><tbody>`;
+  if(m100arr.length===0){
+    m100html+='<tr><td colspan="12" style="text-align:center;color:var(--text-3)">Nenhum crédito de PIS apurado</td></tr>';
+  } else {
+    m100arr.forEach((r,idx)=>{
+      const desc=COD_CRED_DESC[r.codCred]||'–';
+      const orig=r.indCredOri==='1'?'<span class="tag tag-amber">Incorp/Fusão</span>':'<span class="tag tag-gray">Próprio</span>';
+      m100html+=`<tr style="background:${idx%2===0?'':'var(--bg)'}">
+        <td class="mono" style="font-weight:700;color:var(--purple)">${r.codCred}</td>
+        <td style="white-space:normal;min-width:200px;font-size:11px">${desc}</td>
+        <td>${orig}</td>
+        <td class="mono r">R$ ${fm(r.vlBcPis)}</td>
+        <td class="mono r">${r.aliqPis||'–'}%</td>
+        <td class="mono r" style="font-weight:700;color:var(--green)">R$ ${fm(r.vlCred)}</td>
+        <td class="mono r">${br(r.vlAjusAcres)>0?'<span style="color:var(--green)">+R$ '+fm(r.vlAjusAcres)+'</span>':'–'}</td>
+        <td class="mono r">${br(r.vlAjusReduc)>0?'<span style="color:var(--red)">−R$ '+fm(r.vlAjusReduc)+'</span>':'–'}</td>
+        <td class="mono r">${br(r.vlCredDif)>0?'R$ '+fm(r.vlCredDif):'–'}</td>
+        <td class="mono r" style="font-weight:700">R$ ${fm(r.vlCredDisp)}</td>
+        <td class="mono r" style="color:var(--blue)">R$ ${fm(r.vlCredDesc)}</td>
+        <td class="mono r">${br(r.sldCred)>0?'<span style="color:var(--amber)">R$ '+fm(r.sldCred)+'</span>':'–'}</td>
+      </tr>`;
+      // M105 filhos em linha colapsada
+      if(r.m105 && r.m105.length>0){
+        r.m105.forEach(m=>{
+          m100html+=`<tr style="background:#f8f5ff">
+            <td colspan="2" style="padding-left:28px;font-size:10px;color:var(--text-3)">
+              ↳ M105 · Nat.<strong>${m.natBcCred}</strong> · ${m.descCred||''}
+            </td>
+            <td>${cstTag(m.cstPis)}</td>
+            <td class="mono r" style="font-size:11px;color:var(--text-3)">R$ ${fm(m.vlBcPisTot)}</td>
+            <td class="mono r" style="font-size:11px;color:var(--text-3)">Cum: R$ ${fm(m.vlBcPisCum)}</td>
+            <td class="mono r" style="font-size:11px;color:var(--purple)">NC: R$ ${fm(m.vlBcPisNc)}</td>
+            <td class="mono r" style="font-size:11px;color:var(--text-2)" colspan="6">→ M100: R$ ${fm(m.vlBcPis)}</td>
+          </tr>`;
+        });
+      }
+    });
+  }
+  m100html+='</tbody></table>';
+  document.getElementById('m100-detail').innerHTML=m100html;
+
+  // M105 — tabela global (todos os créditos)
+  let m105html=`<table class="tbl"><thead><tr>
+    <th>Nat. BC Créd.</th><th>CST PIS</th>
+    <th class="r">BC Total (doc.)</th><th class="r">BC Cumulativo</th><th class="r">BC NC</th>
+    <th class="r">BC → M100</th><th class="r">Qtd. BC Total</th><th>Descrição</th>
+  </tr></thead><tbody>`;
+  if(D.rM105.length===0){
+    m105html+='<tr><td colspan="8" style="text-align:center;color:var(--text-3)">–</td></tr>';
+  } else {
+    D.rM105.forEach(m=>{m105html+=`<tr>
+      <td class="mono">${m.natBcCred}</td><td>${cstTag(m.cstPis)}</td>
+      <td class="mono r" style="font-weight:700">R$ ${fm(m.vlBcPisTot)}</td>
+      <td class="mono r">R$ ${fm(m.vlBcPisCum)}</td>
+      <td class="mono r" style="color:var(--purple)">R$ ${fm(m.vlBcPisNc)}</td>
+      <td class="mono r" style="color:var(--blue)">R$ ${fm(m.vlBcPis)}</td>
+      <td class="mono r">${m.quantBcPisTot||'–'}</td>
+      <td style="font-size:11px;color:var(--text-3)">${m.descCred||'–'}</td>
+    </tr>`;});
+  }
   m105html+='</tbody></table>';
   document.getElementById('m105-detail').innerHTML=m105html;
 
@@ -1274,33 +1498,124 @@ function renderPIS(){
 function renderCOFINS(){
   const m6r=D.rM600.raw||[];
   const m610arr=D.rM610||[];
-  const cofinsDev=br(m6r[1]);
-  const bcCof=m610arr.reduce((a,r)=>a+br(r[4]),0);
-  document.getElementById('cofins-kpis').innerHTML=
-    statCard('COFINS Total Apurado','R$ '+fm(cofinsDev),'M600','var(--blue)')+
-    statCard('BC COFINS Total','R$ '+fm(bcCof),'M610','var(--text)')+
-    statCard('CSTs Apurados',fi(m610arr.length),'M610','var(--amber)')+
-    statCard('COFINS Devido','R$ '+fm(m610arr.reduce((a,r)=>a+br(r[16]),0)),'M610','var(--green)');
+  const m500arr=D.rM500||[];
 
+  const totCredApurado = m500arr.reduce((a,r)=>a+br(r.vlCred),0);
+  const totCredDisp    = m500arr.reduce((a,r)=>a+br(r.vlCredDisp),0);
+  const totCredDesc    = m500arr.reduce((a,r)=>a+br(r.vlCredDesc),0);
+  const cofinsDev      = br(m6r[1]);
+
+  document.getElementById('cofins-kpis').innerHTML=
+    statCard('COFINS Apurado (M600)','R$ '+fm(cofinsDev),'Total período','var(--blue)')+
+    statCard('Créditos Apurados (M500)','R$ '+fm(totCredApurado),fi(m500arr.length)+' tipo(s) de crédito','var(--green)')+
+    statCard('Créditos Disponíveis','R$ '+fm(totCredDisp),'Após ajustes e diferimento','var(--purple)')+
+    statCard('Créditos Descontados','R$ '+fm(totCredDesc),'Deduzido da contribuição','var(--amber)');
+
+  // M600 — grid de modalidades
   const m600Labels=['Cumulativo Alíq. Normal','Não-Cumulativo Alíq. Normal','Cumulativo Mono Alíq.','NC Mono Alíq.','Cumulativo Substituição','NC Substituição','Cumulativo Alíq. Zero','NC Alíq. Zero','NC Imune/Isento','COFINS Total Período','COFINS Dev. Período Ant.','Outras Deduções'];
   let html='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
   m600Labels.forEach((lbl,i)=>{const v=br(m6r[i+2]);html+=`<div style="padding:8px;background:${v>0?'var(--blue-l)':'var(--bg)'};border-radius:8px"><div style="font-size:10px;color:var(--text-3);font-weight:600">${lbl}</div><div style="font-size:13px;font-weight:700;font-family:'IBM Plex Mono',monospace;color:${v>0?'var(--blue)':'var(--text-3)'};margin-top:2px">R$ ${fm(v)}</div></div>`;});
   html+='</div>';
   document.getElementById('m600-detail').innerHTML=html;
 
+  // M610 — tabela por CST
   let m610html=`<table class="tbl"><thead><tr><th>CST</th><th class="r">Total Receita</th><th class="r">BC COFINS</th><th class="r">Alíq %</th><th class="r">COFINS Apurado</th><th class="r">Deduções</th><th class="r">COFINS Devido</th></tr></thead><tbody>`;
   if(m610arr.length===0){
     m610html+='<tr><td colspan="7" style="text-align:center;color:var(--text-3)">–</td></tr>';
   } else {
-    m610arr.forEach(r=>{
-      m610html+=`<tr><td>${cstTag(r[2])}</td><td class="mono r">R$ ${fm(r[3])}</td><td class="mono r">R$ ${fm(r[4])}</td><td class="mono r">${r[8]||'0'}%</td><td class="mono r" style="color:var(--blue)">R$ ${fm(r[11])}</td><td class="mono r">R$ ${fm(r[12])}</td><td class="mono r" style="font-weight:700">R$ ${fm(r[16])}</td></tr>`;
-    });
+    m610arr.forEach(r=>{m610html+=`<tr><td>${cstTag(r[2])}</td><td class="mono r">R$ ${fm(r[3])}</td><td class="mono r">R$ ${fm(r[4])}</td><td class="mono r">${r[8]||'0'}%</td><td class="mono r" style="color:var(--blue)">R$ ${fm(r[11])}</td><td class="mono r">R$ ${fm(r[12])}</td><td class="mono r" style="font-weight:700">R$ ${fm(r[16])}</td></tr>`;});
   }
   m610html+='</tbody></table>';
   document.getElementById('m610-detail').innerHTML=m610html;
 
-  let m505html=`<table class="tbl"><thead><tr><th>Nat. BC Créd.</th><th>CST COFINS</th><th class="r">BC Alíq Normal</th><th class="r">BC Alíq Esp.</th><th class="r">BC Total</th></tr></thead><tbody>`;
-  D.rM505.forEach(m=>{m505html+=`<tr><td>${m.natBcCred}</td><td>${cstTag(m.cstCofins)}</td><td class="mono r">R$ ${fm(m.vlBcNorm)}</td><td class="mono r">R$ ${fm(m.vlBcEsp)}</td><td class="mono r" style="font-weight:700">R$ ${fm(m.vlBcTot)}</td></tr>`;});
+  // M500 — tabela de créditos com M505 inline (mesmo padrão do M100)
+  const COD_CRED_DESC={
+    '101':'Estoque Abertura (Lei 10.833/03 Art.3 XIV)',
+    '102':'Encargos Deprec./Amort. Bens Imobiliz.',
+    '103':'Encargos Deprec. Máquinas/Equipamentos',
+    '104':'Bens Recebidos em Devolução (CST 50-56)',
+    '105':'Despesas/Custos – Aluguel PJ',
+    '106':'Despesas/Custos – Aluguel PF',
+    '107':'Despesas/Custos – Armazenagem Merc.',
+    '108':'Aquisição de Bens para Revenda',
+    '109':'Atividade Imobiliária – Unidades Imóveis',
+    '110':'Outras Operações',
+    '201':'Estoque Abertura – Alíq Diferenciada',
+    '202':'Encargos Deprec./Amort. – Alíq Diferenciada',
+    '203':'Encargos Deprec. Máquinas – Alíq Diferenciada',
+    '204':'Bens Devolvidos – Alíq Diferenciada',
+    '205':'Aluguel PJ – Alíq Diferenciada',
+    '206':'Aluguel PF – Alíq Diferenciada',
+    '208':'Revenda – Alíq Diferenciada',
+    '301':'Estoque Abertura – Alíq por Unidade',
+    '302':'Deprec./Amort. – Alíq por Unidade',
+    '303':'Deprec. Máquinas – Alíq por Unidade',
+    '308':'Revenda – Alíq por Unidade',
+  };
+  let m500html=`<table class="tbl"><thead><tr>
+    <th>Cód. Crédito</th><th>Descrição</th><th>Orig.</th>
+    <th class="r">BC COFINS</th><th class="r">Alíq %</th><th class="r">Vl. Crédito</th>
+    <th class="r">Aj. Acres.</th><th class="r">Aj. Reduc.</th><th class="r">Diferido</th>
+    <th class="r">Disponível</th><th class="r">Descontado</th><th class="r">Saldo</th>
+  </tr></thead><tbody>`;
+  if(m500arr.length===0){
+    m500html+='<tr><td colspan="12" style="text-align:center;color:var(--text-3)">Nenhum crédito de COFINS apurado</td></tr>';
+  } else {
+    m500arr.forEach((r,idx)=>{
+      const desc=COD_CRED_DESC[r.codCred]||'–';
+      const orig=r.indCredOri==='1'?'<span class="tag tag-amber">Incorp/Fusão</span>':'<span class="tag tag-gray">Próprio</span>';
+      m500html+=`<tr style="background:${idx%2===0?'':'var(--bg)'}">
+        <td class="mono" style="font-weight:700;color:var(--blue)">${r.codCred}</td>
+        <td style="white-space:normal;min-width:200px;font-size:11px">${desc}</td>
+        <td>${orig}</td>
+        <td class="mono r">R$ ${fm(r.vlBcCofins)}</td>
+        <td class="mono r">${r.aliqCofins||'–'}%</td>
+        <td class="mono r" style="font-weight:700;color:var(--green)">R$ ${fm(r.vlCred)}</td>
+        <td class="mono r">${br(r.vlAjusAcres)>0?'<span style="color:var(--green)">+R$ '+fm(r.vlAjusAcres)+'</span>':'–'}</td>
+        <td class="mono r">${br(r.vlAjusReduc)>0?'<span style="color:var(--red)">−R$ '+fm(r.vlAjusReduc)+'</span>':'–'}</td>
+        <td class="mono r">${br(r.vlCredDif)>0?'R$ '+fm(r.vlCredDif):'–'}</td>
+        <td class="mono r" style="font-weight:700">R$ ${fm(r.vlCredDisp)}</td>
+        <td class="mono r" style="color:var(--blue)">R$ ${fm(r.vlCredDesc)}</td>
+        <td class="mono r">${br(r.sldCred)>0?'<span style="color:var(--amber)">R$ '+fm(r.sldCred)+'</span>':'–'}</td>
+      </tr>`;
+      if(r.m505 && r.m505.length>0){
+        r.m505.forEach(m=>{
+          m500html+=`<tr style="background:#f0f4ff">
+            <td colspan="2" style="padding-left:28px;font-size:10px;color:var(--text-3)">
+              ↳ M505 · Nat.<strong>${m.natBcCred}</strong> · ${m.descCred||''}
+            </td>
+            <td>${cstTag(m.cstCofins)}</td>
+            <td class="mono r" style="font-size:11px;color:var(--text-3)">R$ ${fm(m.vlBcCofinsTot)}</td>
+            <td class="mono r" style="font-size:11px;color:var(--text-3)">Cum: R$ ${fm(m.vlBcCofinsCum)}</td>
+            <td class="mono r" style="font-size:11px;color:var(--blue)">NC: R$ ${fm(m.vlBcCofinsNc)}</td>
+            <td class="mono r" style="font-size:11px;color:var(--text-2)" colspan="6">→ M500: R$ ${fm(m.vlBcCofins)}</td>
+          </tr>`;
+        });
+      }
+    });
+  }
+  m500html+='</tbody></table>';
+  document.getElementById('m500-detail').innerHTML=m500html;
+
+  // M505 — tabela global
+  let m505html=`<table class="tbl"><thead><tr>
+    <th>Nat. BC Créd.</th><th>CST COFINS</th>
+    <th class="r">BC Total (doc.)</th><th class="r">BC Cumulativo</th><th class="r">BC NC</th>
+    <th class="r">BC → M500</th><th class="r">Qtd. BC Total</th><th>Descrição</th>
+  </tr></thead><tbody>`;
+  if(D.rM505.length===0){
+    m505html+='<tr><td colspan="8" style="text-align:center;color:var(--text-3)">–</td></tr>';
+  } else {
+    D.rM505.forEach(m=>{m505html+=`<tr>
+      <td class="mono">${m.natBcCred}</td><td>${cstTag(m.cstCofins)}</td>
+      <td class="mono r" style="font-weight:700">R$ ${fm(m.vlBcCofinsTot)}</td>
+      <td class="mono r">R$ ${fm(m.vlBcCofinsCum)}</td>
+      <td class="mono r" style="color:var(--blue)">R$ ${fm(m.vlBcCofinsNc)}</td>
+      <td class="mono r" style="color:var(--purple)">R$ ${fm(m.vlBcCofins)}</td>
+      <td class="mono r">${m.quantBcCofinsTot||'–'}</td>
+      <td style="font-size:11px;color:var(--text-3)">${m.descCred||'–'}</td>
+    </tr>`;});
+  }
   m505html+='</tbody></table>';
   document.getElementById('m505-detail').innerHTML=m505html;
 
@@ -1499,26 +1814,80 @@ function exportXLS(){
 }
 
 // ─── FILE HANDLING ───
-function loadText(text){
-  D = parseSPED(text);
+function showReject(msg){
+  const b = document.getElementById('reject-banner');
+  b.textContent = '⚠ ' + msg;
+  b.style.display='block';
+  setTimeout(()=>{ b.style.display='none'; }, 4500);
+}
+
+function loadText(text, fileName){
+  const parsed = parseSPED(text);
+  const cnpj   = (parsed.r0000.cnpj||'').replace(/\D/g,'');
+  const nome   = parsed.r0000.nome||'';
+  const dtIni  = parsed.r0000.dtIni||'';
+  const dtFin  = parsed.r0000.dtFin||'';
+
+  if(!cnpj){
+    showReject('Arquivo inválido — registro 0000 não encontrado ou CNPJ ausente.');
+    return;
+  }
+
+  // Validar CNPJ se já há um cliente fixado
+  if(_lockedCNPJ && cnpj !== _lockedCNPJ){
+    showReject(
+      `CNPJ divergente: arquivo é de ${nome} (${fmtCNPJ(cnpj)}), `+
+      `mas a sessão está fixada para ${_lockedNome} (${fmtCNPJ(_lockedCNPJ)}). `+
+      `Remova todos os períodos para trocar de cliente.`
+    );
+    return;
+  }
+
+  // Verificar período duplicado
+  const label = dtIni+'_'+dtFin;
+  const dup = datasets.findIndex(ds=>{
+    const d0=ds.data.r0000||{};
+    return d0.dtIni===dtIni && d0.dtFin===dtFin;
+  });
+  if(dup>=0){
+    showReject(`Período ${fmtDt(dtIni)} → ${fmtDt(dtFin)} já está carregado. Remova-o antes de substituir.`);
+    return;
+  }
+
+  // Fixar cliente na primeira carga
+  if(!_lockedCNPJ){ _lockedCNPJ=cnpj; _lockedNome=nome; }
+
+  // Inserir ordenado por DT_INI
+  const entry = { data:parsed, label, cnpj, fileName };
+  datasets.push(entry);
+  datasets.sort((a,b)=>{
+    const ai=a.data.r0000.dtIni||'', bi=b.data.r0000.dtIni||'';
+    return ai.localeCompare(bi);
+  });
+  activeIdx = datasets.findIndex(ds=>ds.label===label);
+  D = datasets[activeIdx].data;
+
   renderAll();
   nav('dash');
 }
-document.getElementById('file-inp').addEventListener('change',e=>{
-  const f=e.target.files[0]; if(!f) return;
+
+function attachFileReader(file){
+  if(!file) return;
   const r=new FileReader();
-  r.onload=ev=>loadText(ev.target.result);
-  r.readAsText(f,'ISO-8859-1');
+  r.onload=ev=>loadText(ev.target.result, file.name);
+  r.readAsText(file,'ISO-8859-1');
+}
+
+document.getElementById('file-inp').addEventListener('change',e=>{
+  attachFileReader(e.target.files[0]);
+  e.target.value=''; // permite recarregar o mesmo arquivo
 });
 const dz=document.getElementById('drop-zone');
 dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over')});
 dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
 dz.addEventListener('drop',e=>{
   e.preventDefault();dz.classList.remove('over');
-  const f=e.dataTransfer.files[0]; if(!f) return;
-  const r=new FileReader();
-  r.onload=ev=>loadText(ev.target.result);
-  r.readAsText(f,'ISO-8859-1');
+  attachFileReader(e.dataTransfer.files[0]);
 });
 </script>
 </body>
