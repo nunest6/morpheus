@@ -1295,236 +1295,340 @@ function renderY570(){
   </tbody></table></div></div>`;
 }
 
-// ─── EXPORT APURAÇÕES (TODAS AS DECLARAÇÕES) ───
+// ─── EXPORT APURAÇÕES – 3 planilhas separadas ───
 function exportApuracoes(){
   const decls=DECLARACOES.filter(Boolean);
   if(!decls.length)return;
-  const wb=XLSX.utils.book_new();
 
-  // ── Helpers ──
-  const pnv=v=>typeof v==='number'?v:0;
-
-  // Extrai métricas por período para qualquer declaração
-  function metricas(d){
-    const isLP=d.regime==='LP';
-    return d.periodos.map(p=>{
-      let recBr=0,lucroLiq=0,irBC=0,irAliq15=0,irAdicional=0,irDedu=0,irPagar=0,csllBC=0,csllAliq=0,csllPagar=0;
-      if(isLP){
-        const p2=d.p200[p.per]||[];
-        const p3=d.p300[p.per]||[];
-        const p4=d.p400[p.per]||[];
-        const p15=d.p150[p.per]||[];
-        const rbRow=p15.find(r=>r.codigo==='3.01.01.01.01'||(/RECEITA BRUTA/i.test(r.descricao||'')&&(r.nivel||9)<=5));
-        recBr=rbRow?.valor||0;
-        const ll=p15.find(r=>(r.nivel||9)===1);
-        lucroLiq=ll?.valor||0;
-        irBC=pnv(p2.find(r=>r.linha==='26')?.valor);
-        irAliq15=pnv(p3.find(r=>r.linha==='3')?.valor);
-        irAdicional=pnv(p3.find(r=>r.linha==='4')?.valor);
-        irDedu=pnv(p3.find(r=>r.linha==='10')?.valor);
-        irPagar=pnv(p3.find(r=>r.linha==='15')?.valor);
-        csllBC=pnv(p4.find(r=>r.linha==='21')?.valor);
-        const csllAliqRow=p4.find(r=>r.linha==='22');
-        csllAliq=csllAliqRow?.valor||0;
-        const csllPagarRow=p4.find(r=>r.linha==='24')||p4.find(r=>r.linha==='23');
-        csllPagar=csllPagarRow?.valor||0;
-      } else {
-        const m3=d.m300[p.per]||[];
-        const m5=d.m350[p.per]||[];
-        const l3=d.l300[p.per]||[];
-        const rbRow=l3.find(r=>r.descricao&&/RECEITA BRUTA/i.test(r.descricao));
-        recBr=rbRow?.valor||0;
-        const totL=m3.filter(r=>r.indTipo==='L');
-        lucroLiq=totL[0]?.valor||0;
-        irBC=totL[totL.length-1]?.valor||0;
-        const totM=m5.filter(r=>r.indTipo==='L');
-        csllBC=totM[totM.length-1]?.valor||0;
-      }
-      return{per:p.per,dtIni:p.dtIni,dtFin:p.dtFin,recBr,lucroLiq,irBC,irAliq15,irAdicional,irDedu,irPagar,csllBC,csllAliq,csllPagar};
-    });
-  }
-
-  // ── Estilo helper ──
-  const hdr=(v,bg,color)=>({v,t:'s',s:{font:{bold:true,color:{rgb:color||'FFFFFF'}},fill:{fgColor:{rgb:bg||'3563E9'}},alignment:{horizontal:'center',vertical:'center'},border:{bottom:{style:'medium',color:{rgb:'CCCCCC'}}}}});
-  const sec=(v)=>({v,t:'s',s:{font:{bold:true,color:{rgb:'1A1D26'}},fill:{fgColor:{rgb:'EEF2FF'}},alignment:{horizontal:'left'}}});
-  const num=(v)=>({v:pnv(v),t:'n',s:{numFmt:'#,##0.00',alignment:{horizontal:'right'}}});
-  const txt=(v)=>({v:v||'',t:'s'});
-  const cur=(v,bold,color)=>({v:pnv(v),t:'n',s:{numFmt:'#,##0.00',font:{bold:!!bold,color:{rgb:color||'1A1D26'}},alignment:{horizontal:'right'}}});
-
-  function setColWidths(ws,widths){ws['!cols']=widths.map(w=>({wch:w}));}
-  function setCellStyle(ws,addr,style){if(ws[addr])ws[addr].s=style;}
+  // ── Helpers globais ──
+  const pnv=v=>(typeof v==='number'?v:0);
+  const txt=v=>({v:v||'',t:'s'});
+  const num=v=>({v:pnv(v),t:'n',s:{numFmt:'#,##0.00',alignment:{horizontal:'right'}}});
+  const cur=(v,bold,rgb)=>({v:pnv(v),t:'n',s:{numFmt:'#,##0.00',font:{bold:!!bold,color:{rgb:rgb||'1A1D26'}},alignment:{horizontal:'right'}}});
+  const hdr=(v,bg)=>({v,t:'s',s:{font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:bg||'1E2330'}},alignment:{horizontal:'center'}}});
+  const sec=v=>({v,t:'s',s:{font:{bold:true,color:{rgb:'1A1D26'}},fill:{fgColor:{rgb:'EEF2FF'}}}});
+  const sub=v=>({v,t:'s',s:{font:{bold:true,italic:true,color:{rgb:'16A34A'}},fill:{fgColor:{rgb:'F0FDF4'}}}});
+  const tot=(v,rgb)=>({v:pnv(v),t:'n',s:{numFmt:'#,##0.00',font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:rgb||'1E2330'}},alignment:{horizontal:'right'}}});
+  const totLbl=(v,rgb)=>({v,t:'s',s:{font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:rgb||'1E2330'}}}});
+  const emp=(v,rgb)=>({v,t:'s',s:{font:{bold:true,color:{rgb:rgb||'FFFFFF'}},fill:{fgColor:{rgb:'1E2330'}},alignment:{horizontal:'left'}}});
+  const blank=(rgb)=>({v:'',t:'s',s:{fill:{fgColor:{rgb:rgb||'FFFFFF'}}}});
+  const sw=(ws,ws2)=>{ws['!cols']=ws2.map(w=>({wch:w}));};
+  // Nome de aba: "T01·EMP" truncado em 31 chars, único dentro do workbook
+  const usedNames={};
+  const abaName=(per,nome)=>{
+    const base=`${per} ${nome.substring(0,20).trim()}`.substring(0,31);
+    if(!usedNames[base]){usedNames[base]=1;return base;}
+    const n=++usedNames[base];
+    return `${base.substring(0,28)} ${n}`.substring(0,31);
+  };
+  const ano=decls[0]?.empresa.dtFin?.substr(4)||String(new Date().getFullYear());
 
   // ════════════════════════════════════════════════
-  // ABA 1: RESUMO CONSOLIDADO
+  // PLANILHA 1 – BASE DE CÁLCULO
+  // Uma aba por (empresa × período)
+  // LP: P200 (BC IRPJ) + P400 (BC CSLL)
+  // LR: M300 totalizadores + M350 totalizadores (só "L")
   // ════════════════════════════════════════════════
   {
-    const rows=[];
-    rows.push([hdr('CNPJ','1E2330'),hdr('Empresa','1E2330'),hdr('Regime','1E2330'),hdr('Período','1E2330'),hdr('Dt Início','1E2330'),hdr('Dt Fim','1E2330'),hdr('Receita Bruta','1E2330'),hdr('Lucro Líquido','1E2330'),hdr('BC IRPJ','1E2330'),hdr('IR a Pagar','1E2330'),hdr('BC CSLL','1E2330'),hdr('CSLL a Pagar','1E2330')]);
+    const wb1=XLSX.utils.book_new();
+    Object.keys(usedNames).forEach(k=>delete usedNames[k]); // reset names
+
+    // Aba RESUMO
+    const resumoRows=[];
+    resumoRows.push([
+      hdr('CNPJ'),hdr('Empresa'),hdr('Regime'),hdr('Período'),
+      hdr('Dt Início'),hdr('Dt Fim'),
+      hdr('Receita Bruta','3563E9'),
+      hdr('Lucro Líquido','3563E9'),
+      hdr('BC IRPJ','EA580C'),
+      hdr('IR Apurado (15%)','EA580C'),
+      hdr('IR Adicional','EA580C'),
+      hdr('IR Deduzido','EA580C'),
+      hdr('IR a Pagar','DC2626'),
+      hdr('BC CSLL','7C3AED'),
+      hdr('CSLL a Pagar','7C3AED'),
+    ]);
+
     decls.forEach(d=>{
       const isLP=d.regime==='LP';
-      const mets=metricas(d);
-      mets.forEach(m=>{
-        rows.push([
-          txt(d.empresa.cnpj),txt(d.empresa.nome),txt(isLP?'Lucro Presumido':'Lucro Real'),
-          txt(m.per),txt(fmtDt(m.dtIni)),txt(fmtDt(m.dtFin)),
-          cur(m.recBr),cur(m.lucroLiq,false,m.lucroLiq>=0?'16A34A':'DC2626'),
-          cur(m.irBC,true,'3563E9'),cur(m.irPagar,true,'DC2626'),
-          cur(m.csllBC,true,'7C3AED'),cur(m.csllPagar,true,'DC2626')
+      d.periodos.forEach(p=>{
+        let recBr=0,lucroLiq=0,irBC=0,ir15=0,irAdd=0,irDedu=0,irPagar=0,csllBC=0,csllPagar=0;
+        if(isLP){
+          const p2=d.p200[p.per]||[];
+          const p3=d.p300[p.per]||[];
+          const p4=d.p400[p.per]||[];
+          const p15=d.p150[p.per]||[];
+          const rbRow=p15.find(r=>r.codigo==='3.01.01.01.01'||(/RECEITA BRUTA/i.test(r.descricao||'')&&(r.nivel||9)<=5));
+          recBr=rbRow?.valor||0;
+          lucroLiq=(p15.find(r=>(r.nivel||9)===1))?.valor||0;
+          irBC=pnv(p2.find(r=>r.linha==='26')?.valor);
+          ir15=pnv(p3.find(r=>r.linha==='3')?.valor);
+          irAdd=pnv(p3.find(r=>r.linha==='4')?.valor);
+          irDedu=pnv(p3.find(r=>r.linha==='10')?.valor);
+          irPagar=pnv(p3.find(r=>r.linha==='15')?.valor);
+          csllBC=pnv(p4.find(r=>r.linha==='21')?.valor);
+          csllPagar=pnv(p4.find(r=>r.linha==='24')?.valor||p4.find(r=>r.linha==='23')?.valor);
+        } else {
+          const m3=d.m300[p.per]||[];
+          const m5=d.m350[p.per]||[];
+          const l3=d.l300[p.per]||[];
+          recBr=(l3.find(r=>/RECEITA BRUTA/i.test(r.descricao||'')))?.valor||0;
+          const totL=m3.filter(r=>r.indTipo==='L');
+          lucroLiq=totL[0]?.valor||0;
+          irBC=totL[totL.length-1]?.valor||0;
+          csllBC=(m5.filter(r=>r.indTipo==='L').slice(-1)[0])?.valor||0;
+        }
+        resumoRows.push([
+          txt(d.empresa.cnpj),txt(d.empresa.nome),
+          txt(isLP?'Lucro Presumido':'Lucro Real'),
+          txt(p.per),txt(fmtDt(p.dtIni)),txt(fmtDt(p.dtFin)),
+          cur(recBr),cur(lucroLiq,false,lucroLiq>=0?'16A34A':'DC2626'),
+          cur(irBC,true,'EA580C'),cur(ir15),cur(irAdd),cur(irDedu),
+          cur(irPagar,true,'DC2626'),
+          cur(csllBC,true,'7C3AED'),cur(csllPagar,true,'7C3AED'),
         ]);
       });
-      // Subtotal por empresa
-      const tot={recBr:0,lucroLiq:0,irBC:0,irPagar:0,csllBC:0,csllPagar:0};
-      mets.forEach(m=>{tot.recBr+=m.recBr;tot.lucroLiq+=m.lucroLiq;tot.irBC+=m.irBC;tot.irPagar+=m.irPagar;tot.csllBC+=m.csllBC;tot.csllPagar+=m.csllPagar;});
-      rows.push([
-        {v:'',t:'s',s:{fill:{fgColor:{rgb:'F0FDF4'}}}},
-        {v:`TOTAL – ${d.empresa.nome}`,t:'s',s:{font:{bold:true,italic:true,color:{rgb:'16A34A'}},fill:{fgColor:{rgb:'F0FDF4'}}}},
-        {v:'',t:'s',s:{fill:{fgColor:{rgb:'F0FDF4'}}}},{v:'',t:'s',s:{fill:{fgColor:{rgb:'F0FDF4'}}}},{v:'',t:'s',s:{fill:{fgColor:{rgb:'F0FDF4'}}}},{v:'',t:'s',s:{fill:{fgColor:{rgb:'F0FDF4'}}}},
-        cur(tot.recBr,true),cur(tot.lucroLiq,true,tot.lucroLiq>=0?'16A34A':'DC2626'),
-        cur(tot.irBC,true,'3563E9'),cur(tot.irPagar,true,'DC2626'),
-        cur(tot.csllBC,true,'7C3AED'),cur(tot.csllPagar,true,'DC2626')
-      ]);
     });
-    const ws=XLSX.utils.aoa_to_sheet(rows);
-    setColWidths(ws,[18,34,18,10,12,12,18,18,18,16,18,16]);
-    ws['!freeze']={xSplit:0,ySplit:1};
-    XLSX.utils.book_append_sheet(wb,ws,'Consolidado');
-  }
+    const wsRes=XLSX.utils.aoa_to_sheet(resumoRows);
+    sw(wsRes,[18,32,16,10,11,11,16,16,16,15,14,13,14,16,14]);
+    wsRes['!freeze']={xSplit:0,ySplit:1};
+    XLSX.utils.book_append_sheet(wb1,wsRes,'Resumo');
 
-  // ════════════════════════════════════════════════
-  // ABA 2: APURAÇÃO LP – P200 / P300 / P400
-  // ════════════════════════════════════════════════
-  const lp_decls=decls.filter(d=>d.regime==='LP');
-  if(lp_decls.length){
-    const rows=[];
-    rows.push([hdr('CNPJ','EA580C'),hdr('Empresa','EA580C'),hdr('Período','EA580C'),hdr('Dt Início','EA580C'),hdr('Dt Fim','EA580C'),hdr('Linha','EA580C'),hdr('Discriminação','EA580C'),hdr('Módulo','EA580C'),hdr('Valor','EA580C')]);
-    lp_decls.forEach(d=>{
+    // Abas por empresa × período — LP: P200+P400 detalhado; LR: só totalizadores M300/M350
+    decls.forEach(d=>{
+      const isLP=d.regime==='LP';
+      const nomeEmp=d.empresa.nome.split(' ')[0];
+      const BG=isLP?'EA580C':'7C3AED';
+
       d.periodos.forEach(p=>{
-        const blocos=[
-          {mod:'P200 – BC IRPJ',data:d.p200[p.per]||[]},
-          {mod:'P300 – Apuração IRPJ',data:d.p300[p.per]||[]},
-          {mod:'P400 – Apuração CSLL',data:d.p400[p.per]||[]}
-        ];
-        blocos.forEach(({mod,data})=>{
-          if(!data.length) return;
-          rows.push([
-            {v:'',t:'s'},{v:`${mod} · ${p.per}`,t:'s',s:{font:{bold:true,color:{rgb:'EA580C'}},fill:{fgColor:{rgb:'FFF7ED'}}}},
-            {v:'',t:'s'},{v:'',t:'s'},{v:'',t:'s'},{v:'',t:'s'},{v:'',t:'s'},{v:'',t:'s'},{v:'',t:'s'}
-          ]);
-          data.forEach(r=>{
+        const rows=[];
+        // Cabeçalho da empresa/período
+        rows.push([{v:`${d.empresa.nome} — CNPJ ${d.empresa.cnpj}`,t:'s',s:{font:{bold:true,sz:13,color:{rgb:BG}},fill:{fgColor:{rgb:'F8F8F8'}}}}]);
+        rows.push([{v:`Período: ${p.per} (${fmtDt(p.dtIni)} a ${fmtDt(p.dtFin)}) · Regime: ${isLP?'Lucro Presumido':'Lucro Real'}`,t:'s',s:{font:{italic:true,color:{rgb:'555C6E'}}}}]);
+        rows.push([]);
+
+        if(isLP){
+          // ── P200 – Base de Cálculo IRPJ ──
+          rows.push([hdr('P200 – BASE DE CÁLCULO DO IRPJ',BG),hdr('',BG),hdr('',BG)]);
+          rows.push([hdr('Linha',BG),hdr('Discriminação',BG),hdr('Valor (R$)',BG)]);
+          (d.p200[p.per]||[]).forEach(r=>{
             const isHead=r.valor===null||r.valor===undefined;
-            const isCaps=r.descricao&&r.descricao===r.descricao.toUpperCase()&&r.descricao.trim().length>3&&!isHead;
+            const isCaps=!isHead&&r.descricao&&r.descricao===r.descricao.toUpperCase()&&r.descricao.trim().length>3;
             rows.push([
-              txt(d.empresa.cnpj),txt(d.empresa.nome),txt(p.per),txt(fmtDt(p.dtIni)),txt(fmtDt(p.dtFin)),
-              {v:r.linha||'',t:'s',s:{font:{color:{rgb:'8891A5'}},alignment:{horizontal:'right'}}},
-              isHead?{v:r.descricao||'',t:'s',s:{font:{bold:true},fill:{fgColor:{rgb:'F5F6F8'}}}}:
-              isCaps?{v:r.descricao||'',t:'s',s:{font:{bold:true},fill:{fgColor:{rgb:'EEF2FF'}}}}:
+              {v:r.linha||'',t:'s',s:{font:{color:{rgb:'8891A5'}},alignment:{horizontal:'center'}}},
+              isHead?{v:r.descricao||'',t:'s',s:{font:{bold:true},fill:{fgColor:{rgb:'FFF7ED'}}}}:
+              isCaps?{v:r.descricao||'',t:'s',s:{font:{bold:true,color:{rgb:BG}},fill:{fgColor:{rgb:'FFF7ED'}}}}:
               txt(r.descricao||''),
-              txt(mod.split(' – ')[0]),
-              isHead?{v:'',t:'s'}:isCaps?cur(r.valor,true,'3563E9'):num(r.valor)
+              isHead?blank():(isCaps?cur(r.valor,true,BG):num(r.valor))
             ]);
           });
-        });
-      });
-    });
-    const ws=XLSX.utils.aoa_to_sheet(rows);
-    setColWidths(ws,[18,34,10,12,12,8,52,14,18]);
-    ws['!freeze']={xSplit:0,ySplit:1};
-    XLSX.utils.book_append_sheet(wb,ws,'Apuração LP');
-  }
+          rows.push([]);
 
-  // ════════════════════════════════════════════════
-  // ABA 3: APURAÇÃO LR – M300 (e-LALUR) / M350 (e-LACS)
-  // ════════════════════════════════════════════════
-  const lr_decls=decls.filter(d=>d.regime==='LR');
-  if(lr_decls.length){
-    const IT={'R':'Seção','L':'Total','A':'Adição','E':'Exclusão','C':'Compensação'};
-    const rows=[];
-    rows.push([hdr('CNPJ','7C3AED'),hdr('Empresa','7C3AED'),hdr('Período','7C3AED'),hdr('Dt Início','7C3AED'),hdr('Dt Fim','7C3AED'),hdr('Código','7C3AED'),hdr('Descrição','7C3AED'),hdr('Tipo','7C3AED'),hdr('Módulo','7C3AED'),hdr('Valor','7C3AED')]);
-    lr_decls.forEach(d=>{
-      d.periodos.forEach(p=>{
-        const blocos=[
-          {mod:'M300 – e-LALUR',data:d.m300[p.per]||[]},
-          {mod:'M350 – e-LACS',data:d.m350[p.per]||[]}
-        ];
-        blocos.forEach(({mod,data})=>{
-          if(!data.length) return;
-          const com_valor=data.filter(r=>r.valor!==0||r.indTipo==='L'||r.indTipo==='R');
-          if(!com_valor.length) return;
-          rows.push([
-            {v:'',t:'s'},{v:`${mod} · ${p.per}`,t:'s',s:{font:{bold:true,color:{rgb:'7C3AED'}},fill:{fgColor:{rgb:'F5F3FF'}}}},
-            {v:'',t:'s'},{v:'',t:'s'},{v:'',t:'s'},{v:'',t:'s'},{v:'',t:'s'},{v:'',t:'s'},{v:'',t:'s'},{v:'',t:'s'}
-          ]);
-          com_valor.forEach(r=>{
-            const isSec=r.indTipo==='R';
-            const isTot=r.indTipo==='L';
-            const valColor=r.indTipo==='A'?'DC2626':r.indTipo==='E'?'16A34A':r.indTipo==='L'?'3563E9':'1A1D26';
+          // ── P400 – Base de Cálculo CSLL ──
+          rows.push([hdr('P400 – BASE DE CÁLCULO DA CSLL','7C3AED'),hdr('','7C3AED'),hdr('','7C3AED')]);
+          rows.push([hdr('Linha','7C3AED'),hdr('Discriminação','7C3AED'),hdr('Valor (R$)','7C3AED')]);
+          (d.p400[p.per]||[]).forEach(r=>{
+            const isHead=r.valor===null||r.valor===undefined;
+            const isCaps=!isHead&&r.descricao&&r.descricao===r.descricao.toUpperCase()&&r.descricao.trim().length>3;
             rows.push([
-              txt(d.empresa.cnpj),txt(d.empresa.nome),txt(p.per),txt(fmtDt(p.dtIni)),txt(fmtDt(p.dtFin)),
-              {v:r.codigo||'',t:'s',s:{font:{color:{rgb:'8891A5'}}}},
-              isSec?{v:r.descricao,t:'s',s:{font:{bold:true},fill:{fgColor:{rgb:'F5F6F8'}}}}:
-              isTot?{v:r.descricao,t:'s',s:{font:{bold:true},fill:{fgColor:{rgb:'EEF2FF'}}}}:
-              txt(r.descricao),
-              txt(IT[r.indTipo]||r.indTipo),
-              txt(mod.split(' – ')[0]),
-              isSec?{v:'',t:'s'}:{v:pnv(r.valor),t:'n',s:{numFmt:'#,##0.00',font:{bold:isTot,color:{rgb:valColor}},alignment:{horizontal:'right'}}}
+              {v:r.linha||'',t:'s',s:{font:{color:{rgb:'8891A5'}},alignment:{horizontal:'center'}}},
+              isHead?{v:r.descricao||'',t:'s',s:{font:{bold:true},fill:{fgColor:{rgb:'F5F3FF'}}}}:
+              isCaps?{v:r.descricao||'',t:'s',s:{font:{bold:true,color:{rgb:'7C3AED'}},fill:{fgColor:{rgb:'F5F3FF'}}}}:
+              txt(r.descricao||''),
+              isHead?blank():(isCaps?cur(r.valor,true,'7C3AED'):num(r.valor))
             ]);
           });
-        });
+
+        } else {
+          // LR: totalizadores M300 e M350
+          [
+            {lbl:'M300 – e-LALUR (Base IRPJ)',data:d.m300[p.per]||[],bg:'3563E9'},
+            {lbl:'M350 – e-LACS (Base CSLL)',data:d.m350[p.per]||[],bg:'7C3AED'}
+          ].forEach(({lbl,data,bg})=>{
+            const IT={'R':'Seção','L':'Total','A':'Adição','E':'Exclusão','C':'Compensação'};
+            rows.push([hdr(lbl,bg),hdr('',bg),hdr('',bg),hdr('',bg)]);
+            rows.push([hdr('Código',bg),hdr('Descrição',bg),hdr('Tipo',bg),hdr('Valor (R$)',bg)]);
+            data.filter(r=>r.valor!==0||r.indTipo==='L'||r.indTipo==='R').forEach(r=>{
+              const isSec=r.indTipo==='R';const isTot=r.indTipo==='L';
+              const vc=r.indTipo==='A'?'DC2626':r.indTipo==='E'?'16A34A':r.indTipo==='L'?bg:'1A1D26';
+              rows.push([
+                {v:r.codigo||'',t:'s',s:{font:{color:{rgb:'8891A5'}}}},
+                isSec?{v:r.descricao,t:'s',s:{font:{bold:true},fill:{fgColor:{rgb:'F5F6F8'}}}}:
+                isTot?{v:r.descricao,t:'s',s:{font:{bold:true},fill:{fgColor:{rgb:'EEF2FF'}}}}:
+                txt(r.descricao),
+                txt(IT[r.indTipo]||r.indTipo),
+                isSec?blank():{v:pnv(r.valor),t:'n',s:{numFmt:'#,##0.00',font:{bold:isTot,color:{rgb:vc}},alignment:{horizontal:'right'}}}
+              ]);
+            });
+            rows.push([]);
+          });
+        }
+
+        const ws=XLSX.utils.aoa_to_sheet(rows);
+        sw(ws,isLP?[8,52,18]:[14,52,12,18]);
+        ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:isLP?2:3}},{s:{r:1,c:0},e:{r:1,c:isLP?2:3}}];
+        XLSX.utils.book_append_sheet(wb1,ws,abaName(p.per,nomeEmp));
       });
     });
-    const ws=XLSX.utils.aoa_to_sheet(rows);
-    setColWidths(ws,[18,34,10,12,12,12,52,12,10,18]);
-    ws['!freeze']={xSplit:0,ySplit:1};
-    XLSX.utils.book_append_sheet(wb,ws,'Apuração LR');
+
+    XLSX.writeFile(wb1,`ECF_Base_Calculo_${ano}.xlsx`);
   }
 
   // ════════════════════════════════════════════════
-  // ABA 4: IRRF – Y570
+  // PLANILHA 2 – APURAÇÃO (P300 IRPJ + P400 CSLL / M300+M350 LR)
+  // Uma aba por (empresa × período)
   // ════════════════════════════════════════════════
   {
-    const COD_REC={'3426':'IRRF – Aplic. Financeiras','0561':'IRRF – Renda Fixa','0562':'IRRF – Renda Variável'};
-    const rows=[];
-    rows.push([hdr('CNPJ Empresa','0891B2'),hdr('Empresa','0891B2'),hdr('CNPJ Instituição','0891B2'),hdr('Nome Instituição','0891B2'),hdr('Cód. Receita','0891B2'),hdr('Descrição Receita','0891B2'),hdr('VL Retido','0891B2'),hdr('VL Deduzido','0891B2'),hdr('VL Compensado','0891B2')]);
-    let totRetido=0,totDedu=0,totComp=0;
+    Object.keys(usedNames).forEach(k=>delete usedNames[k]);
+    const wb2=XLSX.utils.book_new();
+
     decls.forEach(d=>{
-      if(!d.y570.length) return;
-      let subRet=0,subDedu=0,subComp=0;
+      const isLP=d.regime==='LP';
+      const nomeEmp=d.empresa.nome.split(' ')[0];
+      const BG=isLP?'EA580C':'7C3AED';
+
+      d.periodos.forEach(p=>{
+        const rows=[];
+        rows.push([{v:`${d.empresa.nome} — CNPJ ${d.empresa.cnpj}`,t:'s',s:{font:{bold:true,sz:13,color:{rgb:BG}},fill:{fgColor:{rgb:'F8F8F8'}}}}]);
+        rows.push([{v:`Período: ${p.per} (${fmtDt(p.dtIni)} a ${fmtDt(p.dtFin)}) · Regime: ${isLP?'Lucro Presumido':'Lucro Real'}`,t:'s',s:{font:{italic:true,color:{rgb:'555C6E'}}}}]);
+        rows.push([]);
+
+        if(isLP){
+          [
+            {lbl:'P300 – APURAÇÃO DO IRPJ',data:d.p300[p.per]||[],bg:'EA580C'},
+            {lbl:'P400 – APURAÇÃO DA CSLL',data:d.p400[p.per]||[],bg:'7C3AED'}
+          ].forEach(({lbl,data,bg},idx)=>{
+            if(idx>0)rows.push([]);
+            rows.push([hdr(lbl,bg),hdr('',bg),hdr('',bg)]);
+            rows.push([hdr('Linha',bg),hdr('Discriminação',bg),hdr('Valor (R$)',bg)]);
+            data.forEach(r=>{
+              const isHead=r.valor===null||r.valor===undefined;
+              const isCaps=!isHead&&r.descricao&&r.descricao===r.descricao.toUpperCase()&&r.descricao.trim().length>3;
+              const isTax=isCaps&&r.valor!==0;
+              rows.push([
+                {v:r.linha||'',t:'s',s:{font:{color:{rgb:'8891A5'}},alignment:{horizontal:'center'}}},
+                isHead?{v:r.descricao||'',t:'s',s:{font:{bold:true},fill:{fgColor:{rgb:'F5F6F8'}}}}:
+                isTax?{v:r.descricao||'',t:'s',s:{font:{bold:true,color:{rgb:bg}},fill:{fgColor:{rgb:'FFF7ED'}}}}:
+                txt(r.descricao||''),
+                isHead?blank():(isTax?cur(r.valor,true,bg):num(r.valor))
+              ]);
+            });
+          });
+
+        } else {
+          const IT={'R':'Seção','L':'Total','A':'Adição','E':'Exclusão','C':'Compensação'};
+          [
+            {lbl:'M300 – e-LALUR / Demonstração do Lucro Real',data:d.m300[p.per]||[],bg:'3563E9'},
+            {lbl:'M350 – e-LACS / Base de Cálculo da CSLL',data:d.m350[p.per]||[],bg:'7C3AED'}
+          ].forEach(({lbl,data,bg},idx)=>{
+            if(idx>0)rows.push([]);
+            rows.push([hdr(lbl,bg),hdr('',bg),hdr('',bg),hdr('',bg),hdr('',bg)]);
+            rows.push([hdr('Código',bg),hdr('Descrição',bg),hdr('Tipo',bg),hdr('Valor (R$)',bg),hdr('Histórico',bg)]);
+            data.filter(r=>r.valor!==0||r.indTipo==='L'||r.indTipo==='R').forEach(r=>{
+              const isSec=r.indTipo==='R';const isTot=r.indTipo==='L';
+              const vc=r.indTipo==='A'?'DC2626':r.indTipo==='E'?'16A34A':r.indTipo==='L'?bg:'1A1D26';
+              rows.push([
+                {v:r.codigo||'',t:'s',s:{font:{color:{rgb:'8891A5'}}}},
+                isSec?{v:r.descricao,t:'s',s:{font:{bold:true},fill:{fgColor:{rgb:'F5F6F8'}}}}:
+                isTot?{v:r.descricao,t:'s',s:{font:{bold:true},fill:{fgColor:{rgb:'EEF2FF'}}}}:
+                txt(r.descricao),
+                txt(IT[r.indTipo]||r.indTipo),
+                isSec?blank():{v:pnv(r.valor),t:'n',s:{numFmt:'#,##0.00',font:{bold:isTot,color:{rgb:vc}},alignment:{horizontal:'right'}}},
+                txt(r.hist||'')
+              ]);
+            });
+          });
+        }
+
+        const ws=XLSX.utils.aoa_to_sheet(rows);
+        sw(ws,isLP?[8,52,18]:[14,52,12,18,24]);
+        const ncols=isLP?2:4;
+        ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:ncols}},{s:{r:1,c:0},e:{r:1,c:ncols}}];
+        XLSX.utils.book_append_sheet(wb2,ws,abaName(p.per,nomeEmp));
+      });
+    });
+
+    XLSX.writeFile(wb2,`ECF_Apuracao_${ano}.xlsx`);
+  }
+
+  // ════════════════════════════════════════════════
+  // PLANILHA 3 – IRRF Y570
+  // Uma aba por empresa, mais aba Consolidado
+  // ════════════════════════════════════════════════
+  {
+    Object.keys(usedNames).forEach(k=>delete usedNames[k]);
+    const wb3=XLSX.utils.book_new();
+    const COD_REC={'3426':'IRRF s/ Aplicações Financeiras','0561':'IRRF – Renda Fixa','0562':'IRRF – Renda Variável'};
+    const BG='0891B2';
+    const HDR_ROW=[
+      hdr('CNPJ Empresa',BG),hdr('Empresa',BG),
+      hdr('CNPJ Instituição',BG),hdr('Nome Instituição',BG),
+      hdr('Cód. Receita',BG),hdr('Descrição',BG),
+      hdr('VL Retido',BG),hdr('VL Deduzido',BG),hdr('VL Compensado',BG)
+    ];
+    const WIDTHS=[18,30,20,28,14,30,16,16,16];
+
+    // Aba Consolidado Y570
+    const consRows=[HDR_ROW.slice()];
+    let gRet=0,gDedu=0,gComp=0;
+
+    const decls_y=decls.filter(d=>d.y570.length);
+    decls_y.forEach(d=>{
+      let sRet=0,sDedu=0,sComp=0;
       d.y570.forEach(r=>{
-        rows.push([
+        consRows.push([
           txt(d.empresa.cnpj),txt(d.empresa.nome),
           txt(fmtCNPJ(r.cnpj)),txt(r.nome),
           txt(r.codRec),txt(COD_REC[r.codRec]||'—'),
           cur(r.vlRetido,false,'DC2626'),cur(r.vlDedu,false,'16A34A'),cur(r.vlComp,false,'D97706')
         ]);
-        subRet+=r.vlRetido;subDedu+=r.vlDedu;subComp+=r.vlComp;
+        sRet+=r.vlRetido;sDedu+=r.vlDedu;sComp+=r.vlComp;
       });
-      totRetido+=subRet;totDedu+=subDedu;totComp+=subComp;
-      rows.push([
-        {v:'',t:'s'},{v:`Subtotal – ${d.empresa.nome}`,t:'s',s:{font:{bold:true,italic:true},fill:{fgColor:{rgb:'ECFEFF'}}}},
-        {v:'',t:'s'},{v:'',t:'s'},{v:'',t:'s'},{v:'',t:'s'},
-        cur(subRet,true,'DC2626'),cur(subDedu,true,'16A34A'),cur(subComp,true,'D97706')
+      gRet+=sRet;gDedu+=sDedu;gComp+=sComp;
+      // linha subtotal empresa
+      consRows.push([
+        blank('F0FDF4'),sub(`Subtotal – ${d.empresa.nome}`),
+        blank('F0FDF4'),blank('F0FDF4'),blank('F0FDF4'),blank('F0FDF4'),
+        cur(sRet,true,'16A34A'),cur(sDedu,true,'16A34A'),cur(sComp,true,'D97706')
       ]);
     });
-    // Total geral
-    rows.push([
-      {v:'',t:'s'},{v:'TOTAL GERAL',t:'s',s:{font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'0891B2'}},alignment:{horizontal:'center'}}},
-      {v:'',t:'s'},{v:'',t:'s'},{v:'',t:'s'},{v:'',t:'s'},
-      {v:totRetido,t:'n',s:{numFmt:'#,##0.00',font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'0891B2'}},alignment:{horizontal:'right'}}},
-      {v:totDedu,t:'n',s:{numFmt:'#,##0.00',font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'0891B2'}},alignment:{horizontal:'right'}}},
-      {v:totComp,t:'n',s:{numFmt:'#,##0.00',font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'0891B2'}},alignment:{horizontal:'right'}}}
+    // total geral
+    consRows.push([
+      totLbl('',BG),totLbl('TOTAL GERAL',BG),totLbl('',BG),totLbl('',BG),totLbl('',BG),totLbl('',BG),
+      tot(gRet,BG),tot(gDedu,BG),tot(gComp,BG)
     ]);
-    const ws=XLSX.utils.aoa_to_sheet(rows);
-    setColWidths(ws,[18,34,20,28,14,28,16,16,16]);
-    ws['!freeze']={xSplit:0,ySplit:1};
-    XLSX.utils.book_append_sheet(wb,ws,'IRRF Y570');
-  }
+    const wsC=XLSX.utils.aoa_to_sheet(consRows);
+    sw(wsC,WIDTHS);
+    wsC['!freeze']={xSplit:0,ySplit:1};
+    XLSX.utils.book_append_sheet(wb3,wsC,'Consolidado');
 
-  // ════════════════════════════════════════════════
-  // Gera nome do arquivo
-  // ════════════════════════════════════════════════
-  const nomes=decls.map(d=>d.empresa.nome.split(' ')[0]).join('-');
-  const ano=decls[0]?.empresa.dtFin?.substr(4)||new Date().getFullYear();
-  XLSX.writeFile(wb,`ECF_Apuracoes_${nomes}_${ano}.xlsx`);
+    // Aba por empresa
+    decls_y.forEach(d=>{
+      const rows=[];
+      rows.push([{v:`${d.empresa.nome} — CNPJ ${d.empresa.cnpj}`,t:'s',s:{font:{bold:true,sz:13,color:{rgb:BG}},fill:{fgColor:{rgb:'F8F8F8'}}}}]);
+      rows.push([{v:`Período: ${fmtDt(d.empresa.dtIni)} a ${fmtDt(d.empresa.dtFin)}`,t:'s',s:{font:{italic:true,color:{rgb:'555C6E'}}}}]);
+      rows.push([]);
+      rows.push([hdr('CNPJ Instituição',BG),hdr('Nome Instituição',BG),hdr('Cód. Receita',BG),hdr('Descrição',BG),hdr('VL Retido',BG),hdr('VL Deduzido',BG),hdr('VL Compensado',BG)]);
+      let sRet=0,sDedu=0,sComp=0;
+      d.y570.forEach(r=>{
+        rows.push([
+          txt(fmtCNPJ(r.cnpj)),txt(r.nome),txt(r.codRec),txt(COD_REC[r.codRec]||'—'),
+          cur(r.vlRetido,false,'DC2626'),cur(r.vlDedu,false,'16A34A'),cur(r.vlComp,false,'D97706')
+        ]);
+        sRet+=r.vlRetido;sDedu+=r.vlDedu;sComp+=r.vlComp;
+      });
+      rows.push([
+        totLbl('',BG),totLbl('TOTAL',BG),totLbl('',BG),totLbl('',BG),
+        tot(sRet,BG),tot(sDedu,BG),tot(sComp,BG)
+      ]);
+      const ws=XLSX.utils.aoa_to_sheet(rows);
+      sw(ws,[20,28,14,30,16,16,16]);
+      ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:6}},{s:{r:1,c:0},e:{r:1,c:6}}];
+      XLSX.utils.book_append_sheet(wb3,ws,abaName('Y570',d.empresa.nome.split(' ')[0]));
+    });
+
+    if(decls_y.length) XLSX.writeFile(wb3,`ECF_IRRF_Y570_${ano}.xlsx`);
+  }
 }
 
 // ─── REGISTROS 9900 ───
