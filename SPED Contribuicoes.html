@@ -29,8 +29,9 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 ::-webkit-scrollbar-thumb{background:var(--border-h);border-radius:3px}
 
 .shell{display:flex;min-height:100vh}
-.sidebar{width:240px;background:var(--bg-dark);color:#c5cad6;position:fixed;top:0;left:0;bottom:0;z-index:100;display:flex;flex-direction:column;overflow-y:auto}
-.main{margin-left:240px;flex:1;min-height:100vh}
+.sidebar{width:240px;background:var(--bg-dark);color:#c5cad6;position:fixed;top:0;left:0;bottom:0;z-index:100;display:none;flex-direction:column;overflow-y:auto}
+.main{margin-left:0;flex:1;min-height:100vh;transition:margin-left .2s}
+.main.has-sidebar{margin-left:240px}
 
 .sb-logo{padding:16px 14px;display:flex;align-items:center;gap:9px;border-bottom:1px solid rgba(255,255,255,.07)}
 .sb-logo-icon{width:34px;height:34px;border-radius:8px;background:var(--purple);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;flex-shrink:0}
@@ -102,6 +103,8 @@ body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(-
 .upload-zone h3{font-size:16px;font-weight:700;margin:10px 0 4px}
 .upload-zone p{font-size:12px;color:var(--text-3)}
 .upload-zone input{display:none}
+.upload-full{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg);z-index:10}
+.upload-full .upload-zone{width:100%;max-width:480px;padding:64px 40px}
 
 .search{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:0 9px}
 .search input{background:transparent;border:none;outline:none;font-size:11px;padding:6px 0;width:180px;font-family:inherit;color:var(--text)}
@@ -175,6 +178,16 @@ select:focus{border-color:var(--purple)}
 </head>
 <body>
 <div class="reject-banner" id="reject-banner"></div>
+
+<!-- Upload overlay — visível antes do primeiro arquivo -->
+<div class="upload-full" id="upload-overlay">
+  <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-inp').click()">
+    <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.5" style="margin:0 auto 10px;display:block"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <h3>Carregar EFD Contribuições</h3>
+    <p>Clique ou arraste o arquivo .txt do SPED Contribuições aqui</p>
+  </div>
+</div>
+
 <div class="shell">
 
 <nav class="sidebar">
@@ -283,7 +296,7 @@ select:focus{border-color:var(--purple)}
 </nav>
 
 <div class="main">
-  <div class="topbar">
+  <div class="topbar" id="main-topbar" style="display:none">
     <span class="topbar-title" id="page-title">Dashboard</span>
     <div id="topbar-period" style="display:none;align-items:center;gap:8px;margin-left:16px">
       <div class="period-badge">
@@ -306,14 +319,7 @@ select:focus{border-color:var(--purple)}
 
     <!-- DASHBOARD -->
     <div class="page active" id="page-dash">
-      <div id="dash-upload">
-        <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-inp').click()">
-          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" stroke-width="1.5" style="margin:0 auto 10px;display:block"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          <h3>Carregar EFD Contribuições</h3>
-          <p>Clique ou arraste o arquivo .txt do SPED Contribuições aqui</p>
-        </div>
-      </div>
-      <div id="dash-content" style="display:none">
+      <div id="dash-content">
         <div class="kpi-grid" id="dash-kpis"></div>
         <div class="g2">
           <div class="card"><div class="card-h"><h3>Apuração PIS × COFINS</h3></div><div class="card-b"><canvas id="ch-apuracao" height="160"></canvas></div></div>
@@ -1011,11 +1017,13 @@ function removePeriod(e, idx){
   if(datasets.length===0){
     // Reset total
     activeIdx=-1; D={}; _lockedCNPJ=null; _lockedNome=null;
+    document.querySelector('.sidebar').style.display='none';
+    document.querySelector('.main').classList.remove('has-sidebar');
     document.getElementById('sb-periods').style.display='none';
     document.getElementById('sb-footer').innerHTML='Nenhum arquivo carregado';
     document.getElementById('topbar-period').style.display='none';
-    document.getElementById('dash-upload').style.display='';
-    document.getElementById('dash-content').style.display='none';
+    document.getElementById('main-topbar').style.display='none';
+    document.getElementById('upload-overlay').style.display='flex';
     document.getElementById('btn-xls').style.display='none';
     return;
   }
@@ -1037,8 +1045,6 @@ function populateCFOPFilters(){
 
 // ─── DASHBOARD ───
 function renderDash(){
-  document.getElementById('dash-upload').style.display='none';
-  document.getElementById('dash-content').style.display='';
 
   const m2r=D.rM200.raw||[], m6r=D.rM600.raw||[];
   const pisDev = br(m2r[1]), cofinsDev = br(m6r[1]);
@@ -1854,7 +1860,14 @@ function loadText(text, fileName){
   }
 
   // Fixar cliente na primeira carga
-  if(!_lockedCNPJ){ _lockedCNPJ=cnpj; _lockedNome=nome; }
+  if(!_lockedCNPJ){
+    _lockedCNPJ=cnpj; _lockedNome=nome;
+    // Ocultar overlay e mostrar UI completa
+    document.getElementById('upload-overlay').style.display='none';
+    document.getElementById('main-topbar').style.display='flex';
+    document.querySelector('.sidebar').style.display='flex';
+    document.querySelector('.main').classList.add('has-sidebar');
+  }
 
   // Inserir ordenado por DT_INI
   const entry = { data:parsed, label, cnpj, fileName };
