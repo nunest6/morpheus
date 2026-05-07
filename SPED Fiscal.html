@@ -934,39 +934,45 @@ const REG_FIELDS = {
 
 // ─── SPED PARSER ───
 function parseSPED(text, fileName) {
-  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  const lines = text.split(/\r?\n/);
   const data = {
     fileName,
-    registers: {},     // { regId: [ [fields], [fields], ... ] }
-    blocks: {},        // { blockId: { registers: {regId: count}, totalLines: n } }
-    entity: {},        // from 0000, 0005
-    period: {},        // dt_ini, dt_fin
+    registers: {},
+    blocks: {},
+    entity: {},
+    period: {},
     summary: {},
     rawLines: lines.length,
-    errors: []
+    c170Parent: new Map(), // map: c170Index -> c100Index
+    errors: [],
+    warnings: []
   };
 
   let currentC100Idx = -1;
   for (let i = 0; i < lines.length; i++) {
-    let line = lines[i];
-    // SPED lines are pipe-delimited: |REG|field1|field2|...|
+    const line = lines[i];
+    if (!line || !line.trim()) continue;
     if (!line.startsWith('|')) continue;
-    // Remove leading/trailing pipes and split
     const trimmed = line.replace(/^\|/, '').replace(/\|$/, '');
     const fields = trimmed.split('|');
     const regId = fields[0];
 
     if (!regId) continue;
 
+    // Validação leve: número de campos vs definição
+    const def = REG_FIELDS[regId];
+    if (def && fields.length !== def.length) {
+      data.warnings.push({ line: i + 1, regId, expected: def.length, got: fields.length });
+    }
+
     if (!data.registers[regId]) data.registers[regId] = [];
     if (regId === 'C100') {
       currentC100Idx = data.registers['C100'].length;
     } else if (regId === 'C170') {
-      fields._parentC100Idx = currentC100Idx;
+      data.c170Parent.set(data.registers['C170'].length, currentC100Idx);
     }
     data.registers[regId].push(fields);
 
-    // Determine block
     const blockId = regId.charAt(0);
     if (!data.blocks[blockId]) data.blocks[blockId] = { registers: {}, totalLines: 0 };
     data.blocks[blockId].totalLines++;
@@ -1116,9 +1122,20 @@ function calculateSummary(data) {
 }
 
 // ─── UTILITIES ───
+function esc(v) {
+  if (v == null) return '';
+  return String(v).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
 function parseNum(val) {
-  if (!val || val === '') return 0;
-  return parseFloat(val.replace(',', '.')) || 0;
+  if (val == null || val === '') return 0;
+  // SPED usa vírgula como decimal e não usa separador de milhar.
+  // Se vier com ponto+vírgula (legado/erro), remove pontos antes.
+  let s = String(val).trim();
+  if (s.indexOf(',') >= 0 && s.indexOf('.') >= 0) s = s.replace(/\./g, '');
+  s = s.replace(',', '.');
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
 }
 
 function formatDate(d) {
@@ -1127,11 +1144,11 @@ function formatDate(d) {
 }
 
 function fmtMoney(v) {
-  return v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (Number(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function fmtInt(v) {
-  return v.toLocaleString('pt-BR');
+  return (Number(v) || 0).toLocaleString('pt-BR');
 }
 
 function pctChange(newVal, oldVal) {
@@ -1140,16 +1157,29 @@ function pctChange(newVal, oldVal) {
 }
 
 function formatCNPJ(c) {
-  if (!c || c.length < 14) return c || '';
-  return `${c.substr(0,2)}.${c.substr(2,3)}.${c.substr(5,3)}/${c.substr(8,4)}-${c.substr(12,2)}`;
+  if (!c) return '';
+  const clean = String(c).replace(/\D/g, '');
+  if (clean.length !== 14) return c; // devolve original se não bate
+  return `${clean.substr(0,2)}.${clean.substr(2,3)}.${clean.substr(5,3)}/${clean.substr(8,4)}-${clean.substr(12,2)}`;
+}
+
+function destroyAllCharts() {
+  for (const id in state.charts) {
+    try { state.charts[id].destroy(); } catch(e) {}
+  }
+  state.charts = {};
 }
 
 function destroyChart(id) {
-  if (state.charts[id]) { state.charts[id].destroy(); delete state.charts[id]; }
+  if (state.charts[id]) {
+    try { state.charts[id].destroy(); } catch(e) {}
+    delete state.charts[id];
+  }
 }
 
 // ─── NAVIGATION ───
 function showPage(pageId) {
+  destroyAllCharts(); // evita memory leak ao trocar de página
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const page = document.getElementById('page-' + pageId);
@@ -1212,6 +1242,7 @@ function handleFiles(files) {
     if (state.files.find(x => x.name === f.name)) continue;
     state.files.push(f);
   }
+  fileInput.value = ''; // permite reupload do mesmo arquivo
   renderFileList();
 }
 
@@ -1224,21 +1255,32 @@ function renderFileList() {
     return;
   }
   actions.style.display = 'flex';
-  el.innerHTML = state.files.map((f, i) => `
+  el.innerHTML = state.files.map((f, i) => {
+    const isProcessed = state.parsed.some(p => p.fileName === f.name);
+    return `
     <div class="file-item animate-in">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
-      <span class="name">${f.name}</span>
+      <span class="name">${esc(f.name)}</span>
       <span class="size">${(f.size / 1024).toFixed(1)} KB</span>
-      <span class="status tag ${state.parsed[i] ? 'tag-green' : 'tag-yellow'}">${state.parsed[i] ? '✓ Processado' : 'Pendente'}</span>
+      <span class="status tag ${isProcessed ? 'tag-green' : 'tag-yellow'}">${isProcessed ? '✓ Processado' : 'Pendente'}</span>
       <span class="file-remove" onclick="removeFile(${i})">✕</span>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
   document.getElementById('sidebar-file-count').textContent = state.files.length;
 }
 
 function removeFile(i) {
+  const fileToRemove = state.files[i];
   state.files.splice(i, 1);
-  state.parsed.splice(i, 1);
+  // Remove o item de parsed que corresponda ao mesmo fileName (não por índice posicional,
+  // pois parsed pode ter sido reordenado por sort de período)
+  if (fileToRemove) {
+    const pIdx = state.parsed.findIndex(p => p.fileName === fileToRemove.name);
+    if (pIdx >= 0) state.parsed.splice(pIdx, 1);
+    if (state.activeFile >= state.parsed.length) {
+      state.activeFile = Math.max(0, state.parsed.length - 1);
+    }
+  }
   renderFileList();
 }
 
@@ -1255,12 +1297,24 @@ function clearFiles() {
 async function processAllFiles() {
   const statusEl = document.getElementById('process-status');
   state.parsed = [];
+  const erros = [];
 
   for (let i = 0; i < state.files.length; i++) {
     statusEl.textContent = `Processando ${i+1}/${state.files.length}: ${state.files[i].name}...`;
-    const text = await readFileText(state.files[i]);
-    const parsed = parseSPED(text, state.files[i].name);
-    state.parsed.push(parsed);
+    try {
+      const text = await readFileText(state.files[i]);
+      const parsed = parseSPED(text, state.files[i].name);
+      state.parsed.push(parsed);
+    } catch (err) {
+      console.error('Erro ao processar', state.files[i].name, err);
+      erros.push(state.files[i].name + ': ' + (err.message || err));
+    }
+  }
+
+  if (state.parsed.length === 0) {
+    statusEl.textContent = '✗ Nenhum arquivo pôde ser processado. ' + erros.join(' | ');
+    statusEl.style.color = 'var(--danger)';
+    return;
   }
 
   // Sort by period
@@ -1274,8 +1328,9 @@ async function processAllFiles() {
   renderFileList();
 
   const d = state.parsed[state.activeFile];
-  statusEl.textContent = `✓ ${state.parsed.length} arquivo(s) processado(s) com sucesso!`;
-  statusEl.style.color = 'var(--success)';
+  const msg = `✓ ${state.parsed.length} arquivo(s) processado(s)` + (erros.length ? ` (${erros.length} com erro)` : '');
+  statusEl.textContent = msg;
+  statusEl.style.color = erros.length ? 'var(--warning)' : 'var(--success)';
 
   document.getElementById('topbar-period').textContent = `Período: ${d.period.label}`;
   document.getElementById('topbar-period').style.display = '';
@@ -1323,11 +1378,11 @@ function renderDashboard(d) {
       <div class="card-body" style="display:flex;align-items:center;gap:20px;">
         <div style="flex:1;">
           <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">Entidade</div>
-          <div style="font-size:20px;font-weight:700;margin-top:4px;">${d.entity.nome || 'N/I'}</div>
+          <div style="font-size:20px;font-weight:700;margin-top:4px;">${esc(d.entity.nome) || 'N/I'}</div>
           <div style="font-size:13px;color:var(--text-secondary);margin-top:4px;">
-            ${d.entity.cnpj ? 'CNPJ: ' + formatCNPJ(d.entity.cnpj) : ''} 
-            ${d.entity.ie ? ' · IE: ' + d.entity.ie : ''} 
-            ${d.entity.uf ? ' · UF: ' + d.entity.uf : ''}
+            ${d.entity.cnpj ? 'CNPJ: ' + esc(formatCNPJ(d.entity.cnpj)) : ''} 
+            ${d.entity.ie ? ' · IE: ' + esc(d.entity.ie) : ''} 
+            ${d.entity.uf ? ' · UF: ' + esc(d.entity.uf) : ''}
           </div>
         </div>
         <div style="text-align:right;">
@@ -1610,7 +1665,7 @@ function showRegisterDetail(regId) {
     const maxCols = Math.max(...records.slice(0, maxShow).map(r => r.length));
     for (let i = 0; i < maxCols; i++) {
       const fname = fieldDef[i] || `Campo ${i+1}`;
-      html += `<th style="font-size:10px;">${fname}</th>`;
+      html += `<th style="font-size:10px;">${esc(fname)}</th>`;
     }
     html += '</tr></thead><tbody>';
 
@@ -1618,7 +1673,8 @@ function showRegisterDetail(regId) {
       html += `<tr><td class="mono" style="color:var(--text-muted);">${i+1}</td>`;
       for (let j = 0; j < maxCols; j++) {
         const val = records[i][j] || '';
-        html += `<td class="mono" style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${val}">${val}</td>`;
+        const valEsc = esc(val);
+        html += `<td class="mono" style="font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${valEsc}">${valEsc}</td>`;
       }
       html += '</tr>';
     }
@@ -1655,14 +1711,18 @@ function renderApuracao(d) {
   let e210HTML = '';
   if (d.registers['E210'] && d.registers['E210'].length > 0) {
     e210HTML = `<div class="card"><div class="card-header"><h3>E210 – Apuração do ICMS – Substituição Tributária</h3></div><div class="card-body">`;
-    d.registers['E210'].forEach(r => {
-      const uf = d.registers['E200'] ? (d.registers['E200'].find(e => true) || [])[1] || '' : '';
+    d.registers['E210'].forEach((r, idx) => {
+      const e200 = d.registers['E200'] || [];
+      const uf = e200[idx] ? (e200[idx][1] || '') : (e200[0] ? e200[0][1] || '' : '');
+      if (uf) {
+        e210HTML += `<div style="font-weight:600;color:var(--accent);margin-top:${idx>0?'16px':'0'};margin-bottom:8px;">UF: ${esc(uf)}</div>`;
+      }
       const fields210 = ['IND_MOV_ST','VL_SLD_CRED_ANT_ST','VL_DEVOL_ST','VL_RESSARC_ST','VL_OUT_CRED_ST','VL_AJ_CREDITOS_ST','VL_RETENCAO_ST','VL_OUT_DEB_ST','VL_AJ_DEBITOS_ST','VL_SLD_DEV_ANT_ST','VL_DEDUCOES_ST','VL_ICMS_RECOL_ST','VL_SLD_CRED_ST_TRANSPORTAR','DEB_ESP_ST'];
-      fields210.forEach((fname, idx) => {
-        const val = idx === 0 ? r[idx + 1] : parseNum(r[idx + 1]);
+      fields210.forEach((fname, fidx) => {
+        const val = fidx === 0 ? r[fidx + 1] : parseNum(r[fidx + 1]);
         e210HTML += `<div class="comparison-row">
           <div class="comparison-label">${fname.replace(/VL_/g,'').replace(/_/g,' ')}</div>
-          <div class="comparison-val">${idx === 0 ? val : 'R$ ' + fmtMoney(val)}</div>
+          <div class="comparison-val">${fidx === 0 ? esc(val || '') : 'R$ ' + fmtMoney(val)}</div>
         </div>`;
       });
     });
@@ -1690,7 +1750,7 @@ function renderApuracao(d) {
     e111HTML = `<div class="card"><div class="card-header"><h3>E111 – Ajustes da Apuração do ICMS</h3></div><div class="card-body">
       <table class="data-table"><thead><tr><th>Código Ajuste</th><th>Descrição</th><th class="right">Valor</th></tr></thead><tbody>`;
     d.registers['E111'].forEach(r => {
-      e111HTML += `<tr><td class="mono">${r[1] || ''}</td><td>${r[2] || ''}</td><td class="mono right">R$ ${fmtMoney(parseNum(r[3]))}</td></tr>`;
+      e111HTML += `<tr><td class="mono">${esc(r[1] || '')}</td><td>${esc(r[2] || '')}</td><td class="mono right">R$ ${fmtMoney(parseNum(r[3]))}</td></tr>`;
     });
     e111HTML += '</tbody></table></div></div>';
   }
@@ -1701,7 +1761,7 @@ function renderApuracao(d) {
     e116HTML = `<div class="card"><div class="card-header"><h3>E116 – Obrigações do ICMS a Recolher</h3></div><div class="card-body">
       <table class="data-table"><thead><tr><th>Cód. Receita</th><th>Valor</th><th>Vencimento</th><th>Mês Ref.</th></tr></thead><tbody>`;
     d.registers['E116'].forEach(r => {
-      e116HTML += `<tr><td class="mono">${r[4] || ''}</td><td class="mono right">R$ ${fmtMoney(parseNum(r[2]))}</td><td class="mono">${formatDate(r[3])}</td><td class="mono">${r[9] || ''}</td></tr>`;
+      e116HTML += `<tr><td class="mono">${esc(r[4] || '')}</td><td class="mono right">R$ ${fmtMoney(parseNum(r[2]))}</td><td class="mono">${formatDate(r[3])}</td><td class="mono">${esc(r[9] || '')}</td></tr>`;
     });
     e116HTML += '</tbody></table></div></div>';
   }
@@ -1868,8 +1928,9 @@ function exportC100C170() {
   });
 
   // Sheet 2: C170 with parent C100 key fields
-  const c170Rows = c170.map(r => {
-    const parent = r._parentC100Idx >= 0 ? c100[r._parentC100Idx] : null;
+  const c170Rows = c170.map((r, idx) => {
+    const parentIdx = d.c170Parent ? d.c170Parent.get(idx) : -1;
+    const parent = (parentIdx != null && parentIdx >= 0) ? c100[parentIdx] : null;
     const o = {
       C100_NUM_DOC: parent ? (parent[7] || '') : '',
       C100_SER: parent ? (parent[6] || '') : '',
@@ -1963,12 +2024,12 @@ function renderDocumentos(d) {
     for (let i = 0; i < maxShow; i++) {
       const r = docs[i];
       const oper = r[1] === '0' ? '<span class="tag tag-green">Entrada</span>' : '<span class="tag tag-blue">Saída</span>';
-      const sit = r[5] === '00' ? '<span class="tag tag-green">Regular</span>' : `<span class="tag tag-red">${r[5]}</span>`;
+      const sit = r[5] === '00' ? '<span class="tag tag-green">Regular</span>' : `<span class="tag tag-red">${esc(r[5] || '')}</span>`;
       html += `<tr>
         <td>${oper}</td>
         <td>${r[2] === '0' ? 'Própria' : 'Terceiros'}</td>
-        <td class="mono">${r[4] || ''}</td>
-        <td class="mono">${r[7] || ''}</td>
+        <td class="mono">${esc(r[4] || '')}</td>
+        <td class="mono">${esc(r[7] || '')}</td>
         <td class="mono">${formatDate(r[9])}</td>
         <td>${sit}</td>
         <td class="mono right">R$ ${fmtMoney(parseNum(r[11]))}</td>
@@ -2009,12 +2070,12 @@ function renderParticipantes(d) {
     for (let i = 0; i < maxShow; i++) {
       const r = parts[i];
       html += `<tr>
-        <td class="mono">${r[1] || ''}</td>
-        <td class="truncate">${r[2] || ''}</td>
-        <td class="mono">${r[4] ? formatCNPJ(r[4]) : ''}</td>
-        <td class="mono">${r[5] || ''}</td>
-        <td class="mono">${r[6] || ''}</td>
-        <td class="mono">${r[7] || ''}</td>
+        <td class="mono">${esc(r[1] || '')}</td>
+        <td class="truncate">${esc(r[2] || '')}</td>
+        <td class="mono">${r[4] ? esc(formatCNPJ(r[4])) : ''}</td>
+        <td class="mono">${esc(r[5] || '')}</td>
+        <td class="mono">${esc(r[6] || '')}</td>
+        <td class="mono">${esc(r[7] || '')}</td>
       </tr>`;
     }
     html += '</tbody></table></div></div>';
@@ -2024,59 +2085,55 @@ function renderParticipantes(d) {
 }
 
 // ─── NCM CACHE & CONSULTATION STATE ───
-const ncmCache = {};      // { ncmCode: { siscomex: {...}, ibpt: {...}, ai: {...} } }
+const ncmCache = {};      // { ncmCode_uf: { siscomex, ibpt, ai, ... } }
 let ncmSiscomexTable = null; // Full NCM table from Siscomex (loaded on demand)
-let ncmSiscomexLoading = false;
 const NCM_IBPT_URL = 'https://api-ibpt.seunegocionanuvem.com.br/api_ibpt.php';
 
 // ─── NCM API: Siscomex Classif (Official NCM Table) ───
+let ncmSiscomexPromise = null;
 async function loadSiscomexTable() {
   if (ncmSiscomexTable) return ncmSiscomexTable;
-  if (ncmSiscomexLoading) {
-    // Wait for existing load
-    while (ncmSiscomexLoading) await new Promise(r => setTimeout(r, 200));
-    return ncmSiscomexTable;
-  }
-  ncmSiscomexLoading = true;
-  try {
-    const resp = await fetch('https://portalunico.siscomex.gov.br/classif/api/publico/nomenclatura/download/json?perfil=PUBLICO');
-    if (!resp.ok) throw new Error('Siscomex API error: ' + resp.status);
-    const data = await resp.json();
-    ncmSiscomexTable = {};
-    if (data && data.Nomenclaturas) {
-      data.Nomenclaturas.forEach(n => {
-        ncmSiscomexTable[n.Codigo] = {
-          codigo: n.Codigo,
-          descricao: n.Descricao,
-          dataInicio: n.DataInicio,
-          dataFim: n.DataFim,
-          tipoAto: n.TipoAtoIni,
-          numeroAto: n.NumeroAtoIni,
-          anoAto: n.AnoAtoIni
-        };
-      });
+  if (ncmSiscomexPromise) return ncmSiscomexPromise;
+  ncmSiscomexPromise = (async () => {
+    try {
+      const resp = await fetch('https://portalunico.siscomex.gov.br/classif/api/publico/nomenclatura/download/json?perfil=PUBLICO');
+      if (!resp.ok) throw new Error('Siscomex API error: ' + resp.status);
+      const data = await resp.json();
+      const table = {};
+      if (data && Array.isArray(data.Nomenclaturas)) {
+        data.Nomenclaturas.forEach(n => {
+          if (!n || !n.Codigo) return;
+          const key = String(n.Codigo).replace(/\./g, '');
+          table[key] = {
+            codigo: n.Codigo,
+            descricao: n.Descricao,
+            dataInicio: n.DataInicio,
+            dataFim: n.DataFim,
+            tipoAto: n.TipoAtoIni,
+            numeroAto: n.NumeroAtoIni,
+            anoAto: n.AnoAtoIni
+          };
+        });
+      }
+      ncmSiscomexTable = table;
+      return ncmSiscomexTable;
+    } catch (err) {
+      console.error('Erro ao carregar tabela Siscomex:', err);
+      ncmSiscomexPromise = null; // permite retry futuro
+      return null;
     }
-    return ncmSiscomexTable;
-  } catch (err) {
-    console.error('Erro ao carregar tabela Siscomex:', err);
-    return null;
-  } finally {
-    ncmSiscomexLoading = false;
-  }
+  })();
+  return ncmSiscomexPromise;
 }
 
 function lookupSiscomex(ncmCode) {
   if (!ncmSiscomexTable) return null;
-  // Try exact match
-  if (ncmSiscomexTable[ncmCode]) return ncmSiscomexTable[ncmCode];
-  // Try with dots removed
-  const clean = ncmCode.replace(/\./g, '');
+  const clean = String(ncmCode).replace(/\./g, '').trim();
+  if (!clean) return null;
+  // Match exato no código limpo (chave canônica)
   if (ncmSiscomexTable[clean]) return ncmSiscomexTable[clean];
-  // Try partial matches (chapter, position)
-  const partial = clean.substring(0, 4);
-  for (const k of Object.keys(ncmSiscomexTable)) {
-    if (k.startsWith(clean)) return ncmSiscomexTable[k];
-  }
+  // Match com código original (caso a tabela tenha pontuação)
+  if (ncmSiscomexTable[ncmCode]) return ncmSiscomexTable[ncmCode];
   return null;
 }
 
@@ -2125,57 +2182,25 @@ async function fetchIBPT(ncmCode, uf) {
   }
 }
 
-// ─── NCM API: Claude AI Analysis ───
+// ─── NCM API: Análise AI ───
+// AVISO: chamada direta a api.anthropic.com a partir do browser não funciona
+// (CORS + necessidade de API key). Para habilitar, configure um proxy backend
+// (ex: /api/ncm-analysis) que faça a chamada server-side com sua API key.
 async function fetchAIAnalysis(ncmCode, ncmDesc, uf, ibptData) {
+  // Endpoint de proxy backend (configure conforme seu deploy):
+  const PROXY_URL = window.NCM_AI_PROXY_URL || null;
+  if (!PROXY_URL) {
+    return null; // Análise AI desabilitada — configure window.NCM_AI_PROXY_URL
+  }
   try {
-    const prompt = `Você é um especialista tributário brasileiro. Analise o NCM ${ncmCode} (${ncmDesc || 'descrição não disponível'}) para a UF ${uf}.
-
-Forneça uma análise CONCISA e ESTRUTURADA nos seguintes tópicos:
-
-1. **ICMS – Regime Geral:**
-   - Alíquota interna padrão na UF ${uf}
-   - Alíquotas interestaduais aplicáveis (7% e 12%)
-   - Se há redução de base de cálculo (e fundamento legal)
-   - Se há diferimento (e condições)
-   - Se há isenção (Convênio ICMS aplicável)
-   - Se há substituição tributária (e MVA/protocolo se aplicável)
-
-2. **IPI – Regime:**
-   - Alíquota da TIPI vigente para este NCM
-   - Se há suspensão de IPI (e condições - ZFM, Drawback, etc)
-   - Se há isenção de IPI (e fundamento)
-   - Código de enquadramento aplicável
-
-3. **Base Legislativa Principal:**
-   - Convênios ICMS relevantes
-   - Protocolos ICMS de ST
-   - Decretos estaduais da UF ${uf}
-   - Decreto 7.212/2010 (RIPI) - artigos aplicáveis
-   - LC 214/2025 (IBS/CBS) - impacto futuro se aplicável
-
-4. **Alertas de Auditoria:**
-   - Pontos de atenção para este NCM
-   - Erros comuns de classificação
-   - Riscos fiscais
-
-${ibptData ? `Dados IBPT de referência: Federal ${ibptData.nacionalfederal}%, Importados ${ibptData.importadosfederal}%, Estadual ${ibptData.estadual}%, Municipal ${ibptData.municipal}%` : ''}
-
-Responda de forma objetiva, usando marcadores. Não inclua disclaimers.`;
-
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch(PROXY_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
-      })
+      body: JSON.stringify({ ncm: ncmCode, descricao: ncmDesc, uf, ibpt: ibptData })
     });
-
-    if (!resp.ok) throw new Error('AI API error: ' + resp.status);
+    if (!resp.ok) throw new Error('Proxy AI error: ' + resp.status);
     const data = await resp.json();
-    const text = data.content.map(c => c.text || '').join('\n');
-    return text;
+    return data.text || data.content || null;
   } catch (err) {
     console.error('Erro AI:', err);
     return null;
@@ -2187,7 +2212,8 @@ async function consultNCM(ncmCode, uf) {
   const clean = ncmCode.replace(/\./g, '').trim();
   if (!clean || clean.length < 2) return null;
 
-  if (ncmCache[clean + '_' + uf]) return ncmCache[clean + '_' + uf];
+  const cacheKey = clean + '||' + uf;
+  if (ncmCache[cacheKey]) return ncmCache[cacheKey];
 
   const result = { ncm: clean, uf, siscomex: null, ibpt: null, ai: null, timestamp: Date.now() };
 
@@ -2207,7 +2233,7 @@ async function consultNCM(ncmCode, uf) {
   const desc = result.siscomex?.descricao || result.ibpt?.descricao || '';
   result.ai = await fetchAIAnalysis(clean, desc, uf, ibptData);
 
-  ncmCache[clean + '_' + uf] = result;
+  ncmCache[cacheKey] = result;
   return result;
 }
 
@@ -2227,10 +2253,10 @@ function renderNCMResult(result, targetId) {
     html += `<div class="ncm-full-desc">
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Classificação Hierárquica NCM</div>
       ${hier.map(h => `<div style="padding:3px 0;padding-left:${hier.indexOf(h)*16}px;">
-        <span class="mono" style="color:var(--accent);font-size:12px;font-weight:600;">${h.code}</span>
+        <span class="mono" style="color:var(--accent);font-size:12px;font-weight:600;">${esc(h.code)}</span>
         <span style="color:var(--text-muted);font-size:11px;margin:0 4px;">›</span>
-        <span style="font-size:12px;">${h.desc}</span>
-        <span class="tag tag-blue" style="font-size:9px;margin-left:6px;">${h.level}</span>
+        <span style="font-size:12px;">${esc(h.desc)}</span>
+        <span class="tag tag-blue" style="font-size:9px;margin-left:6px;">${esc(h.level)}</span>
       </div>`).join('')}
     </div>`;
   }
@@ -2241,11 +2267,11 @@ function renderNCMResult(result, targetId) {
   html += `<div class="ncm-info-box">
     <h4><span class="icon-dot" style="background:var(--accent);"></span>Dados Oficiais Siscomex/Classif</h4>
     ${s ? `
-      <div class="ncm-info-row"><span class="label">Código NCM</span><span class="value" style="color:var(--accent);">${s.codigo}</span></div>
-      <div class="ncm-info-row"><span class="label">Descrição</span><span class="value" style="font-size:12px;font-family:'DM Sans';max-width:200px;text-align:right;">${s.descricao}</span></div>
-      <div class="ncm-info-row"><span class="label">Vigência Início</span><span class="value">${s.dataInicio || 'N/I'}</span></div>
-      <div class="ncm-info-row"><span class="label">Vigência Fim</span><span class="value">${s.dataFim || 'Vigente'}</span></div>
-      ${s.tipoAto ? `<div class="ncm-info-row"><span class="label">Ato Legal</span><span class="value" style="font-size:11px;">${s.tipoAto} nº ${s.numeroAto}/${s.anoAto}</span></div>` : ''}
+      <div class="ncm-info-row"><span class="label">Código NCM</span><span class="value" style="color:var(--accent);">${esc(s.codigo)}</span></div>
+      <div class="ncm-info-row"><span class="label">Descrição</span><span class="value" style="font-size:12px;font-family:'DM Sans';max-width:200px;text-align:right;">${esc(s.descricao)}</span></div>
+      <div class="ncm-info-row"><span class="label">Vigência Início</span><span class="value">${esc(s.dataInicio) || 'N/I'}</span></div>
+      <div class="ncm-info-row"><span class="label">Vigência Fim</span><span class="value">${esc(s.dataFim) || 'Vigente'}</span></div>
+      ${s.tipoAto ? `<div class="ncm-info-row"><span class="label">Ato Legal</span><span class="value" style="font-size:11px;">${esc(s.tipoAto)} nº ${esc(s.numeroAto)}/${esc(s.anoAto)}</span></div>` : ''}
     ` : '<div style="color:var(--text-muted);font-size:12px;">Tabela Siscomex indisponível. Verifique a conexão.</div>'}
   </div>`;
 
@@ -2253,14 +2279,14 @@ function renderNCMResult(result, targetId) {
   html += `<div class="ncm-info-box">
     <h4><span class="icon-dot" style="background:var(--warning);"></span>Tributação Aproximada (IBPT)</h4>
     ${ib ? `
-      <div class="ncm-info-row"><span class="label">Descrição IBPT</span><span class="value" style="font-size:11px;font-family:'DM Sans';max-width:200px;text-align:right;">${ib.descricao}</span></div>
+      <div class="ncm-info-row"><span class="label">Descrição IBPT</span><span class="value" style="font-size:11px;font-family:'DM Sans';max-width:200px;text-align:right;">${esc(ib.descricao)}</span></div>
       <div class="ncm-info-row"><span class="label">Federal (Nacional)</span><span class="value" style="color:var(--info);">${ib.nacionalfederal}%</span></div>
       <div class="ncm-info-row"><span class="label">Federal (Importados)</span><span class="value" style="color:var(--purple);">${ib.importadosfederal}%</span></div>
       <div class="ncm-info-row"><span class="label">Estadual (ICMS)</span><span class="value" style="color:var(--success);">${ib.estadual}%</span></div>
       <div class="ncm-info-row"><span class="label">Municipal</span><span class="value">${ib.municipal}%</span></div>
-      <div class="ncm-info-row"><span class="label">Vigência</span><span class="value" style="font-size:11px;">${ib.vigenciainicio} a ${ib.vigenciafim}</span></div>
-      <div class="ncm-info-row"><span class="label">Versão / Fonte</span><span class="value" style="font-size:10px;">${ib.versao} · ${ib.fonte}</span></div>
-      <div class="ncm-info-row"><span class="label">UF</span><span class="value">${ib.uf}</span></div>
+      <div class="ncm-info-row"><span class="label">Vigência</span><span class="value" style="font-size:11px;">${esc(ib.vigenciainicio)} a ${esc(ib.vigenciafim)}</span></div>
+      <div class="ncm-info-row"><span class="label">Versão / Fonte</span><span class="value" style="font-size:10px;">${esc(ib.versao)} · ${esc(ib.fonte)}</span></div>
+      <div class="ncm-info-row"><span class="label">UF</span><span class="value">${esc(ib.uf)}</span></div>
       <div class="ncm-trib-bar">
         <div class="ncm-trib-seg" style="flex:${ib.nacionalfederal};background:#4f6df5;" title="Federal Nacional: ${ib.nacionalfederal}%">${ib.nacionalfederal}%</div>
         <div class="ncm-trib-seg" style="flex:${ib.estadual || 0.1};background:#22c55e;" title="Estadual: ${ib.estadual}%">${ib.estadual}%</div>
@@ -2295,10 +2321,12 @@ function renderNCMResult(result, targetId) {
 }
 
 function formatAIContent(text) {
-  // Convert markdown-like formatting to HTML
-  return text
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+  if (!text) return '';
+  // Escapa HTML primeiro, depois aplica formatação markdown segura
+  let s = esc(text);
+  return s
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/(?<!\*)\*([^*\n]+?)\*(?!\*)/g, '<em>$1</em>')
     .replace(/^### (.*?)$/gm, '<div style="font-size:14px;font-weight:700;color:var(--text-primary);margin-top:14px;margin-bottom:6px;">$1</div>')
     .replace(/^## (.*?)$/gm, '<div style="font-size:15px;font-weight:700;color:var(--accent);margin-top:16px;margin-bottom:8px;">$1</div>')
     .replace(/^# (.*?)$/gm, '<div style="font-size:16px;font-weight:700;color:var(--accent);margin-top:16px;margin-bottom:8px;">$1</div>')
@@ -2390,16 +2418,17 @@ function renderItens(d) {
           </tr></thead>
           <tbody>
             ${uniqueNCMs.map(ncm => {
-              const cached = ncmCache[ncm + '_' + uf];
+              const cached = ncmCache[ncm + '||' + uf];
               const ib = cached?.ibpt;
-              return `<tr data-ncm="${ncm}" id="ncm-row-${ncm}">
-                <td class="mono" style="font-weight:600;color:var(--accent);">${ncm.length === 8 ? ncm.substring(0,4)+'.'+ncm.substring(4,6)+'.'+ncm.substring(6) : ncm}</td>
+              const ncmDisplay = ncm.length === 8 ? ncm.substring(0,4)+'.'+ncm.substring(4,6)+'.'+ncm.substring(6) : ncm;
+              return `<tr data-ncm="${esc(ncm)}" id="ncm-row-${esc(ncm)}">
+                <td class="mono" style="font-weight:600;color:var(--accent);">${esc(ncmDisplay)}</td>
                 <td class="mono right">${ncmSet[ncm].count}</td>
-                <td id="ncm-ibpt-${ncm}">${ib ? '<span class="tag tag-green">✓ Consultado</span>' : '<span class="tag tag-yellow">Pendente</span>'}</td>
-                <td class="mono right" id="ncm-est-${ncm}">${ib ? ib.estadual + '%' : '—'}</td>
-                <td class="mono right" id="ncm-fed-${ncm}">${ib ? ib.nacionalfederal + '%' : '—'}</td>
+                <td id="ncm-ibpt-${esc(ncm)}">${ib ? '<span class="tag tag-green">✓ Consultado</span>' : '<span class="tag tag-yellow">Pendente</span>'}</td>
+                <td class="mono right" id="ncm-est-${esc(ncm)}">${ib ? ib.estadual + '%' : '—'}</td>
+                <td class="mono right" id="ncm-fed-${esc(ncm)}">${ib ? ib.nacionalfederal + '%' : '—'}</td>
                 <td>
-                  <button class="ncm-table-btn ${cached ? 'consulted' : ''}" onclick="consultNCMFromTable('${ncm}')" id="ncm-btn-${ncm}">
+                  <button class="ncm-table-btn ${cached ? 'consulted' : ''}" onclick="consultNCMFromTable('${esc(ncm)}')" id="ncm-btn-${esc(ncm)}">
                     ${cached ? '✓ Ver' : 'Consultar'}
                   </button>
                 </td>
@@ -2427,15 +2456,15 @@ function renderItens(d) {
           ${itens.slice(0, 300).map(r => {
             const ncm = (r[7] || '').replace(/\./g, '');
             const tipo = tipoItem[r[6]] || r[6] || '';
-            const cached = ncmCache[ncm + '_' + uf];
+            const cached = ncmCache[ncm + '||' + uf];
             const ib = cached?.ibpt;
             return `<tr>
-              <td class="mono">${r[1] || ''}</td>
-              <td class="truncate">${r[2] || ''}</td>
-              <td><span class="ncm-chip ${cached ? 'consulted' : ''}" onclick="consultNCMFromTable('${ncm}')" title="Clique para consultar">${r[7] || ''}</span></td>
-              <td><span class="tag tag-purple">${tipo}</span></td>
-              <td class="mono">${r[5] || ''}</td>
-              <td class="mono">${r[12] || ''}</td>
+              <td class="mono">${esc(r[1] || '')}</td>
+              <td class="truncate">${esc(r[2] || '')}</td>
+              <td><span class="ncm-chip ${cached ? 'consulted' : ''}" onclick="consultNCMFromTable('${esc(ncm)}')" title="Clique para consultar">${esc(r[7] || '')}</span></td>
+              <td><span class="tag tag-purple">${esc(tipo)}</span></td>
+              <td class="mono">${esc(r[5] || '')}</td>
+              <td class="mono">${esc(r[12] || '')}</td>
               <td class="mono" style="font-size:11px;">${ib ? `<span style="color:var(--success);">${(ib.nacionalfederal + ib.estadual + ib.municipal).toFixed(1)}%</span>` : '—'}</td>
             </tr>`;
           }).join('')}
@@ -2453,7 +2482,7 @@ function renderItens(d) {
 function updateConsultedCount(uf) {
   const countEl = document.getElementById('ncm-consulted-count');
   if (countEl) {
-    const count = Object.keys(ncmCache).filter(k => k.endsWith('_' + uf)).length;
+    const count = Object.keys(ncmCache).filter(k => k.endsWith('||' + uf)).length;
     countEl.textContent = count;
   }
 }
@@ -2497,8 +2526,8 @@ async function consultNCMFromTable(ncm) {
   const uf = ufSelect ? ufSelect.value : (state.parsed[state.activeFile]?.entity?.uf || 'SP');
 
   // Check cache first
-  if (ncmCache[ncm + '_' + uf]) {
-    renderNCMResult(ncmCache[ncm + '_' + uf], 'ncm-result-panel');
+  if (ncmCache[ncm + '||' + uf]) {
+    renderNCMResult(ncmCache[ncm + '||' + uf], 'ncm-result-panel');
     document.getElementById('ncm-result-panel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     return;
   }
@@ -2543,7 +2572,7 @@ async function batchConsultNCMs() {
   const ncmSet = new Set();
   itens.forEach(r => {
     const ncm = (r[7] || '').replace(/\./g, '').trim();
-    if (ncm && ncm.length >= 4 && !ncmCache[ncm + '_' + uf]) ncmSet.add(ncm);
+    if (ncm && ncm.length >= 4 && !ncmCache[ncm + '||' + uf]) ncmSet.add(ncm);
   });
   const ncmsToConsult = [...ncmSet].slice(0, 30);
 
@@ -2570,7 +2599,7 @@ async function batchConsultNCMs() {
 
     // Update row in table
     const btn = document.getElementById('ncm-btn-' + ncm);
-    const cached = ncmCache[ncm + '_' + uf];
+    const cached = ncmCache[ncm + '||' + uf];
     if (btn) { btn.innerHTML = cached ? '✓ Ver' : '✗'; if (cached) btn.classList.add('consulted'); }
     if (cached?.ibpt) {
       const ibptCell = document.getElementById('ncm-ibpt-' + ncm);
@@ -2634,12 +2663,12 @@ function renderInventario(d) {
     for (let i = 0; i < maxShow; i++) {
       const r = h010[i];
       html += `<tr>
-        <td class="mono">${r[1] || ''}</td>
-        <td class="mono">${r[2] || ''}</td>
+        <td class="mono">${esc(r[1] || '')}</td>
+        <td class="mono">${esc(r[2] || '')}</td>
         <td class="mono right">${fmtMoney(parseNum(r[3]))}</td>
         <td class="mono right">R$ ${fmtMoney(parseNum(r[4]))}</td>
         <td class="mono right">R$ ${fmtMoney(parseNum(r[5]))}</td>
-        <td>${indProp[r[6]] || r[6] || ''}</td>
+        <td>${esc(indProp[r[6]] || r[6] || '')}</td>
       </tr>`;
     }
     html += '</tbody></table></div></div>';
@@ -2660,6 +2689,12 @@ function renderInventario(d) {
 function runValidations(d) {
   const alerts = [];
   const s = d.summary;
+
+  // 0. Parser warnings (campos divergentes do leiaute)
+  if (d.warnings && d.warnings.length > 0) {
+    const sample = d.warnings.slice(0, 3).map(w => `linha ${w.line} (${w.regId}: esperado ${w.expected}, encontrado ${w.got})`).join('; ');
+    alerts.push({ level: 'warning', title: `${d.warnings.length} registro(s) com número de campos divergente`, desc: `Possível incompatibilidade de leiaute. Exemplos: ${sample}.` });
+  }
 
   // 1. Check 0000 mandatory fields
   if (!d.entity.cnpj && !d.entity.cpf) {
@@ -2713,12 +2748,21 @@ function runValidations(d) {
     alerts.push({ level: 'info', title: 'Arquivo de Retificação', desc: 'Este arquivo SPED é uma retificação (COD_FIN = 1). Certifique-se de que está dentro do prazo permitido.' });
   }
 
+  // 7b. IND_PERFIL inválido
+  if (d.entity.indPerfil && !['A','B','C'].includes(d.entity.indPerfil)) {
+    alerts.push({ level: 'warning', title: 'IND_PERFIL inválido', desc: `Valor "${d.entity.indPerfil}" não é A, B ou C. Verifique o registro 0000.` });
+  }
+
   // 8. Empty blocks
+  // Mapeamento de bloco -> registro de abertura
+  const openerByBlock = { '0':'0001','B':'B001','C':'C001','D':'D001','E':'E001','G':'G001','H':'H001','K':'K001','1':'1001','9':'9001' };
   for (const [bid, bdata] of Object.entries(d.blocks)) {
     if (bid === '9') continue;
-    const opener = d.registers[`${bid}001`] || d.registers[`${bid === '0' ? '0001' : bid + '001'}`];
+    const openerReg = openerByBlock[bid];
+    if (!openerReg) continue;
+    const opener = d.registers[openerReg];
     if (opener && opener[0] && opener[0][1] === '1' && bdata.totalLines > 2) {
-      alerts.push({ level: 'warning', title: `Bloco ${bid} declarado vazio mas contém dados`, desc: `O registro de abertura indica sem dados (IND_MOV=1), porém há ${bdata.totalLines} registros.` });
+      alerts.push({ level: 'warning', title: `Bloco ${bid} declarado vazio mas contém dados`, desc: `O registro ${openerReg} indica IND_MOV=1 (sem dados), porém há ${bdata.totalLines} registros no bloco.` });
     }
   }
 
@@ -2761,8 +2805,8 @@ function renderValidacao(d) {
     html += `<div class="alert-item alert-${a.level}">
       <div class="alert-icon">${icons[a.level]}</div>
       <div class="alert-text">
-        <strong>${a.title}</strong>
-        ${a.desc}
+        <strong>${esc(a.title)}</strong>
+        ${esc(a.desc)}
       </div>
     </div>`;
   });
@@ -2782,9 +2826,9 @@ function renderResumo(d) {
       <div class="card-body" style="max-height:400px;overflow:auto;">
       <table class="data-table"><thead><tr><th>Registro</th><th>Bloco</th><th class="right">Quantidade</th></tr></thead><tbody>`;
     d.registers['9900'].sort((a,b) => (a[1]||'').localeCompare(b[1]||'')).forEach(r => {
-      if (r[1] === '9900' || r[1] === '9999') return; // skip self-reference
-      reg9900HTML += `<tr><td class="mono" style="font-weight:600;color:var(--accent);">${r[1] || ''}</td>
-        <td><span class="tag tag-blue">Bloco ${(r[1]||'')[0]}</span></td>
+      const reg = r[1] || '';
+      reg9900HTML += `<tr><td class="mono" style="font-weight:600;color:var(--accent);">${esc(reg)}</td>
+        <td><span class="tag tag-blue">Bloco ${esc(reg[0] || '')}</span></td>
         <td class="mono right">${fmtInt(parseInt(r[2]) || 0)}</td></tr>`;
     });
     reg9900HTML += '</tbody></table></div></div>';
@@ -2796,13 +2840,13 @@ function renderResumo(d) {
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
           <div>
             <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;margin-bottom:8px;">Entidade</div>
-            <div style="font-size:16px;font-weight:700;">${d.entity.nome || 'N/I'}</div>
+            <div style="font-size:16px;font-weight:700;">${esc(d.entity.nome) || 'N/I'}</div>
             <div style="font-size:13px;color:var(--text-secondary);margin-top:4px;">
-              ${d.entity.fantasia ? 'Fantasia: ' + d.entity.fantasia + '<br>' : ''}
-              ${d.entity.cnpj ? 'CNPJ: ' + formatCNPJ(d.entity.cnpj) : ''}${d.entity.cpf ? ' · CPF: ' + d.entity.cpf : ''}<br>
-              IE: ${d.entity.ie || 'N/I'} · UF: ${d.entity.uf || 'N/I'}<br>
-              ${d.entity.end ? d.entity.end + ', ' + (d.entity.num || '') + ' - ' + (d.entity.bairro || '') : ''}<br>
-              ${d.entity.email ? 'E-mail: ' + d.entity.email : ''}
+              ${d.entity.fantasia ? 'Fantasia: ' + esc(d.entity.fantasia) + '<br>' : ''}
+              ${d.entity.cnpj ? 'CNPJ: ' + esc(formatCNPJ(d.entity.cnpj)) : ''}${d.entity.cpf ? ' · CPF: ' + esc(d.entity.cpf) : ''}<br>
+              IE: ${esc(d.entity.ie) || 'N/I'} · UF: ${esc(d.entity.uf) || 'N/I'}<br>
+              ${d.entity.end ? esc(d.entity.end) + ', ' + esc(d.entity.num || '') + ' - ' + esc(d.entity.bairro || '') : ''}<br>
+              ${d.entity.email ? 'E-mail: ' + esc(d.entity.email) : ''}
             </div>
           </div>
           <div>
@@ -2857,9 +2901,9 @@ function renderResumo(d) {
     <div class="card" style="margin-top:20px;">
       <div class="card-header"><h3>Contabilista Responsável</h3></div>
       <div class="card-body" style="font-size:13px;color:var(--text-secondary);line-height:1.8;">
-        Nome: <strong>${d.registers['0100'][0][1] || ''}</strong><br>
-        CPF: ${d.registers['0100'][0][2] || ''} · CRC: ${d.registers['0100'][0][3] || ''}<br>
-        ${d.registers['0100'][0][12] ? 'E-mail: ' + d.registers['0100'][0][12] : ''}
+        Nome: <strong>${esc(d.registers['0100'][0][1] || '')}</strong><br>
+        CPF: ${esc(d.registers['0100'][0][2] || '')} · CRC: ${esc(d.registers['0100'][0][3] || '')}<br>
+        ${d.registers['0100'][0][12] ? 'E-mail: ' + esc(d.registers['0100'][0][12]) : ''}
       </div>
     </div>` : ''}
 
